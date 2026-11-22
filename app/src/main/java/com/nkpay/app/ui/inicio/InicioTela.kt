@@ -32,7 +32,6 @@ import com.nkpay.app.dominio.Dinheiro
 import com.nkpay.app.dominio.Saldos
 import com.nkpay.app.ui.Formatos
 import com.nkpay.app.ui.LocalContainer
-import com.nkpay.app.ui.componentes.BotaoAdicionar
 import com.nkpay.app.ui.componentes.CartaoSecao
 import com.nkpay.app.dominio.Natureza
 import com.nkpay.app.ui.backup.diasDesde
@@ -55,10 +54,10 @@ private const val DIAS_PARA_AVISO = 7L
  * 3. Benefícios, em bloco próprio (só se houver conta de benefício). Nunca somados ao disponível.
  * 4. Entradas e despesas do mês atual.
  * 5. Últimas 5 movimentações.
+ * Sem botão "+": lançar fica na aba Movimentações (adendo v0.3, item A1).
  */
 @Composable
 fun InicioTela(
-    aoNovaMovimentacao: () -> Unit,
     aoAbrirMovimentacao: (String) -> Unit,
     aoCadastrarConta: () -> Unit,
     aoVerMovimentacoes: () -> Unit,
@@ -70,10 +69,7 @@ fun InicioTela(
     val ultimoBackup by container.backup.registro.ultimo.collectAsState()
     val hoje = container.relogio.hoje()
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        floatingActionButton = { BotaoAdicionar("Nova movimentação", aoNovaMovimentacao) },
-    ) { espaco ->
+    Scaffold(contentWindowInsets = WindowInsets(0)) { espaco ->
         val v = visao ?: return@Scaffold
         val r = v.resumo
         val mes = YearMonth.from(hoje)
@@ -222,7 +218,7 @@ fun InicioTela(
                     }
                 }
             }
-            Spacer(Modifier.height(96.dp))
+            Spacer(Modifier.height(32.dp))
         }
     }
 }

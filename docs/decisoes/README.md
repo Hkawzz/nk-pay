@@ -14,3 +14,4 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0008](0008-banco-de-dados.md) | Estrutura do banco de dados (esquema v1) | Aceita |
 | [0009](0009-saldo-inicial-e-contas-arquivadas.md) | Saldo inicial, contas arquivadas e transferências com benefícios | Aceita |
 | [0010](0010-backup.md) | Backup e restauração (`.nkpay`, cópia antes de restaurar, sem senha por ora) | Aceita |
+| [0011](0011-aba-mais-volta-ao-menu.md) | A aba Mais sempre reabre no menu principal | Aceita |
