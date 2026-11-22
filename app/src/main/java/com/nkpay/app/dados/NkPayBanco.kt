@@ -29,6 +29,10 @@ abstract class NkPayBanco : RoomDatabase() {
     abstract fun movimentacaoDao(): MovimentacaoDao
     abstract fun auditoriaDao(): AuditoriaDao
     abstract fun backupDao(): BackupDao
+    abstract fun contaFixaDao(): ContaFixaDao
+    abstract fun obrigacaoDao(): ObrigacaoDao
+    abstract fun pagamentoDao(): PagamentoDao
+    abstract fun ajusteObrigacaoDao(): AjusteObrigacaoDao
 
     companion object {
         /** Versão do esquema. Também vai no manifesto de cada backup. */

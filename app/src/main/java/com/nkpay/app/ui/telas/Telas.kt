@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
@@ -50,18 +51,6 @@ import com.nkpay.app.ui.theme.EstiloValor
 // Telas simples: A pagar e Objetivos (chegam em versões futuras), Mais, Sobre e o aviso "em breve".
 
 @Composable
-fun APagarTela() {
-    Column(Modifier.fillMaxSize()) {
-        NkTituloTela("A pagar")
-        NkEstadoVazio(
-            icone = Icons.Rounded.DateRange,
-            titulo = "Chega na próxima versão",
-            texto = "Contas fixas, parcelas e pendências vão aparecer aqui.",
-        )
-    }
-}
-
-@Composable
 fun ObjetivosTela() {
     Column(Modifier.fillMaxSize()) {
         NkTituloTela("Objetivos")
@@ -77,6 +66,7 @@ private data class ItemMais(val rota: String, val titulo: String, val icone: Ima
 
 private val itensMais = listOf(
     ItemMais(Rotas.CONTAS, "Contas e carteiras", Icons.Rounded.AccountBox),
+    ItemMais(Rotas.CONTAS_FIXAS, "Contas fixas", Icons.Rounded.Refresh),
     ItemMais(Rotas.CATEGORIAS, "Categorias", Icons.Rounded.ShoppingCart),
     ItemMais(Rotas.BACKUP, "Backup e restauração", Icons.Rounded.Lock),
     ItemMais(Rotas.REGISTRO, "Registro de alterações", Icons.Rounded.Edit),

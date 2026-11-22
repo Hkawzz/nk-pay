@@ -22,6 +22,16 @@ object Rotas {
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
     const val BACKUP = "mais/backup"
+    const val CONTAS_FIXAS = "mais/contas-fixas"
+    const val CONTA_FIXA_FORM = "mais/conta-fixa-form?id={id}"
+    fun contaFixaForm(id: String? = null) = if (id == null) "mais/conta-fixa-form" else "mais/conta-fixa-form?id=$id"
+
+    /** Conta a pagar: sem id cria uma avulsa no mês informado. */
+    const val OBRIGACAO_FORM = "obrigacao-form?id={id}&mes={mes}"
+    fun obrigacaoForm(id: String? = null, mes: java.time.YearMonth? = null): String {
+        val params = listOfNotNull(id?.let { "id=$it" }, mes?.let { "mes=$it" })
+        return if (params.isEmpty()) "obrigacao-form" else "obrigacao-form?" + params.joinToString("&")
+    }
 
     // Telas com parâmetros (o padrão fica junto da função que monta a rota)
     const val CONTA = "mais/conta/{id}"

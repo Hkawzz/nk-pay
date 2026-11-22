@@ -49,7 +49,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 
-private val NOME_ENTIDADE = mapOf("conta" to "Conta", "categoria" to "Categoria", "movimentacao" to "Movimentação")
+private val NOME_ENTIDADE = mapOf("conta" to "Conta", "categoria" to "Categoria", "movimentacao" to "Movimentação", "conta_fixa" to "Conta fixa", "obrigacao" to "Conta a pagar", "pagamento" to "Pagamento", "obrigacao_ajuste" to "Ajuste de conta", "backup" to "Backup")
 
 private fun rotuloOperacao(op: String) = runCatching { Operacao.valueOf(op).rotulo }.getOrDefault(op)
 
@@ -213,6 +213,14 @@ private val ROTULOS = mapOf(
     "contaDestinoId" to "Conta de destino",
     "categoriaId" to "Categoria",
     "descricao" to "Descrição",
+    "valorPadraoCentavos" to "Valor de costume",
+    "contaPadraoId" to "Conta que costuma pagar",
+    "origem" to "Origem",
+    "valorPrevistoCentavos" to "Valor previsto",
+    "vencimento" to "Vencimento",
+    "mesReferencia" to "Mês da conta",
+    "contaFixaId" to "Conta fixa",
+    "canceladaEm" to "Cancelada em",
 )
 
 /** Deixa o valor legível: centavos em reais, instantes em data e hora, ids em nomes. */
@@ -221,13 +229,13 @@ private fun formatarCampo(campo: String, valor: kotlinx.serialization.json.JsonE
     val p = valor as? JsonPrimitive ?: return valor.toString()
     val texto = p.content
     return when (campo) {
-        "saldoInicialCentavos", "valorCentavos", "limiteCentavos" -> texto.toLongOrNull()?.let { Dinheiro.formatar(it) } ?: texto
+        "saldoInicialCentavos", "valorCentavos", "limiteCentavos", "valorPadraoCentavos", "valorPrevistoCentavos" -> texto.toLongOrNull()?.let { Dinheiro.formatar(it) } ?: texto
         "arquivadaEm", "criadoEm", "atualizadoEm", "excluidoEm" -> texto.toLongOrNull()?.let { Formatos.dataHora(it) } ?: texto
-        "dataSaldoInicial", "data" -> runCatching { Formatos.data(java.time.LocalDate.parse(texto)) }.getOrDefault(texto)
+        "dataSaldoInicial", "data", "vencimento" -> runCatching { Formatos.data(java.time.LocalDate.parse(texto)) }.getOrDefault(texto)
         "natureza" -> runCatching { Natureza.valueOf(texto).rotulo }.getOrDefault(texto)
         "tipoBeneficio" -> runCatching { TipoBeneficio.valueOf(texto).rotulo }.getOrDefault(texto)
         "tipo" -> runCatching { TipoMovimentacao.valueOf(texto).rotulo }.getOrDefault(texto)
-        "contaId", "contaDestinoId" -> v.conta(texto)?.nome ?: "(conta excluída)"
+        "contaId", "contaDestinoId", "contaPadraoId" -> v.conta(texto)?.nome ?: "(conta excluída)"
         "categoriaId" -> v.categoria(texto)?.nome ?: "(categoria)"
         "cor" -> "#" + (texto.toLongOrNull()?.let { java.lang.Long.toHexString(it).uppercase().takeLast(6) } ?: texto)
         "descricao" -> texto.ifBlank { "—" }
