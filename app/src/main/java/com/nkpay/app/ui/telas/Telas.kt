@@ -41,58 +41,7 @@ import com.nkpay.app.ui.componentes.Subtela
 import com.nkpay.app.ui.componentes.TituloDeTela
 import com.nkpay.app.ui.theme.EstiloValor
 
-// Telas da v0.0.1. Nesta versão elas só validam o tema e a navegação.
-// Os números da Início são R$ 0,00 porque ainda não existe nenhuma conta: não há dado falso.
-
-@Composable
-fun InicioTela() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
-        TituloDeTela("Início")
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ),
-            shape = MaterialTheme.shapes.large,
-        ) {
-            Column(Modifier.padding(24.dp)) {
-                Text("Disponível", style = MaterialTheme.typography.titleSmall)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    Dinheiro.formatar(0),
-                    style = EstiloValor.destaque,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(Modifier.height(16.dp))
-                Row {
-                    ValorRotulado("Dinheiro próprio", Dinheiro.formatar(0), Modifier.weight(1f))
-                    ValorRotulado("Reservado", Dinheiro.formatar(0), Modifier.weight(1f))
-                }
-            }
-        }
-        EstadoVazio(
-            icone = Icons.Filled.AccountBox,
-            titulo = "Cadastre suas contas e saldos iniciais",
-            texto = "O cadastro de contas e carteiras chega na v0.1.0.",
-            modifier = Modifier.height(320.dp),
-        )
-    }
-}
-
-@Composable
-private fun ValorRotulado(rotulo: String, valor: String, modifier: Modifier = Modifier) {
-    Column(modifier) {
-        Text(rotulo, style = MaterialTheme.typography.labelMedium)
-        Text(valor, style = EstiloValor.lista, color = MaterialTheme.colorScheme.onBackground)
-    }
-}
+// Telas simples: A pagar e Objetivos (chegam em versões futuras), Mais, Sobre e o aviso "em breve".
 
 @Composable
 fun APagarTela() {

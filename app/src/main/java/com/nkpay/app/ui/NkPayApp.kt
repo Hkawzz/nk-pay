@@ -27,7 +27,7 @@ import com.nkpay.app.ui.contas.ContaFormTela
 import com.nkpay.app.ui.contas.ContasTela
 import com.nkpay.app.ui.telas.APagarTela
 import com.nkpay.app.ui.telas.EmBreveSubtela
-import com.nkpay.app.ui.telas.InicioTela
+import com.nkpay.app.ui.inicio.InicioTela
 import com.nkpay.app.ui.telas.MaisTela
 import com.nkpay.app.ui.movimentacoes.MovimentacaoFormTela
 import com.nkpay.app.ui.movimentacoes.MovimentacoesTela
@@ -80,7 +80,20 @@ fun NkPayApp() {
             startDestination = Rotas.INICIO,
             modifier = Modifier.padding(espaco),
         ) {
-            composable(Rotas.INICIO) { InicioTela() }
+            composable(Rotas.INICIO) {
+                InicioTela(
+                    aoNovaMovimentacao = { navController.navigate(Rotas.movimentacaoForm()) },
+                    aoAbrirMovimentacao = { navController.navigate(Rotas.movimentacaoForm(id = it)) },
+                    aoCadastrarConta = { navController.navigate(Rotas.contaForm()) },
+                    aoVerMovimentacoes = {
+                        navController.navigate(Rotas.MOVIMENTACOES) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
+            }
             composable(Rotas.MOVIMENTACOES) {
                 MovimentacoesTela(
                     aoAbrir = { navController.navigate(Rotas.movimentacaoForm(id = it)) },
