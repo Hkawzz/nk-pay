@@ -219,6 +219,38 @@ class BackupTest {
     }
 
     @Test
+    fun `backup feito na v0_2 (banco versao 1) continua restauravel na v0_3`() = runTest {
+        montarCenario()
+        val antes = fotoDoBanco()
+        val partes = conteudo(exportarBytes())
+
+        // Recria o arquivo como a v0.2 gerava: sem as listas novas e com versaoBanco = 1.
+        val json = kotlinx.serialization.json.Json
+        val dados = json.parseToJsonElement(partes.getValue("dados.json").toString(Charsets.UTF_8)) as kotlinx.serialization.json.JsonObject
+        val dadosV1 = kotlinx.serialization.json.JsonObject(dados.filterKeys { it in setOf("contas", "categorias", "movimentacoes", "auditoria") })
+        val bytesV1 = dadosV1.toString().toByteArray(Charsets.UTF_8)
+        val sha = java.security.MessageDigest.getInstance("SHA-256").digest(bytesV1).joinToString("") { "%02x".format(it) }
+        val manifesto = json.parseToJsonElement(partes.getValue("manifest.json").toString(Charsets.UTF_8)) as kotlinx.serialization.json.JsonObject
+        val manifestoV1 = kotlinx.serialization.json.JsonObject(
+            manifesto.filterKeys { it != "contasFixas" && it != "obrigacoes" } +
+                mapOf(
+                    "versaoBanco" to kotlinx.serialization.json.JsonPrimitive(1),
+                    "sha256Dados" to kotlinx.serialization.json.JsonPrimitive(sha),
+                ),
+        )
+        val arquivoV1 = zipCom("manifest.json" to manifestoV1.toString().toByteArray(), "dados.json" to bytesV1)
+
+        contas.criar(Conta("", "Depois do backup", Natureza.PROPRIO, null, 1, dia)).ok()
+        val lido = backup.ler(ByteArrayInputStream(arquivoV1))
+        assertEquals(1, lido.manifesto.versaoBanco)
+        backup.restaurar(lido)
+
+        assertEquals(antes[0], banco.backupDao().contas())
+        assertEquals(antes[2], banco.backupDao().movimentacoes())
+        assertTrue(banco.backupDao().obrigacoes().isEmpty())
+    }
+
+    @Test
     fun `arquivo recusado nao altera nada`() = runTest {
         montarCenario()
         val antes = fotoDoBanco()

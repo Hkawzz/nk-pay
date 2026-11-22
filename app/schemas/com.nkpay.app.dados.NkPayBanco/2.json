@@ -1,0 +1,937 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "3ad6fa75607fac48876a4c79104cb2e2",
+    "entities": [
+      {
+        "tableName": "conta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nome` TEXT NOT NULL, `natureza` TEXT NOT NULL, `tipoBeneficio` TEXT, `saldoInicialCentavos` INTEGER NOT NULL, `dataSaldoInicial` TEXT NOT NULL, `icone` TEXT, `cor` INTEGER, `instituicao` TEXT, `limiteCentavos` INTEGER, `diaFechamento` INTEGER, `diaVencimento` INTEGER, `arquivadaEm` INTEGER, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nome",
+            "columnName": "nome",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "natureza",
+            "columnName": "natureza",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoBeneficio",
+            "columnName": "tipoBeneficio",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "saldoInicialCentavos",
+            "columnName": "saldoInicialCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataSaldoInicial",
+            "columnName": "dataSaldoInicial",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "icone",
+            "columnName": "icone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cor",
+            "columnName": "cor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "instituicao",
+            "columnName": "instituicao",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "limiteCentavos",
+            "columnName": "limiteCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "diaFechamento",
+            "columnName": "diaFechamento",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "diaVencimento",
+            "columnName": "diaVencimento",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "arquivadaEm",
+            "columnName": "arquivadaEm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "categoria",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nome` TEXT NOT NULL, `codigoSistema` TEXT, `arquivadaEm` INTEGER, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nome",
+            "columnName": "nome",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "codigoSistema",
+            "columnName": "codigoSistema",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "arquivadaEm",
+            "columnName": "arquivadaEm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_categoria_codigoSistema",
+            "unique": false,
+            "columnNames": [
+              "codigoSistema"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_categoria_codigoSistema` ON `${TABLE_NAME}` (`codigoSistema`)"
+          }
+        ]
+      },
+      {
+        "tableName": "movimentacao",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `tipo` TEXT NOT NULL, `data` TEXT NOT NULL, `valorCentavos` INTEGER NOT NULL, `contaId` TEXT NOT NULL, `contaDestinoId` TEXT, `categoriaId` TEXT, `descricao` TEXT NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`contaId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`contaDestinoId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`categoriaId`) REFERENCES `categoria`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "data",
+            "columnName": "data",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorCentavos",
+            "columnName": "valorCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contaId",
+            "columnName": "contaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contaDestinoId",
+            "columnName": "contaDestinoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoriaId",
+            "columnName": "categoriaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "descricao",
+            "columnName": "descricao",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_movimentacao_contaId",
+            "unique": false,
+            "columnNames": [
+              "contaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movimentacao_contaId` ON `${TABLE_NAME}` (`contaId`)"
+          },
+          {
+            "name": "index_movimentacao_contaDestinoId",
+            "unique": false,
+            "columnNames": [
+              "contaDestinoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movimentacao_contaDestinoId` ON `${TABLE_NAME}` (`contaDestinoId`)"
+          },
+          {
+            "name": "index_movimentacao_categoriaId",
+            "unique": false,
+            "columnNames": [
+              "categoriaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movimentacao_categoriaId` ON `${TABLE_NAME}` (`categoriaId`)"
+          },
+          {
+            "name": "index_movimentacao_data",
+            "unique": false,
+            "columnNames": [
+              "data"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movimentacao_data` ON `${TABLE_NAME}` (`data`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "conta",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "contaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "conta",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "contaDestinoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "categoria",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "categoriaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "auditoria",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `grupoId` TEXT NOT NULL, `quando` INTEGER NOT NULL, `operacao` TEXT NOT NULL, `entidade` TEXT NOT NULL, `entidadeId` TEXT NOT NULL, `resumo` TEXT NOT NULL, `antes` TEXT, `depois` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "grupoId",
+            "columnName": "grupoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quando",
+            "columnName": "quando",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operacao",
+            "columnName": "operacao",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entidade",
+            "columnName": "entidade",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entidadeId",
+            "columnName": "entidadeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resumo",
+            "columnName": "resumo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "antes",
+            "columnName": "antes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "depois",
+            "columnName": "depois",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_auditoria_quando",
+            "unique": false,
+            "columnNames": [
+              "quando"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_auditoria_quando` ON `${TABLE_NAME}` (`quando`)"
+          },
+          {
+            "name": "index_auditoria_grupoId",
+            "unique": false,
+            "columnNames": [
+              "grupoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_auditoria_grupoId` ON `${TABLE_NAME}` (`grupoId`)"
+          },
+          {
+            "name": "index_auditoria_entidadeId",
+            "unique": false,
+            "columnNames": [
+              "entidadeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_auditoria_entidadeId` ON `${TABLE_NAME}` (`entidadeId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "conta_fixa",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nome` TEXT NOT NULL, `valorPadraoCentavos` INTEGER NOT NULL, `diaVencimento` INTEGER, `categoriaId` TEXT, `contaPadraoId` TEXT, `arquivadaEm` INTEGER, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`categoriaId`) REFERENCES `categoria`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`contaPadraoId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nome",
+            "columnName": "nome",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorPadraoCentavos",
+            "columnName": "valorPadraoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diaVencimento",
+            "columnName": "diaVencimento",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "categoriaId",
+            "columnName": "categoriaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "contaPadraoId",
+            "columnName": "contaPadraoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "arquivadaEm",
+            "columnName": "arquivadaEm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_conta_fixa_categoriaId",
+            "unique": false,
+            "columnNames": [
+              "categoriaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_conta_fixa_categoriaId` ON `${TABLE_NAME}` (`categoriaId`)"
+          },
+          {
+            "name": "index_conta_fixa_contaPadraoId",
+            "unique": false,
+            "columnNames": [
+              "contaPadraoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_conta_fixa_contaPadraoId` ON `${TABLE_NAME}` (`contaPadraoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "categoria",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "categoriaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "conta",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "contaPadraoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "obrigacao",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `origem` TEXT NOT NULL, `descricao` TEXT NOT NULL, `valorPrevistoCentavos` INTEGER NOT NULL, `vencimento` TEXT, `mesReferencia` TEXT, `contaFixaId` TEXT, `categoriaId` TEXT, `contaCreditoId` TEXT, `compraId` TEXT, `numeroParcela` INTEGER, `totalParcelas` INTEGER, `canceladaEm` INTEGER, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`contaFixaId`) REFERENCES `conta_fixa`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`categoriaId`) REFERENCES `categoria`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`contaCreditoId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origem",
+            "columnName": "origem",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descricao",
+            "columnName": "descricao",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorPrevistoCentavos",
+            "columnName": "valorPrevistoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vencimento",
+            "columnName": "vencimento",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mesReferencia",
+            "columnName": "mesReferencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "contaFixaId",
+            "columnName": "contaFixaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoriaId",
+            "columnName": "categoriaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "contaCreditoId",
+            "columnName": "contaCreditoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "compraId",
+            "columnName": "compraId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "numeroParcela",
+            "columnName": "numeroParcela",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "totalParcelas",
+            "columnName": "totalParcelas",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "canceladaEm",
+            "columnName": "canceladaEm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_obrigacao_contaFixaId_mesReferencia",
+            "unique": false,
+            "columnNames": [
+              "contaFixaId",
+              "mesReferencia"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_obrigacao_contaFixaId_mesReferencia` ON `${TABLE_NAME}` (`contaFixaId`, `mesReferencia`)"
+          },
+          {
+            "name": "index_obrigacao_categoriaId",
+            "unique": false,
+            "columnNames": [
+              "categoriaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_obrigacao_categoriaId` ON `${TABLE_NAME}` (`categoriaId`)"
+          },
+          {
+            "name": "index_obrigacao_contaCreditoId",
+            "unique": false,
+            "columnNames": [
+              "contaCreditoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_obrigacao_contaCreditoId` ON `${TABLE_NAME}` (`contaCreditoId`)"
+          },
+          {
+            "name": "index_obrigacao_vencimento",
+            "unique": false,
+            "columnNames": [
+              "vencimento"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_obrigacao_vencimento` ON `${TABLE_NAME}` (`vencimento`)"
+          },
+          {
+            "name": "index_obrigacao_mesReferencia",
+            "unique": false,
+            "columnNames": [
+              "mesReferencia"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_obrigacao_mesReferencia` ON `${TABLE_NAME}` (`mesReferencia`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "conta_fixa",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "contaFixaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "categoria",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "categoriaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "conta",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "contaCreditoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "pagamento",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `obrigacaoId` TEXT NOT NULL, `movimentacaoId` TEXT NOT NULL, `valorAplicadoCentavos` INTEGER NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`obrigacaoId`) REFERENCES `obrigacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`movimentacaoId`) REFERENCES `movimentacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "obrigacaoId",
+            "columnName": "obrigacaoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "movimentacaoId",
+            "columnName": "movimentacaoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorAplicadoCentavos",
+            "columnName": "valorAplicadoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pagamento_obrigacaoId",
+            "unique": false,
+            "columnNames": [
+              "obrigacaoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pagamento_obrigacaoId` ON `${TABLE_NAME}` (`obrigacaoId`)"
+          },
+          {
+            "name": "index_pagamento_movimentacaoId",
+            "unique": false,
+            "columnNames": [
+              "movimentacaoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pagamento_movimentacaoId` ON `${TABLE_NAME}` (`movimentacaoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "obrigacao",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "obrigacaoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "movimentacao",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "movimentacaoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "obrigacao_ajuste",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `obrigacaoId` TEXT NOT NULL, `pagamentoId` TEXT, `natureza` TEXT NOT NULL, `valorCentavos` INTEGER NOT NULL, `movimentacaoId` TEXT, `observacao` TEXT NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`obrigacaoId`) REFERENCES `obrigacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`pagamentoId`) REFERENCES `pagamento`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`movimentacaoId`) REFERENCES `movimentacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "obrigacaoId",
+            "columnName": "obrigacaoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pagamentoId",
+            "columnName": "pagamentoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "natureza",
+            "columnName": "natureza",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorCentavos",
+            "columnName": "valorCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "movimentacaoId",
+            "columnName": "movimentacaoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observacao",
+            "columnName": "observacao",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_obrigacao_ajuste_obrigacaoId",
+            "unique": false,
+            "columnNames": [
+              "obrigacaoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_obrigacao_ajuste_obrigacaoId` ON `${TABLE_NAME}` (`obrigacaoId`)"
+          },
+          {
+            "name": "index_obrigacao_ajuste_pagamentoId",
+            "unique": false,
+            "columnNames": [
+              "pagamentoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_obrigacao_ajuste_pagamentoId` ON `${TABLE_NAME}` (`pagamentoId`)"
+          },
+          {
+            "name": "index_obrigacao_ajuste_movimentacaoId",
+            "unique": false,
+            "columnNames": [
+              "movimentacaoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_obrigacao_ajuste_movimentacaoId` ON `${TABLE_NAME}` (`movimentacaoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "obrigacao",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "obrigacaoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "pagamento",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pagamentoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "movimentacao",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "movimentacaoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3ad6fa75607fac48876a4c79104cb2e2')"
+    ]
+  }
+}

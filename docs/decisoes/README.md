@@ -15,3 +15,5 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0009](0009-saldo-inicial-e-contas-arquivadas.md) | Saldo inicial, contas arquivadas e transferências com benefícios | Aceita |
 | [0010](0010-backup.md) | Backup e restauração (`.nkpay`, cópia antes de restaurar, sem senha por ora) | Aceita |
 | [0011](0011-aba-mais-volta-ao-menu.md) | A aba Mais sempre reabre no menu principal | Aceita |
+| [0012](0012-banco-v2-obrigacoes.md) | Banco versão 2: contas fixas, obrigações, pagamentos e ajustes | Aceita |
+| [0013](0013-regras-de-pagamento.md) | Regras de pagamento de contas fixas e avulsas | Aceita |

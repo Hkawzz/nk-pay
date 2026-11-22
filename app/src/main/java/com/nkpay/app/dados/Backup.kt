@@ -41,6 +41,9 @@ data class ManifestoBackup(
     val categorias: Int,
     val movimentacoes: Int,
     val registrosDeAuditoria: Int,
+    // Versão 2 (v0.3). Valor padrão 0 para os manifestos da versão 1.
+    val contasFixas: Int = 0,
+    val obrigacoes: Int = 0,
 )
 
 @Serializable
@@ -49,6 +52,12 @@ data class DadosBackup(
     val categorias: List<CategoriaEntidade>,
     val movimentacoes: List<MovimentacaoEntidade>,
     val auditoria: List<AuditoriaEntidade>,
+    // Versão 2 do banco (v0.3). Backups da versão 1 não têm estes campos:
+    // o valor padrão (lista vazia) faz eles continuarem restauráveis.
+    val contasFixas: List<ContaFixaEntidade> = emptyList(),
+    val obrigacoes: List<ObrigacaoEntidade> = emptyList(),
+    val pagamentos: List<PagamentoEntidade> = emptyList(),
+    val ajustesDeObrigacao: List<ObrigacaoAjusteEntidade> = emptyList(),
 )
 
 /** Um backup lido e validado, pronto para ser restaurado. */
@@ -85,7 +94,10 @@ class BackupServico(
     suspend fun exportar(saida: OutputStream, marcarComoUltimo: Boolean = true): ManifestoBackup {
         // Lê tudo dentro de uma transação: o backup é uma "foto" consistente.
         val dados = banco.withTransaction {
-            DadosBackup(dao.contas(), dao.categorias(), dao.movimentacoes(), dao.auditoria())
+            DadosBackup(
+                dao.contas(), dao.categorias(), dao.movimentacoes(), dao.auditoria(),
+                dao.contasFixas(), dao.obrigacoes(), dao.pagamentos(), dao.ajustesDeObrigacao(),
+            )
         }
         val bytesDados = json.encodeToString(DadosBackup.serializer(), dados).toByteArray(Charsets.UTF_8)
         val manifesto = ManifestoBackup(
@@ -98,6 +110,8 @@ class BackupServico(
             categorias = dados.categorias.size,
             movimentacoes = dados.movimentacoes.size,
             registrosDeAuditoria = dados.auditoria.size,
+            contasFixas = dados.contasFixas.size,
+            obrigacoes = dados.obrigacoes.size,
         )
         ZipOutputStream(saida).use { zip ->
             zip.putNextEntry(ZipEntry(MANIFESTO))
@@ -161,6 +175,16 @@ class BackupServico(
                 (m.categoriaId == null || m.categoriaId in categorias)
         }
         if (!ok) throw BackupInvalido("O backup está inconsistente: há movimentações de contas ou categorias que não existem nele.")
+
+        val movs = d.movimentacoes.map { it.id }.toSet()
+        val fixas = d.contasFixas.map { it.id }.toSet()
+        val obrigs = d.obrigacoes.map { it.id }.toSet()
+        val pags = d.pagamentos.map { it.id }.toSet()
+        val okV2 = d.contasFixas.all { (it.categoriaId == null || it.categoriaId in categorias) && (it.contaPadraoId == null || it.contaPadraoId in contas) } &&
+            d.obrigacoes.all { (it.contaFixaId == null || it.contaFixaId in fixas) && (it.categoriaId == null || it.categoriaId in categorias) && (it.contaCreditoId == null || it.contaCreditoId in contas) } &&
+            d.pagamentos.all { it.obrigacaoId in obrigs && it.movimentacaoId in movs } &&
+            d.ajustesDeObrigacao.all { it.obrigacaoId in obrigs && (it.pagamentoId == null || it.pagamentoId in pags) && (it.movimentacaoId == null || it.movimentacaoId in movs) }
+        if (!okV2) throw BackupInvalido("O backup está inconsistente: há contas a pagar que apontam para registros que não existem nele.")
     }
 
     private fun lerComLimite(entrada: InputStream): ByteArray {
@@ -191,13 +215,23 @@ class BackupServico(
         val copia = salvarCopiaAutomatica()
         val d = backup.dados
         banco.withTransaction {
+            // Apaga de "fora para dentro" (quem aponta antes de quem é apontado)...
+            dao.apagarAjustesDeObrigacao()
+            dao.apagarPagamentos()
+            dao.apagarObrigacoes()
+            dao.apagarContasFixas()
             dao.apagarMovimentacoes()
             dao.apagarContas()
             dao.apagarCategorias()
             dao.apagarAuditoria()
+            // ...e insere de "dentro para fora".
             dao.inserirContas(d.contas)
             dao.inserirCategorias(d.categorias)
             dao.inserirMovimentacoes(d.movimentacoes)
+            dao.inserirContasFixas(d.contasFixas)
+            dao.inserirObrigacoes(d.obrigacoes)
+            dao.inserirPagamentos(d.pagamentos)
+            dao.inserirAjustesDeObrigacao(d.ajustesDeObrigacao)
             dao.inserirAuditoria(d.auditoria)
             val m = backup.manifesto
             dao.inserirAuditoria(

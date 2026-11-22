@@ -144,6 +144,26 @@ Toda criação, edição, exclusão e restauração grava uma linha no **Registr
 
 ---
 
+## 6A. Contas a pagar (contas fixas e avulsas) 🚧 v0.3
+
+Aprovadas em 22/11/2026. Ver [`decisoes/0013-regras-de-pagamento.md`](decisoes/0013-regras-de-pagamento.md).
+
+- **Obrigação** é algo a pagar: uma conta fixa de um mês ou uma conta avulsa. Ela guarda o **valor previsto original** e o **mês de referência**, que nunca mudam por causa de pagamentos.
+- `restante = previsto + acréscimos − abatimentos − pagamentos aplicados` (calculado, nunca gravado).
+- **A despesa é o valor efetivamente pago**, no mês do pagamento. Cada pagamento parcial gera a sua despesa.
+- **Encargos** (juros, multa, tarifa, IOF) são despesas próprias, na categoria "Encargos financeiros".
+- **Pagou menos:** o app pergunta se foi pagamento *parcial* (o restante continua) ou *desconto* (abatimento e quitação, sem receita fictícia).
+- **Contas fixas no mês:** são lançadas por seleção manual, sem duplicar.
+- **Atrasadas** continuam em "A pagar" com o mês original.
+
+> **Exemplos** (luz de R$ 100,00, referência dezembro):
+> - Paga R$ 100,00 em 10/12 → despesa de R$ 100,00 em dezembro; restante R$ 0,00 (quitada).
+> - Paga R$ 60,00 (parcial) → despesa de R$ 60,00; restante R$ 40,00 (parcial). Depois paga R$ 40,00 em 05/01 → despesa de R$ 40,00 em **janeiro**; a obrigação continua sendo de **dezembro**, agora quitada.
+> - Paga R$ 105,00 com R$ 5,00 de multa → despesas de R$ 100,00 (categoria da luz) e R$ 5,00 (Encargos financeiros); restante R$ 0,00.
+> - Paga R$ 95,00 com desconto de R$ 5,00 → despesa de R$ 95,00 e abatimento de R$ 5,00; restante R$ 0,00. Entradas do mês: inalteradas.
+
+---
+
 ## 7. Regras futuras 🔜
 
 Estas regras não são implementadas na v0.1, mas o banco de dados da v0.1 precisa permiti-las.
