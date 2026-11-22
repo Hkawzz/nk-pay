@@ -1,11 +1,9 @@
 package com.nkpay.app.ui.theme
 
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
 
 // Tema escuro, único na v0.1. Não há tema claro nem cores dinâmicas (Material You),
 // para a identidade visual ser sempre a mesma.
@@ -37,9 +35,9 @@ private val EsquemaEscuro = darkColorScheme(
 )
 
 private val Formas = Shapes(
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
+    small = Raio.formaPequena,
+    medium = Raio.formaMedia,
+    large = Raio.formaGrande,
 )
 
 @Composable
