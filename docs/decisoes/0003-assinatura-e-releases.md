@@ -14,6 +14,7 @@ A chave de debug do CI não serve: o GitHub Actions gera uma nova a cada execuç
   - `NKPAY_KEYSTORE_BASE64`: o arquivo `.jks` em base64.
   - `NKPAY_KEYSTORE_PASSWORD`, `NKPAY_KEY_ALIAS` e `NKPAY_KEY_PASSWORD`.
 - O `release.yml` decodifica a keystore em um arquivo temporário, assina o APK e **falha** se os Secrets não existirem. Ele nunca publica um APK sem assinatura ou com a chave de debug.
+- O `release.yml` também confere a **impressão digital SHA-256** do certificado (`E4:08:56:3D:…:FC:64`). Se a chave usada não for a oficial, a Release falha.
 - O `build.gradle.kts` lê a assinatura de variáveis de ambiente. Sem elas, o APK de release sai sem assinatura (e não instala), o que é intencional.
 
 ## Consequências

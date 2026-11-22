@@ -104,6 +104,15 @@ jobs:
             echo "::error::O APK foi assinado com a chave de DEBUG. Abortando."
             exit 1
           fi
+          # A assinatura precisa ser EXATAMENTE a da keystore oficial (impressão
+          # digital SHA-256 do certificado; não é segredo). Se os Secrets forem
+          # trocados por outra chave, a Release falha em vez de publicar um APK
+          # que não instalaria por cima do app atual.
+          ESPERADA="e408563d272ef960f75617f92da848c9948bebedb66b9371143a299fe9b2fc64"
+          if ! grep -q "certificate SHA-256 digest: $ESPERADA" assinatura.txt; then
+            echo "::error::A impressão digital do certificado não é a da keystore oficial. Abortando."
+            exit 1
+          fi
           mv "$APK" "nk-pay-v$VERSAO.apk"
 
       - name: Criar a GitHub Release
