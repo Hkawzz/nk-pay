@@ -21,6 +21,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.nkpay.app.ui.categorias.CategoriasTela
 import com.nkpay.app.ui.contas.ContaDetalheTela
 import com.nkpay.app.ui.contas.ContaFormTela
 import com.nkpay.app.ui.contas.ContasTela
@@ -109,9 +110,7 @@ fun NkPayApp() {
                 ) { entrada ->
                     ContaFormTela(contaId = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
                 }
-                composable(Rotas.CATEGORIAS) {
-                    EmBreveSubtela("Categorias", aoVoltar = { navController.popBackStack() })
-                }
+                composable(Rotas.CATEGORIAS) { CategoriasTela(aoVoltar = { navController.popBackStack() }) }
                 composable(Rotas.REGISTRO) {
                     EmBreveSubtela("Registro de alterações", aoVoltar = { navController.popBackStack() })
                 }
