@@ -19,6 +19,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.nkpay.app.ui.contas.ContaDetalheTela
+import com.nkpay.app.ui.contas.ContaFormTela
+import com.nkpay.app.ui.contas.ContasTela
 import com.nkpay.app.ui.telas.APagarTela
 import com.nkpay.app.ui.telas.EmBreveSubtela
 import com.nkpay.app.ui.telas.InicioTela
@@ -82,7 +87,27 @@ fun NkPayApp() {
             navigation(startDestination = "mais/lista", route = Rotas.MAIS) {
                 composable("mais/lista") { MaisTela(aoAbrir = { navController.navigate(it) }) }
                 composable(Rotas.CONTAS) {
-                    EmBreveSubtela("Contas e carteiras", aoVoltar = { navController.popBackStack() })
+                    ContasTela(
+                        aoVoltar = { navController.popBackStack() },
+                        aoAbrirConta = { navController.navigate(Rotas.conta(it)) },
+                        aoNovaConta = { navController.navigate(Rotas.contaForm()) },
+                    )
+                }
+                composable(Rotas.CONTA, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                    val id = entrada.arguments?.getString("id").orEmpty()
+                    ContaDetalheTela(
+                        contaId = id,
+                        aoVoltar = { navController.popBackStack() },
+                        aoEditar = { navController.navigate(Rotas.contaForm(id)) },
+                        aoAbrirMovimentacao = { navController.navigate(Rotas.movimentacaoForm(id = it)) },
+                        aoNovaMovimentacao = { navController.navigate(Rotas.movimentacaoForm(conta = id)) },
+                    )
+                }
+                composable(
+                    Rotas.CONTA_FORM,
+                    arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                ) { entrada ->
+                    ContaFormTela(contaId = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
                 }
                 composable(Rotas.CATEGORIAS) {
                     EmBreveSubtela("Categorias", aoVoltar = { navController.popBackStack() })
@@ -91,6 +116,16 @@ fun NkPayApp() {
                     EmBreveSubtela("Registro de alterações", aoVoltar = { navController.popBackStack() })
                 }
                 composable(Rotas.SOBRE) { SobreTela(aoVoltar = { navController.popBackStack() }) }
+            }
+
+            composable(
+                Rotas.MOVIMENTACAO_FORM,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("conta") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
+            ) {
+                EmBreveSubtela("Movimentação", aoVoltar = { navController.popBackStack() })
             }
         }
     }
