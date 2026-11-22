@@ -11,3 +11,5 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0005](0005-sdk-e-ferramentas.md) | compileSdk 37.2, JDK 21 e Gradle 9.9 | Aceita |
 | [0006](0006-sem-backup-automatico-do-android.md) | Backup automático do Android desligado | Aceita (provisória) |
 | [0007](0007-app-de-debug-separado.md) | App de debug com outro identificador | Aceita |
+| [0008](0008-banco-de-dados.md) | Estrutura do banco de dados (esquema v1) | Proposta (aguarda aprovação) |
+| [0009](0009-saldo-inicial-e-contas-arquivadas.md) | Saldo inicial, contas arquivadas e transferências com benefícios | Aceita |
