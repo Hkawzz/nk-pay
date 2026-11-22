@@ -224,7 +224,8 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             EscolhaSegmentada(
-                opcoes = TipoMovimentacao.entries.map { Opcao(it, it.rotulo) },
+                // "Transf." para caber 4 opções em telas estreitas; a explicação abaixo usa o nome completo.
+                opcoes = TipoMovimentacao.entries.map { Opcao(it, if (it == TipoMovimentacao.TRANSFERENCIA) "Transf." else it.rotulo) },
                 selecionado = vm.tipo,
                 aoEscolher = vm::mudarTipo,
             )
@@ -329,6 +330,6 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
 private fun explicacaoDoTipo(t: TipoMovimentacao): String = when (t) {
     TipoMovimentacao.ENTRADA -> "Dinheiro que entra (salário, VA recebido). Entra no total de entradas do mês."
     TipoMovimentacao.DESPESA -> "Consumo real. Entra no total de despesas do mês, mesmo se paga com VA/VR."
-    TipoMovimentacao.TRANSFERENCIA -> "O dinheiro só muda de conta. Não é entrada nem despesa."
+    TipoMovimentacao.TRANSFERENCIA -> "Transferência: o dinheiro só muda de conta. Não é entrada nem despesa."
     TipoMovimentacao.AJUSTE -> "Corrige o saldo para bater com o real. Não é entrada nem despesa."
 }

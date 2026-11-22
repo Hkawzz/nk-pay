@@ -28,7 +28,7 @@ import java.time.LocalDate
 
 /** Relógio previsível: o tempo anda 1 s a cada chamada e os ids são sequenciais. */
 class RelogioFalso : Relogio {
-    private var t = 1_764_547_200_000L // 01/12/2026 00:00 UTC
+    private var t = 1_796_126_400_000L // 01/12/2026 12:00 UTC (09:00 em Brasília)
     private var n = 0
     override fun agora(): Long = t.also { t += 1_000 }
     override fun hoje(): LocalDate = LocalDate.of(2026, 12, 1)
