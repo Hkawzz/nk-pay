@@ -35,6 +35,7 @@ import com.nkpay.app.ui.LocalContainer
 import com.nkpay.app.ui.componentes.BotaoAdicionar
 import com.nkpay.app.ui.componentes.CartaoSecao
 import com.nkpay.app.dominio.Natureza
+import com.nkpay.app.ui.backup.diasDesde
 import com.nkpay.app.ui.componentes.LinhaConta
 import com.nkpay.app.ui.componentes.LinhaMovimentacao
 import com.nkpay.app.ui.componentes.RotuloDeSecao
@@ -43,6 +44,9 @@ import com.nkpay.app.ui.theme.EstiloValor
 import com.nkpay.app.ui.theme.RosaDespesa
 import com.nkpay.app.ui.theme.VerdeEntrada
 import java.time.YearMonth
+
+/** Depois de quantos dias sem backup a Início mostra o aviso. */
+private const val DIAS_PARA_AVISO = 7L
 
 /**
  * Tela Início.
@@ -59,9 +63,11 @@ fun InicioTela(
     aoCadastrarConta: () -> Unit,
     aoVerMovimentacoes: () -> Unit,
     aoAbrirConta: (String) -> Unit,
+    aoFazerBackup: () -> Unit,
 ) {
     val container = LocalContainer.current
     val visao by container.visao.collectAsState()
+    val ultimoBackup by container.backup.registro.ultimo.collectAsState()
     val hoje = container.relogio.hoje()
 
     Scaffold(
@@ -102,6 +108,28 @@ fun InicioTela(
                     Row {
                         ValorRotulado("Dinheiro próprio", Dinheiro.formatar(r.dinheiroProprio), Modifier.weight(1f))
                         ValorRotulado("Reservado", Dinheiro.formatar(r.reservado), Modifier.weight(1f))
+                    }
+                }
+            }
+
+            // --- Aviso de backup: nunca feito, ou feito há mais de 7 dias ---
+            val dias = diasDesde(ultimoBackup, container.relogio.agora())
+            if (v.contas.isNotEmpty() && (dias == null || dias >= DIAS_PARA_AVISO)) {
+                CartaoSecao(cor = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Row(Modifier.padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                if (dias == null) "Você ainda não fez nenhum backup" else "Último backup há $dias dias",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = RosaDespesa,
+                            )
+                            Text(
+                                "Se o celular for perdido, só um backup recupera seus dados.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        TextButton(onClick = aoFazerBackup) { Text("Fazer") }
                     }
                 }
             }

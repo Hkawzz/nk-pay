@@ -4,6 +4,19 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.2.0] - 2026-11-22
+
+**Backup e restauração.** A partir desta versão, perder ou trocar de celular não precisa mais significar perder os dados.
+
+### Adicionado
+- **Mais → Backup e restauração.**
+  - **Fazer backup agora:** gera um arquivo `.nkpay` com tudo (contas, categorias, movimentações, inclusive as excluídas, e o Registro de alterações) e salva onde você escolher, como uma pasta do Google Drive ou Downloads.
+  - **Restaurar de um arquivo:** confere o arquivo (se está íntegro e se é de uma versão compatível), mostra a data e o que ele contém e só substitui depois da sua confirmação.
+  - Antes de restaurar, o app guarda sozinho uma **cópia do estado atual** ("Cópias antes de restaurar"), para você poder desfazer.
+  - A restauração aparece no Registro de alterações.
+- **Aviso na Início** quando você ainda não fez nenhum backup, ou quando o último tem 7 dias ou mais.
+- 10 testes novos do backup: ida e volta idênticas, nenhuma mistura de dados, desfazer pela cópia automática e recusa de arquivos corrompidos, adulterados ou de versão mais nova.
+
 ## [0.1.1] - 2026-11-22
 
 Ajustes de uso pedidos depois do primeiro teste no celular.

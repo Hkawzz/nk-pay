@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
@@ -72,6 +73,7 @@ private data class ItemMais(val rota: String, val titulo: String, val icone: Ima
 private val itensMais = listOf(
     ItemMais(Rotas.CONTAS, "Contas e carteiras", Icons.Filled.AccountBox),
     ItemMais(Rotas.CATEGORIAS, "Categorias", Icons.Filled.ShoppingCart),
+    ItemMais(Rotas.BACKUP, "Backup e restauração", Icons.Filled.Lock),
     ItemMais(Rotas.REGISTRO, "Registro de alterações", Icons.Filled.Edit),
     ItemMais(Rotas.SOBRE, "Sobre", Icons.Filled.Info),
 )

@@ -21,6 +21,7 @@ object Rotas {
     const val CATEGORIAS = "mais/categorias"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
+    const val BACKUP = "mais/backup"
 
     // Telas com parâmetros (o padrão fica junto da função que monta a rota)
     const val CONTA = "mais/conta/{id}"

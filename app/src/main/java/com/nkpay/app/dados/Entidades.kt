@@ -94,8 +94,9 @@ data class MovimentacaoEntidade(
 /**
  * Registro de alterações. Uma linha por registro alterado. Uma operação que mexe
  * em vários registros (no futuro, "pagar fatura") usa o mesmo grupoId em todas as linhas.
- * Esta tabela nunca é editada nem excluída pelo app.
+ * Esta tabela nunca é editada pelo app; só a restauração de um backup a substitui inteira.
  */
+@Serializable
 @Entity(tableName = "auditoria", indices = [Index("quando"), Index("grupoId"), Index("entidadeId")])
 data class AuditoriaEntidade(
     @PrimaryKey val id: String,
@@ -103,7 +104,7 @@ data class AuditoriaEntidade(
     val quando: Long,
     /** CRIACAO | EDICAO | EXCLUSAO | RESTAURACAO */
     val operacao: String,
-    /** conta | categoria | movimentacao */
+    /** conta | categoria | movimentacao | backup */
     val entidade: String,
     val entidadeId: String,
     /** Frase curta para a lista, ex.: "Conta “Pix” arquivada". */

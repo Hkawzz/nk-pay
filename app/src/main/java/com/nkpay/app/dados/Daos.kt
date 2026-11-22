@@ -81,3 +81,26 @@ interface AuditoriaDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun inserir(registro: AuditoriaEntidade)
 }
+
+/**
+ * Usado só pelo backup: lê TUDO (inclusive o que foi excluído logicamente, para o
+ * backup ser completo) e substitui tudo de uma vez na restauração.
+ */
+@Dao
+interface BackupDao {
+    @Query("SELECT * FROM conta ORDER BY criadoEm, id") suspend fun contas(): List<ContaEntidade>
+    @Query("SELECT * FROM categoria ORDER BY criadoEm, id") suspend fun categorias(): List<CategoriaEntidade>
+    @Query("SELECT * FROM movimentacao ORDER BY criadoEm, id") suspend fun movimentacoes(): List<MovimentacaoEntidade>
+    @Query("SELECT * FROM auditoria ORDER BY quando, id") suspend fun auditoria(): List<AuditoriaEntidade>
+
+    // A ordem importa por causa das chaves estrangeiras: movimentações antes de contas/categorias.
+    @Query("DELETE FROM movimentacao") suspend fun apagarMovimentacoes()
+    @Query("DELETE FROM conta") suspend fun apagarContas()
+    @Query("DELETE FROM categoria") suspend fun apagarCategorias()
+    @Query("DELETE FROM auditoria") suspend fun apagarAuditoria()
+
+    @Insert suspend fun inserirContas(lista: List<ContaEntidade>)
+    @Insert suspend fun inserirCategorias(lista: List<CategoriaEntidade>)
+    @Insert suspend fun inserirMovimentacoes(lista: List<MovimentacaoEntidade>)
+    @Insert suspend fun inserirAuditoria(lista: List<AuditoriaEntidade>)
+}

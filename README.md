@@ -6,7 +6,9 @@ App Android de finanças pessoais, feito para uso de uma única pessoa.
 - **Feito para substituir a planilha mensal:** contas e carteiras, movimentações (entrada, despesa, transferência e ajuste), categorias e, nas próximas versões, contas a pagar, cartões, parcelamentos e objetivos.
 - **Regras financeiras explícitas:** estão em [`docs/regras-financeiras.md`](docs/regras-financeiras.md). As decisões técnicas, cada uma com o seu porquê, estão em [`docs/decisoes/`](docs/decisoes/).
 
-> Estado atual: **v0.1.0**. Tem contas e carteiras (dinheiro próprio e benefícios), categorias, os 4 tipos de movimentação, a tela Início com o Disponível e o Registro de alterações. Ainda não tem backup: ele chega na v0.2. O histórico de versões está em [`CHANGELOG.md`](CHANGELOG.md).
+> Estado atual: **v0.2.0**. Tem contas e carteiras (dinheiro próprio e benefícios), categorias, os 4 tipos de movimentação, a tela Início com o Disponível, o Registro de alterações e **backup e restauração** (Mais → Backup e restauração). O histórico de versões está em [`CHANGELOG.md`](CHANGELOG.md).
+>
+> **Faça backups:** os dados ficam só no celular. Salve o arquivo `.nkpay` em um lugar fora dele (por exemplo, o Google Drive). Para trocar de celular, instale o app no novo e use "Restaurar de um arquivo".
 
 ---
 

@@ -32,6 +32,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.nkpay.app.ui.backup.BackupTela
 import com.nkpay.app.ui.categorias.CategoriasTela
 import com.nkpay.app.ui.contas.ContaDetalheTela
 import com.nkpay.app.ui.contas.ContaFormTela
@@ -134,6 +135,7 @@ fun NkPayApp() {
                     aoAbrirMovimentacao = { navController.navigate(Rotas.movimentacaoForm(id = it)) },
                     aoCadastrarConta = { navController.navigate(Rotas.contaForm()) },
                     aoAbrirConta = { navController.navigate(Rotas.conta(it)) },
+                    aoFazerBackup = { navController.navigate(Rotas.BACKUP) },
                     aoVerMovimentacoes = {
                         navController.navigate(Rotas.MOVIMENTACOES) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -189,6 +191,7 @@ fun NkPayApp() {
                     RegistroDetalheTela(id = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
                 }
                 composable(Rotas.SOBRE) { SobreTela(aoVoltar = { navController.popBackStack() }) }
+                composable(Rotas.BACKUP) { BackupTela(aoVoltar = { navController.popBackStack() }) }
             }
 
             composable(
