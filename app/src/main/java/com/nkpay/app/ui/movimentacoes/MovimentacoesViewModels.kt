@@ -52,7 +52,7 @@ class MovimentacaoFormViewModel(
     var contaId by mutableStateOf(contaInicial)
     var contaDestinoId by mutableStateOf<String?>(null)
     var categoriaId by mutableStateOf<String?>(null)
-    var valorTexto by mutableStateOf("")
+    var valorTexto by mutableStateOf("0,00")
     var novoSaldoTexto by mutableStateOf("")
     var modoAjuste by mutableStateOf(ModoAjuste.NOVO_SALDO)
     var data by mutableStateOf(container.relogio.hoje())
