@@ -15,7 +15,7 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [ContaEntidade::class, CategoriaEntidade::class, MovimentacaoEntidade::class, AuditoriaEntidade::class],
-    version = 1,
+    version = NkPayBanco.VERSAO,
     exportSchema = true,
 )
 abstract class NkPayBanco : RoomDatabase() {
@@ -23,8 +23,11 @@ abstract class NkPayBanco : RoomDatabase() {
     abstract fun categoriaDao(): CategoriaDao
     abstract fun movimentacaoDao(): MovimentacaoDao
     abstract fun auditoriaDao(): AuditoriaDao
+    abstract fun backupDao(): BackupDao
 
     companion object {
+        /** Versão do esquema. Também vai no manifesto de cada backup. */
+        const val VERSAO = 1
         const val NOME_ARQUIVO = "nk-pay.db"
 
         fun criar(context: Context): NkPayBanco =

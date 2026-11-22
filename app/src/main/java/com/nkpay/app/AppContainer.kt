@@ -1,6 +1,12 @@
 package com.nkpay.app
 
 import android.app.Application
+import android.content.Context
+import com.nkpay.app.dados.BackupServico
+import com.nkpay.app.dados.RegistroDeBackup
+import com.nkpay.app.dados.RegistroDeBackupEmMemoria
+import kotlinx.coroutines.flow.MutableStateFlow
+import java.io.File
 import com.nkpay.app.dados.AuditoriaRepositorio
 import com.nkpay.app.dados.Auditor
 import com.nkpay.app.dados.CategoriaRepositorio
@@ -27,6 +33,8 @@ class AppContainer(
     val banco: NkPayBanco,
     val relogio: Relogio = RelogioDoSistema,
     escopo: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    pastaCopias: File = File(System.getProperty("java.io.tmpdir"), "nkpay-copias"),
+    registroBackup: RegistroDeBackup = RegistroDeBackupEmMemoria(),
 ) {
     private val auditor = Auditor(banco.auditoriaDao(), relogio)
 
@@ -34,6 +42,7 @@ class AppContainer(
     val categorias = CategoriaRepositorio(banco, auditor, relogio)
     val movimentacoes = MovimentacaoRepositorio(banco, auditor, relogio)
     val auditoria = AuditoriaRepositorio(banco)
+    val backup = BackupServico(banco, relogio, BuildConfig.VERSION_NAME, pastaCopias, registroBackup)
 
     /**
      * Contas + categorias + movimentações, sempre atualizadas. Qualquer alteração no
@@ -46,6 +55,16 @@ class AppContainer(
         }.stateIn(escopo, SharingStarted.Eagerly, null)
 }
 
+/** Guarda a data do último backup exportado nas preferências do app (não é dado financeiro). */
+class RegistroDeBackupNasPreferencias(context: Context) : RegistroDeBackup {
+    private val prefs = context.getSharedPreferences("backup", Context.MODE_PRIVATE)
+    override val ultimo = MutableStateFlow(prefs.getLong("ultimo", 0L).takeIf { it > 0 })
+    override fun marcar(quando: Long) {
+        prefs.edit().putLong("ultimo", quando).apply()
+        ultimo.value = quando
+    }
+}
+
 class NkPayAplicacao : Application() {
     lateinit var container: AppContainer
         private set
@@ -54,7 +73,11 @@ class NkPayAplicacao : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer(NkPayBanco.criar(this))
+        container = AppContainer(
+            banco = NkPayBanco.criar(this),
+            pastaCopias = File(filesDir, "copias-de-seguranca"),
+            registroBackup = RegistroDeBackupNasPreferencias(this),
+        )
         // Primeira abertura: cria as categorias sugeridas (só age se faltarem).
         escopo.launch { container.categorias.garantirCategoriasIniciais() }
     }

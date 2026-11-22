@@ -119,6 +119,8 @@ class AceiteTest {
         // Início: Disponível R$ 1.500 (só o próprio) e Benefícios R$ 250 à parte.
         esperarTexto("R$ 1.500,00")
         regra.onNodeWithText("Benefícios · fora do Disponível").assertExists()
+        // Com contas e sem backup, a Início avisa.
+        regra.onNodeWithText("Você ainda não fez nenhum backup").assertExists()
         foto("02-inicio-com-contas")
 
         // Transferência Pix → Dinheiro de R$ 40 pela interface.
@@ -187,5 +189,13 @@ class AceiteTest {
         foto("09-registro-detalhe")
 
         assertTrue(regra.onAllNodes(hasText("Antes")).fetchSemanticsNodes().isNotEmpty())
+
+        // Tela de backup (v0.2).
+        regra.onNodeWithContentDescription("Voltar").performClick()
+        regra.onNodeWithContentDescription("Voltar").performClick()
+        regra.onNodeWithText("Backup e restauração").performClick()
+        esperarTexto("Fazer backup agora")
+        regra.onNodeWithText("Nenhum backup feito ainda").assertExists()
+        foto("10-backup")
     }
 }
