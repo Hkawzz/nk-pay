@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,9 +31,9 @@ import com.nkpay.app.dados.Resultado
 import com.nkpay.app.dominio.Categoria
 import com.nkpay.app.ui.LocalContainer
 import com.nkpay.app.ui.componentes.BotaoAdicionar
-import com.nkpay.app.ui.componentes.CampoTexto
-import com.nkpay.app.ui.componentes.CartaoSecao
-import com.nkpay.app.ui.componentes.RotuloDeSecao
+import com.nkpay.app.ui.componentes.NkCampo
+import com.nkpay.app.ui.componentes.NkCard
+import com.nkpay.app.ui.componentes.NkCabecalhoSecao
 import com.nkpay.app.ui.componentes.Subtela
 import kotlinx.coroutines.launch
 
@@ -68,10 +68,10 @@ fun CategoriasTela(aoVoltar: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 )
             }
-            item { RotuloDeSecao("Em uso") }
+            item { NkCabecalhoSecao("Em uso") }
             item { ListaCategorias(ativas) { editandoId = it.id } }
             if (arquivadas.isNotEmpty()) {
-                item { RotuloDeSecao("Arquivadas") }
+                item { NkCabecalhoSecao("Arquivadas") }
                 item { ListaCategorias(arquivadas) { editandoId = it.id } }
             }
             item { Spacer(Modifier.height(96.dp)) }
@@ -132,7 +132,7 @@ fun CategoriasTela(aoVoltar: () -> Unit) {
 
 @Composable
 private fun ListaCategorias(categorias: List<Categoria>, aoClicar: (Categoria) -> Unit) {
-    CartaoSecao {
+    NkCard {
         if (categorias.isEmpty()) {
             Text(
                 "Nenhuma.",
@@ -151,7 +151,7 @@ private fun ListaCategorias(categorias: List<Categoria>, aoClicar: (Categoria) -
             ) {
                 Text(c.nome, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 if (c.ehDoSistema) {
-                    Icon(Icons.Filled.Lock, contentDescription = "Categoria do sistema", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Rounded.Lock, contentDescription = "Categoria do sistema", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -175,7 +175,7 @@ private fun DialogoNome(
         title = { Text(titulo) },
         text = {
             Column {
-                CampoTexto("Nome", nome, { nome = it; erro = null }, erro = erro)
+                NkCampo("Nome", nome, { nome = it; erro = null }, erro = erro)
                 if (acaoExtra != null) {
                     TextButton(onClick = aoAcaoExtra) { Text(acaoExtra) }
                     Text(

@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -92,6 +93,8 @@ fun NkPayApp() {
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     letterSpacing = 0.sp,
                                     color = LocalContentColor.current,
+                                    // Item ativo com o rótulo mais forte, além do indicador roxo.
+                                    fontWeight = if (selecionada) FontWeight.SemiBold else FontWeight.Normal,
                                 ),
                                 autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp, stepSize = 0.5.sp),
                             )

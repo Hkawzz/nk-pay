@@ -14,10 +14,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.List
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -49,14 +49,17 @@ import com.nkpay.app.ui.componentes.BotaoAdicionar
 import com.nkpay.app.ui.componentes.CampoData
 import com.nkpay.app.ui.componentes.CampoDinheiro
 import com.nkpay.app.ui.componentes.CampoEscolha
-import com.nkpay.app.ui.componentes.CampoTexto
-import com.nkpay.app.ui.componentes.CartaoSecao
+import com.nkpay.app.ui.componentes.NkCampo
+import com.nkpay.app.ui.componentes.NkCard
 import com.nkpay.app.ui.componentes.DialogoConfirmacao
 import com.nkpay.app.ui.componentes.EscolhaSegmentada
-import com.nkpay.app.ui.componentes.EstadoVazio
+import com.nkpay.app.ui.componentes.NkEstadoVazio
 import com.nkpay.app.ui.componentes.Opcao
 import com.nkpay.app.ui.componentes.Subtela
-import com.nkpay.app.ui.componentes.TituloDeTela
+import com.nkpay.app.ui.componentes.NkBotaoPrimario
+import com.nkpay.app.ui.componentes.NkValorRotulado
+import com.nkpay.app.ui.theme.Espaco
+import com.nkpay.app.ui.componentes.NkTituloTela
 import com.nkpay.app.ui.nkViewModel
 import com.nkpay.app.ui.theme.EstiloValor
 import com.nkpay.app.ui.theme.RosaDespesa
@@ -79,14 +82,14 @@ fun MovimentacoesTela(aoAbrir: (String) -> Unit, aoNova: () -> Unit) {
         val lista = vm.filtrar(v)
 
         LazyColumn(Modifier.padding(espaco).fillMaxSize()) {
-            item { TituloDeTela("Movimentações") }
+            item { NkTituloTela("Movimentações") }
             item {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = vm::mesAnterior) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Mês anterior")
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = "Mês anterior")
                     }
                     Text(
                         Formatos.mes(vm.mes),
@@ -95,35 +98,29 @@ fun MovimentacoesTela(aoAbrir: (String) -> Unit, aoNova: () -> Unit) {
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = vm::proximoMes) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Próximo mês")
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = "Próximo mês")
                     }
                 }
             }
             item {
-                CartaoSecao {
-                    Row(Modifier.padding(16.dp)) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Entradas", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(Dinheiro.formatar(totais.entradas), style = EstiloValor.medio, color = VerdeEntrada)
-                        }
-                        Column(Modifier.weight(1f)) {
-                            Text("Despesas", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(Dinheiro.formatar(totais.despesas), style = EstiloValor.medio, color = RosaDespesa)
-                        }
+                NkCard {
+                    Row(Modifier.padding(start = Espaco.l, end = Espaco.l, top = Espaco.l, bottom = Espaco.xs)) {
+                        NkValorRotulado("Entradas", totais.entradas, Modifier.weight(1f), corValor = VerdeEntrada)
+                        NkValorRotulado("Despesas", totais.despesas, Modifier.weight(1f), corValor = RosaDespesa)
                     }
                     Text(
                         "Transferências e ajustes não entram nesses totais.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                        modifier = Modifier.padding(start = Espaco.l, end = Espaco.l, bottom = Espaco.m),
                     )
                 }
             }
             item { Filtros(vm, v) }
             if (lista.isEmpty()) {
                 item {
-                    EstadoVazio(
-                        icone = Icons.AutoMirrored.Filled.List,
+                    NkEstadoVazio(
+                        icone = Icons.AutoMirrored.Rounded.List,
                         titulo = if (doMes.isEmpty()) "Nada lançado neste mês" else "Nada com esses filtros",
                         texto = if (v.contas.isEmpty()) "Cadastre uma conta em Mais → Contas e carteiras para começar." else "Toque no + para lançar.",
                         modifier = Modifier.height(280.dp),
@@ -148,7 +145,7 @@ private fun Filtros(vm: MovimentacoesViewModel, v: VisaoFinanceira) {
     )
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Espaco.xs),
     ) {
         for ((tipo, rotulo) in tipos) {
             FilterChip(
@@ -188,7 +185,7 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
         acoes = {
             if (vm.editando) {
                 IconButton(onClick = { confirmarExclusao = true }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Excluir")
+                    Icon(Icons.Rounded.Delete, contentDescription = "Excluir")
                 }
             }
         },
@@ -196,8 +193,8 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
         val v = visao ?: return@Subtela
         if (!vm.carregado) return@Subtela
         if (v.contas.isEmpty()) {
-            EstadoVazio(
-                icone = Icons.AutoMirrored.Filled.List,
+            NkEstadoVazio(
+                icone = Icons.AutoMirrored.Rounded.List,
                 titulo = "Cadastre uma conta primeiro",
                 texto = "Toda movimentação acontece em uma conta. Vá em Mais → Contas e carteiras.",
                 modifier = modifier,
@@ -220,8 +217,8 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = Espaco.l, vertical = Espaco.xs),
+            verticalArrangement = Arrangement.spacedBy(Espaco.s),
         ) {
             EscolhaSegmentada(
                 // "Transf." para caber 4 opções em telas estreitas; a explicação abaixo usa o nome completo.
@@ -243,14 +240,14 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
                         { vm.categoriaId = it },
                         textoVazio = "Sem categoria",
                     )
-                    CampoTexto("Descrição", vm.descricao, { vm.descricao = it }, ajuda = "Opcional. Ex.: Mercado, Salário")
+                    NkCampo("Descrição", vm.descricao, { vm.descricao = it }, ajuda = "Opcional. Ex.: Mercado, Salário")
                 }
                 TipoMovimentacao.TRANSFERENCIA -> {
                     CampoEscolha("De (origem)", opcoesDeConta(vm.contaId), vm.contaId, { vm.contaId = it })
                     CampoEscolha("Para (destino)", opcoesDeConta(vm.contaDestinoId).filter { it.valor != vm.contaId }, vm.contaDestinoId, { vm.contaDestinoId = it })
                     CampoDinheiro("Valor", vm.valorTexto, { vm.valorTexto = it }, erro = vm.erroValor)
                     CampoData("Data", vm.data, { vm.data = it })
-                    CampoTexto("Descrição", vm.descricao, { vm.descricao = it }, ajuda = "Opcional")
+                    NkCampo("Descrição", vm.descricao, { vm.descricao = it }, ajuda = "Opcional")
                 }
                 TipoMovimentacao.AJUSTE -> {
                     CampoEscolha("Conta", opcoesDeConta(vm.contaId), vm.contaId, { vm.contaId = it })
@@ -295,23 +292,15 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
                         )
                     }
                     CampoData("Data", vm.data, { vm.data = it })
-                    CampoTexto("Motivo", vm.descricao, { vm.descricao = it }, ajuda = "Ex.: conferência com o extrato")
+                    NkCampo("Motivo", vm.descricao, { vm.descricao = it }, ajuda = "Ex.: conferência com o extrato")
                 }
             }
 
             vm.erroGeral?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
-            Spacer(Modifier.height(4.dp))
-            Button(
-                onClick = { vm.salvar(aoVoltar) },
-                enabled = !vm.salvando,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-            ) { Text(if (vm.editando) "Salvar alterações" else "Lançar") }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Espaco.xxs))
+            NkBotaoPrimario(if (vm.editando) "Salvar alterações" else "Lançar", { vm.salvar(aoVoltar) }, habilitado = !vm.salvando)
+            Spacer(Modifier.height(Espaco.l))
         }
     }
 
