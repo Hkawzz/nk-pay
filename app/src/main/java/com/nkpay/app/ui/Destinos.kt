@@ -26,7 +26,10 @@ object Rotas {
     const val CONTA = "mais/conta/{id}"
     fun conta(id: String) = "mais/conta/$id"
 
-    const val CONTA_FORM = "mais/conta-form?id={id}"
+    const val REGISTRO_DETALHE = "mais/registro/{id}"
+    fun registroDetalhe(id: String) = "mais/registro/$id"
+
+    const val CONTA_FORM ="mais/conta-form?id={id}"
     fun contaForm(id: String? = null) = if (id == null) "mais/conta-form" else "mais/conta-form?id=$id"
 
     /** Formulário de movimentação. Sem id: nova. `conta`: conta já escolhida. */

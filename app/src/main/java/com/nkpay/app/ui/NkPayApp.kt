@@ -28,6 +28,8 @@ import com.nkpay.app.ui.contas.ContasTela
 import com.nkpay.app.ui.telas.APagarTela
 import com.nkpay.app.ui.telas.EmBreveSubtela
 import com.nkpay.app.ui.inicio.InicioTela
+import com.nkpay.app.ui.registro.RegistroDetalheTela
+import com.nkpay.app.ui.registro.RegistroTela
 import com.nkpay.app.ui.telas.MaisTela
 import com.nkpay.app.ui.movimentacoes.MovimentacaoFormTela
 import com.nkpay.app.ui.movimentacoes.MovimentacoesTela
@@ -131,7 +133,13 @@ fun NkPayApp() {
                 }
                 composable(Rotas.CATEGORIAS) { CategoriasTela(aoVoltar = { navController.popBackStack() }) }
                 composable(Rotas.REGISTRO) {
-                    EmBreveSubtela("Registro de alterações", aoVoltar = { navController.popBackStack() })
+                    RegistroTela(
+                        aoVoltar = { navController.popBackStack() },
+                        aoAbrir = { navController.navigate(Rotas.registroDetalhe(it)) },
+                    )
+                }
+                composable(Rotas.REGISTRO_DETALHE, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                    RegistroDetalheTela(id = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
                 }
                 composable(Rotas.SOBRE) { SobreTela(aoVoltar = { navController.popBackStack() }) }
             }
