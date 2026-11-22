@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
+import com.nkpay.app.ui.LocalContainer
 import com.nkpay.app.ui.NkPayApp
 import com.nkpay.app.ui.theme.NkPayTema
 
@@ -17,9 +19,12 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
+        val container = (application as NkPayAplicacao).container
         setContent {
             NkPayTema {
-                NkPayApp()
+                CompositionLocalProvider(LocalContainer provides container) {
+                    NkPayApp()
+                }
             }
         }
     }

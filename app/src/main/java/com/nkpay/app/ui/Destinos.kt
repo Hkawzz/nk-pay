@@ -21,6 +21,20 @@ object Rotas {
     const val CATEGORIAS = "mais/categorias"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
+
+    // Telas com parâmetros (o padrão fica junto da função que monta a rota)
+    const val CONTA = "mais/conta/{id}"
+    fun conta(id: String) = "mais/conta/$id"
+
+    const val CONTA_FORM = "mais/conta-form?id={id}"
+    fun contaForm(id: String? = null) = if (id == null) "mais/conta-form" else "mais/conta-form?id=$id"
+
+    /** Formulário de movimentação. Sem id: nova. `conta`: conta já escolhida. */
+    const val MOVIMENTACAO_FORM = "movimentacao-form?id={id}&conta={conta}"
+    fun movimentacaoForm(id: String? = null, conta: String? = null): String {
+        val params = listOfNotNull(id?.let { "id=$it" }, conta?.let { "conta=$it" })
+        return if (params.isEmpty()) "movimentacao-form" else "movimentacao-form?" + params.joinToString("&")
+    }
 }
 
 /** As 5 abas da barra inferior, na ordem em que aparecem. */
