@@ -122,8 +122,12 @@ class AceiteTest {
         // Com contas e sem backup, a Início avisa.
         regra.onNodeWithText("Você ainda não fez nenhum backup").assertExists()
         foto("02-inicio-com-contas")
+        // A Início não tem mais o botão "+" (adendo v0.3, A1).
+        regra.onNodeWithContentDescription("Nova movimentação").assertDoesNotExist()
 
-        // Transferência Pix → Dinheiro de R$ 40 pela interface.
+        // Transferência Pix → Dinheiro de R$ 40 pela interface, a partir da aba Movimentações.
+        regra.onNodeWithText("Movimentações").performClick()
+        esperarTexto("Transferências e ajustes não entram nesses totais.")
         regra.onNodeWithContentDescription("Nova movimentação").performClick()
         esperarTexto("Lançar")
         regra.onNodeWithText("Transf.").performClick()
@@ -134,11 +138,14 @@ class AceiteTest {
         foto("03-form-transferencia")
         regra.onNodeWithText("Lançar").performScrollTo().performClick()
 
-        esperarTexto("Últimas movimentações")
         regra.waitUntil(10_000) { saldos()[pix] == 116_000L }
         assertEquals(34_000L, saldos()[din])
         // O Disponível não muda.
+        regra.onNodeWithText("Início").performClick()
+        esperarTexto("Últimas movimentações")
         esperarTexto("R$ 1.500,00")
+        regra.onNodeWithText("Movimentações").performClick()
+        esperarTexto("Transferências e ajustes não entram nesses totais.")
 
         // Despesa de R$ 25 paga com o VA.
         regra.onNodeWithContentDescription("Nova movimentação").performClick()
@@ -150,6 +157,7 @@ class AceiteTest {
 
         regra.waitUntil(10_000) { saldos()[va] == 22_500L }
         // Disponível igual; a despesa entra no total do mês.
+        regra.onNodeWithText("Início").performClick()
         esperarTexto("R$ 1.500,00")
         esperarTexto("R$ 25,00")
         foto("04-inicio-depois")
@@ -197,5 +205,22 @@ class AceiteTest {
         esperarTexto("Fazer backup agora")
         regra.onNodeWithText("Nenhum backup feito ainda").assertExists()
         foto("10-backup")
+
+        // A aba Mais sempre reabre no menu principal (adendo v0.3, A2)...
+        regra.onNodeWithText("Início").performClick()
+        esperarTexto("Últimas movimentações")
+        regra.onNodeWithText("Mais").performClick()
+        esperarTexto("Contas e carteiras")
+        regra.onNodeWithText("Fazer backup agora").assertDoesNotExist()
+
+        // ...mas as outras abas preservam o estado (o mês escolhido em Movimentações continua).
+        regra.onNodeWithText("Movimentações").performClick()
+        esperarTexto("Dezembro de 2026")
+        regra.onNodeWithContentDescription("Mês anterior").performClick()
+        esperarTexto("Novembro de 2026")
+        regra.onNodeWithText("Início").performClick()
+        esperarTexto("Últimas movimentações")
+        regra.onNodeWithText("Movimentações").performClick()
+        esperarTexto("Novembro de 2026")
     }
 }

@@ -48,7 +48,7 @@ import com.nkpay.app.ui.movimentacoes.MovimentacoesTela
 import com.nkpay.app.ui.telas.ObjetivosTela
 import com.nkpay.app.ui.telas.SobreTela
 
-private const val DURACAO = 260
+private const val DURACAO = 220
 private const val DURACAO_ABA = 150
 
 /** As telas-raiz de cada aba (trocar entre elas não é "abrir" uma tela nova). */
@@ -78,7 +78,9 @@ fun NkPayApp() {
                                     saveState = true
                                 }
                                 launchSingleTop = true
-                                restoreState = true
+                                // Exceção: a aba Mais sempre reabre no menu principal
+                                // (docs/decisoes/0011-aba-mais-volta-ao-menu.md).
+                                restoreState = aba != Aba.MAIS
                             }
                         },
                         icon = { Icon(aba.icone, contentDescription = null) },
@@ -131,7 +133,6 @@ fun NkPayApp() {
         ) {
             composable(Rotas.INICIO) {
                 InicioTela(
-                    aoNovaMovimentacao = { navController.navigate(Rotas.movimentacaoForm()) },
                     aoAbrirMovimentacao = { navController.navigate(Rotas.movimentacaoForm(id = it)) },
                     aoCadastrarConta = { navController.navigate(Rotas.contaForm()) },
                     aoAbrirConta = { navController.navigate(Rotas.conta(it)) },
