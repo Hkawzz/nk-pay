@@ -1,0 +1,43 @@
+# ---------------------------------------------------------------
+# Segurança: segredos e dados reais NUNCA entram no repositório.
+# ---------------------------------------------------------------
+# Chaves de assinatura
+*.jks
+*.keystore
+keystore.properties
+*.p12
+*.pem
+
+# Bancos de dados, backups e planilhas (podem conter dados financeiros reais)
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.nkpay
+*.xlsx
+*.xls
+*.csv
+*.ods
+
+# Arquivos locais da máquina (caminho do SDK, etc.)
+local.properties
+.env
+.env.*
+
+# ---------------------------------------------------------------
+# Build e IDE
+# ---------------------------------------------------------------
+/build
+build/
+.gradle/
+.kotlin/
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.hprof
+.DS_Store
+Thumbs.db
