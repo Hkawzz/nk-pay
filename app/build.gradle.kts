@@ -1,6 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
+}
+
+// Room grava o esquema de cada versão do banco em app/schemas/ (versionado no Git).
+// É com esses arquivos que as migrações são escritas e testadas: uma atualização do
+// app nunca pode apagar os dados. Ver docs/decisoes/0008-banco-de-dados.md.
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +97,11 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        // Necessário para os testes do banco (Robolectric) rodarem na JVM, sem emulador.
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -100,8 +115,17 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.kotlinx.serialization.json)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(libs.androidx.room.testing)
 }
