@@ -4,6 +4,22 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.1.0] - 2026-11-22
+
+Primeira versão para uso no dia a dia: contas, categorias, movimentações e o Registro de alterações. **A partir desta versão, os dados são reais: nenhuma atualização futura pode apagá-los.**
+
+### Adicionado
+- **Contas e carteiras** (Mais → Contas e carteiras): criar, editar, arquivar e excluir. Cada conta é *Dinheiro próprio* (Pix, dinheiro, bancos) ou *Benefício* (VA, VR, outro), com saldo inicial, data e cor opcional. A tela da conta mostra o saldo atual calculado e as movimentações dela. Uma conta com movimentações não pode ser excluída: o app oferece arquivar.
+- **Categorias** (Mais → Categorias): sugestões criadas na primeira abertura (Alimentação, Moradia, Transporte, Saúde, Lazer, Tecnologia, Assinaturas, Educação, Outros) e a categoria de sistema "Encargos financeiros". Dá para criar, renomear e arquivar. Uma categoria arquivada some das novas escolhas e continua nos registros antigos.
+- **Movimentações**: os 4 tipos (entrada, despesa, transferência e ajuste), com um formulário que muda conforme o tipo. O ajuste pode ser informado pelo **novo saldo**, e o app calcula a diferença. A lista é agrupada por dia, com seletor de mês, filtros por tipo e por conta e totais de entradas e despesas do mês (transferências e ajustes não entram).
+- **Início**: Disponível em destaque, dinheiro próprio, reservado (R$ 0 até os objetivos chegarem), bloco **Benefícios** separado (nunca somado ao disponível), entradas e despesas do mês, últimas 5 movimentações e botão +. Na primeira abertura, mostra um passo a passo curto.
+- **Registro de alterações** (Mais → Registro de alterações): toda criação, edição e exclusão, com data e hora e com o valor antes e depois de cada campo.
+- Banco de dados local (Room/SQLite) com esquema versionado e sem migração destrutiva. Toda alteração é gravada na mesma transação da sua auditoria.
+- 44 testes automáticos com dados fictícios: regras de saldo, banco de dados e um roteiro de aceite executado pela interface, que também gera capturas de tela.
+
+### Segurança
+- A Release só é publicada se o APK estiver assinado com a keystore oficial (o workflow confere a impressão digital do certificado).
+
 ## [0.0.1] - 2026-11-21
 
 Primeira versão instalável. Ela não tem funcionalidades financeiras: serve para validar o caminho completo, do código até o celular (CI, assinatura, Release e instalação).
