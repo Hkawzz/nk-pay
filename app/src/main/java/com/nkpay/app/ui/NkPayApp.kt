@@ -38,7 +38,10 @@ import com.nkpay.app.ui.categorias.CategoriasTela
 import com.nkpay.app.ui.contas.ContaDetalheTela
 import com.nkpay.app.ui.contas.ContaFormTela
 import com.nkpay.app.ui.contas.ContasTela
-import com.nkpay.app.ui.telas.APagarTela
+import com.nkpay.app.ui.apagar.APagarTela
+import com.nkpay.app.ui.apagar.ContaFixaFormTela
+import com.nkpay.app.ui.apagar.ContasFixasTela
+import com.nkpay.app.ui.apagar.ObrigacaoFormTela
 import com.nkpay.app.ui.telas.EmBreveSubtela
 import com.nkpay.app.ui.inicio.InicioTela
 import com.nkpay.app.ui.registro.RegistroDetalheTela
@@ -155,7 +158,28 @@ fun NkPayApp() {
                     aoNova = { navController.navigate(Rotas.movimentacaoForm()) },
                 )
             }
-            composable(Rotas.A_PAGAR) { APagarTela() }
+            composable(Rotas.A_PAGAR) {
+                APagarTela(
+                    aoNova = { mes -> navController.navigate(Rotas.obrigacaoForm(mes = mes)) },
+                    aoAbrir = { navController.navigate(Rotas.obrigacaoForm(id = it)) },
+                    aoContasFixas = { navController.navigate(Rotas.CONTAS_FIXAS) },
+                )
+            }
+            composable(
+                Rotas.OBRIGACAO_FORM,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("mes") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
+            ) { entrada ->
+                val mes = entrada.arguments?.getString("mes")?.let { java.time.YearMonth.parse(it) }
+                    ?: java.time.YearMonth.from(LocalContainer.current.relogio.hoje())
+                ObrigacaoFormTela(
+                    id = entrada.arguments?.getString("id"),
+                    mesInicial = mes,
+                    aoVoltar = { navController.popBackStack() },
+                )
+            }
             composable(Rotas.OBJETIVOS) { ObjetivosTela() }
 
             // "Mais" é um subgrafo: as telas internas mantêm a aba "Mais" selecionada.
@@ -196,6 +220,19 @@ fun NkPayApp() {
                 }
                 composable(Rotas.SOBRE) { SobreTela(aoVoltar = { navController.popBackStack() }) }
                 composable(Rotas.BACKUP) { BackupTela(aoVoltar = { navController.popBackStack() }) }
+                composable(Rotas.CONTAS_FIXAS) {
+                    ContasFixasTela(
+                        aoVoltar = { navController.popBackStack() },
+                        aoAbrir = { navController.navigate(Rotas.contaFixaForm(it)) },
+                        aoNova = { navController.navigate(Rotas.contaFixaForm()) },
+                    )
+                }
+                composable(
+                    Rotas.CONTA_FIXA_FORM,
+                    arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                ) { entrada ->
+                    ContaFixaFormTela(id = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
+                }
             }
 
             composable(

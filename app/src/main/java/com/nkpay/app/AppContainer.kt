@@ -3,6 +3,11 @@ package com.nkpay.app
 import android.app.Application
 import android.content.Context
 import com.nkpay.app.dados.BackupServico
+import com.nkpay.app.dados.ContaFixaRepositorio
+import com.nkpay.app.dados.ObrigacaoRepositorio
+import com.nkpay.app.dados.paraDominio
+import com.nkpay.app.dominio.VisaoAPagar
+import kotlinx.coroutines.flow.map
 import com.nkpay.app.dados.RegistroDeBackup
 import com.nkpay.app.dados.RegistroDeBackupEmMemoria
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +58,20 @@ class AppContainer(
         combine(contas.observar(), categorias.observar(), movimentacoes.observar()) { c, cat, m ->
             VisaoFinanceira(c, cat, m)
         }.stateIn(escopo, SharingStarted.Eagerly, null)
+
+    // --- Contas a pagar (v0.3) ---
+    val contasFixas = ContaFixaRepositorio(banco, auditor, relogio)
+    val obrigacoes = ObrigacaoRepositorio(banco, auditor, relogio)
+
+    /** Contas fixas + obrigações + pagamentos e ajustes válidos, sempre atualizados. */
+    val visaoAPagar: StateFlow<VisaoAPagar?> =
+        combine(
+            contasFixas.observar(),
+            obrigacoes.observar(),
+            banco.pagamentoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
+            banco.ajusteObrigacaoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
+        ) { f, o, p, a -> VisaoAPagar(f, o, p, a) }
+            .stateIn(escopo, SharingStarted.Eagerly, null)
 }
 
 /** Guarda a data do último backup exportado nas preferências do app (não é dado financeiro). */

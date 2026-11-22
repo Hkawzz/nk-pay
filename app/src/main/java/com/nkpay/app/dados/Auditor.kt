@@ -50,5 +50,9 @@ class Auditor(private val dao: AuditoriaDao, private val relogio: Relogio) {
         const val CONTA = "conta"
         const val CATEGORIA = "categoria"
         const val MOVIMENTACAO = "movimentacao"
+        const val CONTA_FIXA = "conta_fixa"
+        const val OBRIGACAO = "obrigacao"
+        const val PAGAMENTO = "pagamento"
+        const val AJUSTE_OBRIGACAO = "obrigacao_ajuste"
     }
 }
