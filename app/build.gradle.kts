@@ -103,8 +103,7 @@ android {
     testOptions {
         // Necessário para os testes do banco (Robolectric) rodarem na JVM, sem emulador.
         unitTests.isIncludeAndroidResources = true
-    }
-}
+    }}
 
 dependencies {
     implementation(libs.androidx.core.ktx)

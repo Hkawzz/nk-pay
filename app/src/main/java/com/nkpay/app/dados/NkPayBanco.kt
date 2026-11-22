@@ -14,7 +14,12 @@ import androidx.room.RoomDatabase
  *   escrita à mão e testada. Ver docs/decisoes/0008-banco-de-dados.md.
  */
 @Database(
-    entities = [ContaEntidade::class, CategoriaEntidade::class, MovimentacaoEntidade::class, AuditoriaEntidade::class],
+    entities = [
+        // Versão 1
+        ContaEntidade::class, CategoriaEntidade::class, MovimentacaoEntidade::class, AuditoriaEntidade::class,
+        // Versão 2 (v0.3): só tabelas novas; as da versão 1 não mudam.
+        ContaFixaEntidade::class, ObrigacaoEntidade::class, PagamentoEntidade::class, ObrigacaoAjusteEntidade::class,
+    ],
     version = NkPayBanco.VERSAO,
     exportSchema = true,
 )
@@ -27,12 +32,21 @@ abstract class NkPayBanco : RoomDatabase() {
 
     companion object {
         /** Versão do esquema. Também vai no manifesto de cada backup. */
-        const val VERSAO = 1
+        const val VERSAO = 2
         const val NOME_ARQUIVO = "nk-pay.db"
 
-        fun criar(context: Context): NkPayBanco =
-            Room.databaseBuilder(context.applicationContext, NkPayBanco::class.java, NOME_ARQUIVO)
-                // Migrações entram aqui, por exemplo: .addMigrations(MIGRACAO_1_2)
+        fun criar(context: Context): NkPayBanco {
+            val app = context.applicationContext
+            // Antes de qualquer migração, guarda uma cópia do arquivo do banco como está.
+            copiarAntesDeMigrar(
+                arquivoBanco = app.getDatabasePath(NOME_ARQUIVO),
+                pastaCopias = java.io.File(app.filesDir, "copias-antes-de-migrar"),
+                versaoAtual = VERSAO,
+                agora = System.currentTimeMillis(),
+            )
+            return Room.databaseBuilder(app, NkPayBanco::class.java, NOME_ARQUIVO)
+                .addMigrations(*MIGRACOES)
                 .build()
+        }
     }
 }
