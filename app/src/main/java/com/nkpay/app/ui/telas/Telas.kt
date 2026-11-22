@@ -95,18 +95,6 @@ private fun ValorRotulado(rotulo: String, valor: String, modifier: Modifier = Mo
 }
 
 @Composable
-fun MovimentacoesTela() {
-    Column(Modifier.fillMaxSize()) {
-        TituloDeTela("Movimentações")
-        EstadoVazio(
-            icone = Icons.AutoMirrored.Filled.List,
-            titulo = "Nenhuma movimentação ainda",
-            texto = "Entradas, despesas, transferências e ajustes chegam na v0.1.0.",
-        )
-    }
-}
-
-@Composable
 fun APagarTela() {
     Column(Modifier.fillMaxSize()) {
         TituloDeTela("A pagar")

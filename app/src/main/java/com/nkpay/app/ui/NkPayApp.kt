@@ -29,7 +29,8 @@ import com.nkpay.app.ui.telas.APagarTela
 import com.nkpay.app.ui.telas.EmBreveSubtela
 import com.nkpay.app.ui.telas.InicioTela
 import com.nkpay.app.ui.telas.MaisTela
-import com.nkpay.app.ui.telas.MovimentacoesTela
+import com.nkpay.app.ui.movimentacoes.MovimentacaoFormTela
+import com.nkpay.app.ui.movimentacoes.MovimentacoesTela
 import com.nkpay.app.ui.telas.ObjetivosTela
 import com.nkpay.app.ui.telas.SobreTela
 
@@ -80,7 +81,12 @@ fun NkPayApp() {
             modifier = Modifier.padding(espaco),
         ) {
             composable(Rotas.INICIO) { InicioTela() }
-            composable(Rotas.MOVIMENTACOES) { MovimentacoesTela() }
+            composable(Rotas.MOVIMENTACOES) {
+                MovimentacoesTela(
+                    aoAbrir = { navController.navigate(Rotas.movimentacaoForm(id = it)) },
+                    aoNova = { navController.navigate(Rotas.movimentacaoForm()) },
+                )
+            }
             composable(Rotas.A_PAGAR) { APagarTela() }
             composable(Rotas.OBJETIVOS) { ObjetivosTela() }
 
@@ -123,8 +129,12 @@ fun NkPayApp() {
                     navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null },
                     navArgument("conta") { type = NavType.StringType; nullable = true; defaultValue = null },
                 ),
-            ) {
-                EmBreveSubtela("Movimentação", aoVoltar = { navController.popBackStack() })
+            ) { entrada ->
+                MovimentacaoFormTela(
+                    id = entrada.arguments?.getString("id"),
+                    contaInicial = entrada.arguments?.getString("conta"),
+                    aoVoltar = { navController.popBackStack() },
+                )
             }
         }
     }
