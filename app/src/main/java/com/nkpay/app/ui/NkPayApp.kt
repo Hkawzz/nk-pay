@@ -12,6 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.LocalContentColor
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -63,7 +67,16 @@ fun NkPayApp() {
                         },
                         icon = { Icon(aba.icone, contentDescription = null) },
                         label = {
-                            Text(aba.rotulo, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            // A fonte encolhe só o necessário para "Movimentações" caber inteira.
+                            BasicText(
+                                aba.rotulo,
+                                maxLines = 1,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    letterSpacing = 0.sp,
+                                    color = LocalContentColor.current,
+                                ),
+                                autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp, stepSize = 0.5.sp),
+                            )
                         },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,

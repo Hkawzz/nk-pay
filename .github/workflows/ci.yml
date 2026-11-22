@@ -34,8 +34,17 @@ jobs:
       - name: Instalar a plataforma Android 37.2
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.2" > /dev/null
 
-      - name: Testes de unidade
-        run: ./gradlew testDebugUnitTest --console=plain
+      - name: Testes (domínio, banco e interface) + capturas de tela
+        run: ./gradlew testDebugUnitTest -Proborazzi.test.record=true --console=plain
+
+      - name: Guardar as capturas de tela
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: capturas-de-tela
+          path: app/build/outputs/roborazzi/
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Compilar APK de debug
         run: ./gradlew assembleDebug --console=plain

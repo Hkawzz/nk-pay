@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -121,7 +122,7 @@ private fun CampoClicavel(
             modifier = Modifier.fillMaxWidth(),
         )
         // Camada transparente por cima: o toque abre a escolha em vez do teclado.
-        Box(Modifier.matchParentSize().padding(top = 8.dp).clickable(onClick = aoClicar))
+        Box(Modifier.matchParentSize().padding(top = 8.dp).testTag("campo:$rotulo").clickable(onClick = aoClicar))
     }
 }
 
@@ -224,11 +225,20 @@ fun <T> EscolhaSegmentada(opcoes: List<Opcao<T>>, selecionado: T, aoEscolher: (T
                 selected = opcao.valor == selecionado,
                 onClick = { aoEscolher(opcao.valor) },
                 shape = SegmentedButtonDefaults.itemShape(index = i, count = opcoes.size),
+                // Sem o ícone de "check": no celular, o espaço é curto para 4 opções.
+                icon = {},
                 colors = SegmentedButtonDefaults.colors(
                     activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ),
-                label = { Text(opcao.rotulo, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                label = {
+                    Text(
+                        opcao.rotulo,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = if (opcoes.size > 3) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
+                    )
+                },
             )
         }
     }
