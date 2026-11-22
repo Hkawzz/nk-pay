@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema da janela antes do Compose desenhar: fundo escuro para não piscar branco. -->
+    <style name="Theme.NkPay" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/nk_background</item>
+        <item name="android:statusBarColor">@color/nk_background</item>
+        <item name="android:navigationBarColor">@color/nk_background</item>
+    </style>
+</resources>
