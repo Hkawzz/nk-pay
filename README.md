@@ -6,7 +6,7 @@ App Android de finanças pessoais, feito para uso de uma única pessoa.
 - **Feito para substituir a planilha mensal:** contas e carteiras, movimentações (entrada, despesa, transferência e ajuste), categorias e, nas próximas versões, contas a pagar, cartões, parcelamentos e objetivos.
 - **Regras financeiras explícitas:** estão em [`docs/regras-financeiras.md`](docs/regras-financeiras.md). As decisões técnicas, cada uma com o seu porquê, estão em [`docs/decisoes/`](docs/decisoes/).
 
-> Estado atual: **v0.0.1**. Esta versão tem só o esqueleto (tema, navegação e telas vazias), para validar todo o caminho até o celular. O histórico de versões está em [`CHANGELOG.md`](CHANGELOG.md).
+> Estado atual: **v0.1.0**. Tem contas e carteiras (dinheiro próprio e benefícios), categorias, os 4 tipos de movimentação, a tela Início com o Disponível e o Registro de alterações. Ainda não tem backup: ele chega na v0.2. O histórico de versões está em [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
@@ -50,12 +50,17 @@ A fonte oficial dos APKs é o GitHub Actions (ver abaixo). Compilar localmente �
 Requisitos: JDK 21 e Android SDK (plataforma `android-37.2`), com as variáveis `JAVA_HOME` e `ANDROID_HOME` configuradas.
 
 ```powershell
-# Testes de unidade
+# Todos os testes (domínio, banco e interface), sem celular
 .\gradlew.bat testDebugUnitTest
+
+# Os mesmos testes, salvando capturas de tela em app/build/outputs/roborazzi/
+.\gradlew.bat testDebugUnitTest -Proborazzi.test.record=true
 
 # APK de desenvolvimento (app/build/outputs/apk/debug/)
 .\gradlew.bat assembleDebug
 ```
+
+Em cada PR, o CI publica as capturas de tela como o artefato **capturas-de-tela**: abra a execução em *Actions* e role até *Artifacts*.
 
 O APK de debug tem outro identificador (`com.nkpay.app.debug`) e se chama "NK Pay" também. Ele é instalado **ao lado** do app oficial, nunca por cima, para que os testes não toquem nos dados reais.
 
@@ -72,7 +77,10 @@ O APK de debug tem outro identificador (`com.nkpay.app.debug`) e se chama "NK Pa
 ```
 app/src/main/java/com/nkpay/app/
   dominio/      Regras financeiras em Kotlin puro (sem Android). É o código mais testado.
+  dados/        Banco (Room): tabelas, consultas e repositórios. Toda alteração grava a auditoria junto.
   ui/           Telas em Jetpack Compose, tema e navegação.
+  AppContainer  Cria o banco e os repositórios uma vez (injeção de dependência manual).
+app/schemas/    Esquema de cada versão do banco. É a base das migrações: não apague.
 docs/
   regras-financeiras.md   As regras, com exemplos numéricos.
   decisoes/               Uma decisão por arquivo: contexto, decisão e consequências.
