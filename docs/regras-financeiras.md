@@ -190,5 +190,5 @@ São **reservas virtuais** sobre o dinheiro próprio: o dinheiro continua na con
 ### 7.7 Empréstimos entre pessoas
 Não são receita nem despesa. O modelo ainda vai ser definido.
 
-### 7.8 Backup e restauração
-Completos e offline.
+### 7.8 Backup e restauração ✅ v0.2
+Completos e offline. A restauração substitui tudo (nunca mistura), guarda antes uma cópia do estado atual e fica registrada no Registro de alterações. Ver [`decisoes/0010-backup.md`](decisoes/0010-backup.md).
