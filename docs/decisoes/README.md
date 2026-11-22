@@ -1,4 +1,4 @@
-# Registros de decisão
+﻿# Registros de decisão
 
 Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão tomada e as consequências (o que ganhamos e o que perdemos). Os arquivos são numerados em ordem e nunca são reescritos: se uma decisão mudar, cria-se um arquivo novo que *substitui* o antigo.
 
@@ -11,5 +11,5 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0005](0005-sdk-e-ferramentas.md) | compileSdk 37.2, JDK 21 e Gradle 9.9 | Aceita |
 | [0006](0006-sem-backup-automatico-do-android.md) | Backup automático do Android desligado | Aceita (provisória) |
 | [0007](0007-app-de-debug-separado.md) | App de debug com outro identificador | Aceita |
-| [0008](0008-banco-de-dados.md) | Estrutura do banco de dados (esquema v1) | Proposta (aguarda aprovação) |
+| [0008](0008-banco-de-dados.md) | Estrutura do banco de dados (esquema v1) | Aceita |
 | [0009](0009-saldo-inicial-e-contas-arquivadas.md) | Saldo inicial, contas arquivadas e transferências com benefícios | Aceita |

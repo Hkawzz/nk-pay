@@ -127,7 +127,8 @@ class AceiteTest {
         regra.onNodeWithText("Transf.").performClick()
         escolher("De (origem)", "Pix")
         escolher("Para (destino)", "Dinheiro")
-        digitar("Valor", "40")
+        // Estilo app de banco: "4000" vira R$ 40,00.
+        digitar("Valor", "4000")
         foto("03-form-transferencia")
         regra.onNodeWithText("Lançar").performScrollTo().performClick()
 
@@ -141,7 +142,7 @@ class AceiteTest {
         regra.onNodeWithContentDescription("Nova movimentação").performClick()
         esperarTexto("Lançar")
         escolher("Conta", "VA")
-        digitar("Valor", "25")
+        digitar("Valor", "2500")
         digitar("Descrição", "Mercado")
         regra.onNodeWithText("Lançar").performScrollTo().performClick()
 

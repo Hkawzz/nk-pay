@@ -1,6 +1,6 @@
 # 0008 — Estrutura do banco de dados (esquema versão 1)
 
-**Estado:** proposta, aguardando aprovação antes da v0.1.0 · 2026-11-22
+**Estado:** aceita (aprovada pelo dono antes da v0.1.0) · 2026-11-22
 
 ## Contexto
 A partir da v0.1.0, o app guarda dados reais. Depois disso, qualquer mudança nas tabelas exige uma **migração** (um código que converte o banco antigo no novo sem perder nada). Por isso, a estrutura precisa nascer certa e já comportar as regras futuras (cartão, crediário, parcelas, objetivos e sincronização).

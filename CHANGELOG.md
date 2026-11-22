@@ -4,6 +4,15 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.1.1] - 2026-11-22
+
+Ajustes de uso pedidos depois do primeiro teste no celular.
+
+### Alterado
+- **Digitar valores ficou como nos apps de banco:** o campo começa em 0,00 e cada número entra pela direita (0,01 → 0,12 → 1,27 → 12,78 → 127,80). Não é mais preciso apagar o 0,00. Nos campos que aceitam valor negativo (saldo inicial e ajuste), o botão **+/−** inverte o sinal.
+- **Transições mais fluidas:** abrir uma tela desliza da direita e voltar desliza para a direita, em cerca de 0,25 s. Trocar de aba usa um fade rápido. Antes, todas as transições usavam o fade padrão, de 0,7 s.
+- **Início mostra o saldo de cada conta** de dinheiro próprio ("Suas contas"). Tocar em uma conta abre a tela dela.
+
 ## [0.1.0] - 2026-11-22
 
 Primeira versão para uso no dia a dia: contas, categorias, movimentações e o Registro de alterações. **A partir desta versão, os dados são reais: nenhuma atualização futura pode apagá-los.**

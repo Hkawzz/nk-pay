@@ -13,6 +13,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.navigation.NavBackStackEntry
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.LocalContentColor
@@ -39,6 +46,14 @@ import com.nkpay.app.ui.movimentacoes.MovimentacaoFormTela
 import com.nkpay.app.ui.movimentacoes.MovimentacoesTela
 import com.nkpay.app.ui.telas.ObjetivosTela
 import com.nkpay.app.ui.telas.SobreTela
+
+private const val DURACAO = 260
+private const val DURACAO_ABA = 150
+
+/** As telas-raiz de cada aba (trocar entre elas não é "abrir" uma tela nova). */
+private val rotasDeAba = Aba.entries.map { it.rota }.toSet() + "mais/lista"
+
+private fun ehAba(entrada: NavBackStackEntry) = entrada.destination.route in rotasDeAba
 
 /** Estrutura do app: barra inferior com 5 abas e o grafo de navegação. */
 @Composable
@@ -93,6 +108,24 @@ fun NkPayApp() {
         NavHost(
             navController = navController,
             startDestination = Rotas.INICIO,
+            // Transições curtas (o padrão da biblioteca é um fade de 700 ms, que parece lento):
+            // trocar de aba = fade rápido; abrir tela = desliza da direita; voltar = desliza para a direita.
+            enterTransition = {
+                if (ehAba(initialState) && ehAba(targetState)) fadeIn(tween(DURACAO_ABA))
+                else slideInHorizontally(tween(DURACAO, easing = FastOutSlowInEasing)) { it / 5 } + fadeIn(tween(DURACAO))
+            },
+            exitTransition = {
+                if (ehAba(initialState) && ehAba(targetState)) fadeOut(tween(DURACAO_ABA))
+                else fadeOut(tween(DURACAO / 2))
+            },
+            popEnterTransition = {
+                if (ehAba(initialState) && ehAba(targetState)) fadeIn(tween(DURACAO_ABA))
+                else fadeIn(tween(DURACAO))
+            },
+            popExitTransition = {
+                if (ehAba(initialState) && ehAba(targetState)) fadeOut(tween(DURACAO_ABA))
+                else slideOutHorizontally(tween(DURACAO, easing = FastOutSlowInEasing)) { it / 5 } + fadeOut(tween(DURACAO))
+            },
             modifier = Modifier.padding(espaco),
         ) {
             composable(Rotas.INICIO) {
@@ -100,6 +133,7 @@ fun NkPayApp() {
                     aoNovaMovimentacao = { navController.navigate(Rotas.movimentacaoForm()) },
                     aoAbrirMovimentacao = { navController.navigate(Rotas.movimentacaoForm(id = it)) },
                     aoCadastrarConta = { navController.navigate(Rotas.contaForm()) },
+                    aoAbrirConta = { navController.navigate(Rotas.conta(it)) },
                     aoVerMovimentacoes = {
                         navController.navigate(Rotas.MOVIMENTACOES) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }

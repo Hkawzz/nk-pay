@@ -37,7 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
+import com.nkpay.app.dominio.Dinheiro
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,8 +49,9 @@ import com.nkpay.app.ui.theme.EstiloValor
 import java.time.LocalDate
 
 /**
- * Campo de valor em reais. A pessoa digita "1.234,56" ou "1234,56"; a conversão para
- * centavos (Dinheiro.ler) acontece ao salvar, e o erro aparece embaixo do campo.
+ * Campo de valor em reais, no estilo dos apps de banco: começa em 0,00 e cada dígito
+ * entra pela direita. O texto entregue a [aoMudar] já vem formatado ("1.234,56", ou
+ * "-1.234,56" quando o sinal está invertido); a conversão para centavos usa Dinheiro.ler.
  */
 @Composable
 fun CampoDinheiro(
@@ -59,20 +63,38 @@ fun CampoDinheiro(
     ajuda: String? = null,
     permitirNegativo: Boolean = false,
 ) {
+    // Digitação estilo app de banco: os números entram pela direita.
+    // 0,00 → 0,01 → 0,12 → 1,27 → 12,78 → 127,80. Apagar faz o caminho inverso.
+    val negativo = texto.trim().startsWith("-")
+    val centavos = Dinheiro.ler(texto)?.let { if (it < 0) -it else it } ?: 0L
+    val exibido = Dinheiro.formatarSemSimbolo(centavos)
+    fun emitir(valor: Long, comSinal: Boolean) {
+        aoMudar((if (comSinal) "-" else "") + Dinheiro.formatarSemSimbolo(valor))
+    }
     OutlinedTextField(
-        value = texto,
+        // O cursor fica sempre no fim: cada dígito novo entra pela direita.
+        value = TextFieldValue(exibido, selection = TextRange(exibido.length)),
         onValueChange = { novo ->
-            // Só deixa digitar o que pode formar um valor (dígitos, vírgula, ponto e o sinal).
-            val filtrado = novo.filter { it.isDigit() || it == ',' || it == '.' || (permitirNegativo && it == '-') }
-            aoMudar(filtrado)
+            val digitos = novo.text.filter { it.isDigit() }.trimStart('0')
+            val valor = if (digitos.isEmpty()) 0L else digitos.take(11).toLong()
+            if (valor <= Dinheiro.LIMITE_CENTAVOS) emitir(valor, negativo)
         },
         label = { Text(rotulo) },
-        prefix = { Text("R$ ") },
+        prefix = { Text(if (negativo) "-R$ " else "R$ ") },
+        trailingIcon = if (permitirNegativo) {
+            {
+                TextButton(onClick = { emitir(centavos, !negativo) }) {
+                    Text("+/−", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        } else {
+            null
+        },
         singleLine = true,
         textStyle = EstiloValor.lista,
         isError = erro != null,
         supportingText = (erro ?: ajuda)?.let { { Text(it) } },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
         modifier = modifier.fillMaxWidth(),
     )
 }

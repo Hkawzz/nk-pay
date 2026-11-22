@@ -34,6 +34,8 @@ import com.nkpay.app.ui.Formatos
 import com.nkpay.app.ui.LocalContainer
 import com.nkpay.app.ui.componentes.BotaoAdicionar
 import com.nkpay.app.ui.componentes.CartaoSecao
+import com.nkpay.app.dominio.Natureza
+import com.nkpay.app.ui.componentes.LinhaConta
 import com.nkpay.app.ui.componentes.LinhaMovimentacao
 import com.nkpay.app.ui.componentes.RotuloDeSecao
 import com.nkpay.app.ui.componentes.TituloDeTela
@@ -45,7 +47,7 @@ import java.time.YearMonth
 /**
  * Tela Início.
  * 1. Disponível em destaque (= dinheiro próprio − reservado).
- * 2. Dinheiro próprio e reservado.
+ * 2. Dinheiro próprio e reservado, e o saldo de cada conta de dinheiro próprio.
  * 3. Benefícios, em bloco próprio (só se houver conta de benefício). Nunca somados ao disponível.
  * 4. Entradas e despesas do mês atual.
  * 5. Últimas 5 movimentações.
@@ -56,6 +58,7 @@ fun InicioTela(
     aoAbrirMovimentacao: (String) -> Unit,
     aoCadastrarConta: () -> Unit,
     aoVerMovimentacoes: () -> Unit,
+    aoAbrirConta: (String) -> Unit,
 ) {
     val container = LocalContainer.current
     val visao by container.visao.collectAsState()
@@ -99,6 +102,18 @@ fun InicioTela(
                     Row {
                         ValorRotulado("Dinheiro próprio", Dinheiro.formatar(r.dinheiroProprio), Modifier.weight(1f))
                         ValorRotulado("Reservado", Dinheiro.formatar(r.reservado), Modifier.weight(1f))
+                    }
+                }
+            }
+
+            // --- Saldo de cada conta de dinheiro próprio (as que formam o Disponível) ---
+            val proprias = v.contas.filter { it.natureza == Natureza.PROPRIO && !it.arquivada }
+            if (proprias.isNotEmpty()) {
+                RotuloDeSecao("Suas contas")
+                CartaoSecao {
+                    proprias.forEachIndexed { i, conta ->
+                        if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        LinhaConta(conta, v.saldo(conta.id)) { aoAbrirConta(conta.id) }
                     }
                 }
             }

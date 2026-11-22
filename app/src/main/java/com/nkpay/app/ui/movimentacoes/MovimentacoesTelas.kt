@@ -283,7 +283,7 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
                             vm.valorTexto,
                             { vm.valorTexto = it },
                             erro = vm.erroValor,
-                            ajuda = "Positivo aumenta o saldo; com “-” na frente, diminui.",
+                            ajuda = "Positivo aumenta o saldo. Toque em +/− para diminuir.",
                             permitirNegativo = true,
                         )
                     }
