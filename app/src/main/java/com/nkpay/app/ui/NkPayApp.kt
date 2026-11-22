@@ -42,6 +42,7 @@ import com.nkpay.app.ui.apagar.APagarTela
 import com.nkpay.app.ui.apagar.ContaFixaFormTela
 import com.nkpay.app.ui.apagar.ContasFixasTela
 import com.nkpay.app.ui.apagar.ObrigacaoFormTela
+import com.nkpay.app.ui.apagar.PagarTela
 import com.nkpay.app.ui.telas.EmBreveSubtela
 import com.nkpay.app.ui.inicio.InicioTela
 import com.nkpay.app.ui.registro.RegistroDetalheTela
@@ -178,7 +179,11 @@ fun NkPayApp() {
                     id = entrada.arguments?.getString("id"),
                     mesInicial = mes,
                     aoVoltar = { navController.popBackStack() },
+                    aoPagar = { navController.navigate(Rotas.pagar(it)) },
                 )
+            }
+            composable(Rotas.PAGAR, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                PagarTela(obrigacaoId = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
             }
             composable(Rotas.OBJETIVOS) { ObjetivosTela() }
 

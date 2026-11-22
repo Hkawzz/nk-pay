@@ -62,6 +62,7 @@ class AppContainer(
     // --- Contas a pagar (v0.3) ---
     val contasFixas = ContaFixaRepositorio(banco, auditor, relogio)
     val obrigacoes = ObrigacaoRepositorio(banco, auditor, relogio)
+    val pagamentos = com.nkpay.app.dados.PagamentoServico(banco, auditor, relogio)
 
     /** Contas fixas + obrigações + pagamentos e ajustes válidos, sempre atualizados. */
     val visaoAPagar: StateFlow<VisaoAPagar?> =

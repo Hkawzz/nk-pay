@@ -228,6 +228,12 @@ class MovimentacaoRepositorio(
     private val dao = banco.movimentacaoDao()
     private val contaDao = banco.contaDao()
     private val categoriaDao = banco.categoriaDao()
+    private val pagamentoDao = banco.pagamentoDao()
+
+    /** Movimentações criadas pelo botão Pagar só mudam pelo próprio pagamento (v0.3). */
+    private suspend fun ehDePagamento(id: String) = pagamentoDao.daMovimentacao(id).isNotEmpty()
+
+    suspend fun ehPagamentoDeConta(id: String): Boolean = ehDePagamento(id)
 
     /** Movimentações não excluídas, da mais recente para a mais antiga. */
     fun observar(): Flow<List<Movimentacao>> = dao.observarTodas().map { lista -> lista.map { it.paraDominio() } }
@@ -287,6 +293,7 @@ class MovimentacaoRepositorio(
         return banco.withTransaction {
             val antes = dao.buscar(m.id)?.takeIf { it.excluidoEm == null }
                 ?: return@withTransaction Resultado.Falha("Movimentação não encontrada.")
+            if (ehDePagamento(m.id)) return@withTransaction Resultado.Falha(MENSAGEM_PAGAMENTO)
             validar(limpa)?.let { return@withTransaction Resultado.Falha(it) }
             val depois = antes.copy(
                 tipo = limpa.tipo.name,
@@ -312,6 +319,7 @@ class MovimentacaoRepositorio(
     suspend fun excluir(id: String): Resultado<Unit> = banco.withTransaction {
         val antes = dao.buscar(id)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction Resultado.Falha("Movimentação não encontrada.")
+        if (ehDePagamento(id)) return@withTransaction Resultado.Falha(MENSAGEM_PAGAMENTO)
         val agora = relogio.agora()
         val depois = antes.copy(excluidoEm = agora, atualizadoEm = agora)
         dao.atualizar(depois)
@@ -322,6 +330,10 @@ class MovimentacaoRepositorio(
         Resultado.Sucesso(Unit)
     }
 }
+
+/** Mensagem para quem tenta mexer numa movimentação criada pelo botão Pagar. */
+const val MENSAGEM_PAGAMENTO =
+    "Este lançamento é o pagamento de uma conta. Para mudar, abra a conta em A pagar e exclua o pagamento."
 
 class AuditoriaRepositorio(banco: NkPayBanco) {
     private val dao = banco.auditoriaDao()
