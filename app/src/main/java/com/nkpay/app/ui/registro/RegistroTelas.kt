@@ -1,5 +1,6 @@
 package com.nkpay.app.ui.registro
 
+import com.nkpay.app.ui.theme.Espaco
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,8 +37,8 @@ import com.nkpay.app.dominio.TipoMovimentacao
 import com.nkpay.app.dominio.VisaoFinanceira
 import com.nkpay.app.ui.Formatos
 import com.nkpay.app.ui.LocalContainer
-import com.nkpay.app.ui.componentes.CartaoSecao
-import com.nkpay.app.ui.componentes.EstadoVazio
+import com.nkpay.app.ui.componentes.NkCard
+import com.nkpay.app.ui.componentes.NkEstadoVazio
 import com.nkpay.app.ui.componentes.Subtela
 import com.nkpay.app.ui.theme.EstiloValor
 import com.nkpay.app.ui.theme.RosaDespesa
@@ -61,8 +62,8 @@ fun RegistroTela(aoVoltar: () -> Unit, aoAbrir: (String) -> Unit) {
     Subtela(titulo = "Registro de alterações", aoVoltar = aoVoltar) { modifier ->
         val lista = registros ?: return@Subtela
         if (lista.isEmpty()) {
-            EstadoVazio(
-                icone = Icons.Filled.Edit,
+            NkEstadoVazio(
+                icone = Icons.Rounded.Edit,
                 titulo = "Nada registrado ainda",
                 texto = "Toda criação, edição e exclusão aparece aqui, com o antes e o depois.",
                 modifier = modifier,
@@ -127,8 +128,8 @@ fun RegistroDetalheTela(id: String, aoVoltar: () -> Unit) {
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            CartaoSecao {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            NkCard {
+                Column(Modifier.padding(Espaco.l), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(r.resumo, style = MaterialTheme.typography.titleMedium)
                     Text(
                         "${rotuloOperacao(r.operacao)} · ${NOME_ENTIDADE[r.entidade] ?: r.entidade}",
@@ -138,9 +139,9 @@ fun RegistroDetalheTela(id: String, aoVoltar: () -> Unit) {
                     Text(Formatos.dataHora(r.quando), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            CartaoSecao {
+            NkCard {
                 Column(Modifier.padding(vertical = 8.dp)) {
-                    Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                    Row(Modifier.padding(horizontal = Espaco.l, vertical = Espaco.xs)) {
                         Text("Campo", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                         Text("Antes", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.2f))
                         Text("Depois", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.2f))

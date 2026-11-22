@@ -13,9 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -99,28 +99,6 @@ fun CampoDinheiro(
     )
 }
 
-/** Campo de texto simples de uma linha. */
-@Composable
-fun CampoTexto(
-    rotulo: String,
-    texto: String,
-    aoMudar: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    erro: String? = null,
-    ajuda: String? = null,
-) {
-    OutlinedTextField(
-        value = texto,
-        onValueChange = aoMudar,
-        label = { Text(rotulo) },
-        singleLine = true,
-        isError = erro != null,
-        supportingText = (erro ?: ajuda)?.let { { Text(it) } },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-        modifier = modifier.fillMaxWidth(),
-    )
-}
-
 /** Campo que parece um texto, mas abre uma escolha ao tocar. */
 @Composable
 private fun CampoClicavel(
@@ -156,7 +134,7 @@ fun CampoData(rotulo: String, data: LocalDate, aoMudar: (LocalDate) -> Unit, mod
     CampoClicavel(
         rotulo = rotulo,
         valor = Formatos.data(data),
-        icone = { Icon(Icons.Filled.DateRange, contentDescription = null) },
+        icone = { Icon(Icons.Rounded.DateRange, contentDescription = null) },
         aoClicar = { aberto = true },
         modifier = modifier,
     )
@@ -196,7 +174,7 @@ fun <T> CampoEscolha(
     CampoClicavel(
         rotulo = rotulo,
         valor = atual?.rotulo ?: textoVazio,
-        icone = { Icon(Icons.Filled.ArrowDropDown, contentDescription = null) },
+        icone = { Icon(Icons.Rounded.ArrowDropDown, contentDescription = null) },
         aoClicar = { aberto = true },
         modifier = modifier,
         erro = erro,
@@ -226,7 +204,7 @@ fun <T> CampoEscolha(
                                 }
                                 if (opcao.valor == selecionado) {
                                     Spacer(Modifier.width(8.dp))
-                                    Icon(Icons.Filled.Check, contentDescription = "Selecionado", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Rounded.Check, contentDescription = "Selecionado", tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }

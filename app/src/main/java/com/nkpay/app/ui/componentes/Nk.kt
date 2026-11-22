@@ -168,7 +168,10 @@ fun NkListItem(
     titulo: String,
     modifier: Modifier = Modifier,
     subtitulo: String? = null,
+    corTitulo: Color = MaterialTheme.colorScheme.onSurface,
     corSubtitulo: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    /** Linhas máximas: 1 nas listas comuns; mais em avisos que não podem ser cortados. */
+    linhas: Int = 1,
     inicio: (@Composable () -> Unit)? = null,
     fim: (@Composable () -> Unit)? = null,
     aoClicar: (() -> Unit)? = null,
@@ -186,9 +189,9 @@ fun NkListItem(
             Spacer(Modifier.width(Espaco.s + 2.dp))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(titulo, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(titulo, style = MaterialTheme.typography.bodyLarge, color = corTitulo, maxLines = linhas, overflow = TextOverflow.Ellipsis)
             if (subtitulo != null) {
-                Text(subtitulo, style = MaterialTheme.typography.bodySmall, color = corSubtitulo, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(subtitulo, style = MaterialTheme.typography.bodySmall, color = corSubtitulo, maxLines = linhas, overflow = TextOverflow.Ellipsis)
             }
         }
         if (fim != null) {

@@ -1,5 +1,6 @@
 package com.nkpay.app.ui.backup
 
+import com.nkpay.app.ui.theme.Espaco
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -38,9 +39,11 @@ import com.nkpay.app.AppContainer
 import com.nkpay.app.dados.BackupLido
 import com.nkpay.app.dados.BackupServico
 import com.nkpay.app.ui.Formatos
-import com.nkpay.app.ui.componentes.CartaoSecao
-import com.nkpay.app.ui.componentes.RotuloDeSecao
+import com.nkpay.app.ui.componentes.NkCard
+import com.nkpay.app.ui.componentes.NkCabecalhoSecao
 import com.nkpay.app.ui.componentes.Subtela
+import com.nkpay.app.ui.componentes.NkBotaoPrimario
+import com.nkpay.app.ui.componentes.NkBotaoSecundario
 import com.nkpay.app.ui.componentes.lembrarSnackbar
 import com.nkpay.app.ui.nkViewModel
 import com.nkpay.app.ui.theme.RosaDespesa
@@ -138,8 +141,8 @@ fun BackupTela(aoVoltar: () -> Unit) {
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            CartaoSecao {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            NkCard {
+                Column(Modifier.padding(Espaco.l), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
                     Text("Último backup", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     val u = ultimo
                     Text(
@@ -153,15 +156,7 @@ fun BackupTela(aoVoltar: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(4.dp))
-                    Button(
-                        onClick = { criarArquivo.launch(vm.nomeSugerido()) },
-                        enabled = !vm.trabalhando,
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ),
-                    ) { Text("Fazer backup agora") }
+                    NkBotaoPrimario("Fazer backup agora", { criarArquivo.launch(vm.nomeSugerido()) }, habilitado = !vm.trabalhando)
                     Text(
                         "Escolha onde salvar. Dica: uma pasta do Google Drive, para ter uma cópia fora do celular.",
                         style = MaterialTheme.typography.bodySmall,
@@ -170,31 +165,27 @@ fun BackupTela(aoVoltar: () -> Unit) {
                 }
             }
 
-            RotuloDeSecao("Restaurar")
-            CartaoSecao {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            NkCabecalhoSecao("Restaurar")
+            NkCard {
+                Column(Modifier.padding(Espaco.l), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
                     Text(
                         "Substitui TODOS os dados do app pelos do arquivo. Antes, o app guarda sozinho uma cópia do estado atual, para você poder voltar atrás.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    OutlinedButton(
-                        onClick = { abrirArquivo.launch(arrayOf("*/*")) },
-                        enabled = !vm.trabalhando,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Restaurar de um arquivo .nkpay") }
+                    NkBotaoSecundario("Restaurar de um arquivo .nkpay", { abrirArquivo.launch(arrayOf("*/*")) }, habilitado = !vm.trabalhando)
                 }
             }
 
             vm.erro?.let {
-                CartaoSecao {
-                    Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(20.dp))
+                NkCard {
+                    Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(Espaco.l))
                 }
             }
 
             if (vm.copias.isNotEmpty()) {
-                RotuloDeSecao("Cópias antes de restaurar")
-                CartaoSecao {
+                NkCabecalhoSecao("Cópias antes de restaurar")
+                NkCard {
                     vm.copias.forEachIndexed { i, arquivo ->
                         if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {

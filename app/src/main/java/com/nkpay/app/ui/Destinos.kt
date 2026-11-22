@@ -1,11 +1,11 @@
 package com.nkpay.app.ui
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.automirrored.rounded.List
+import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /** Rotas de navegação. Cada string identifica uma tela. */
@@ -43,9 +43,9 @@ object Rotas {
 
 /** As 5 abas da barra inferior, na ordem em que aparecem. */
 enum class Aba(val rota: String, val rotulo: String, val icone: ImageVector) {
-    INICIO(Rotas.INICIO, "Início", Icons.Filled.Home),
-    MOVIMENTACOES(Rotas.MOVIMENTACOES, "Movimentações", Icons.AutoMirrored.Filled.List),
-    A_PAGAR(Rotas.A_PAGAR, "A pagar", Icons.Filled.DateRange),
-    OBJETIVOS(Rotas.OBJETIVOS, "Objetivos", Icons.Filled.Star),
-    MAIS(Rotas.MAIS, "Mais", Icons.Filled.Menu),
+    INICIO(Rotas.INICIO, "Início", Icons.Rounded.Home),
+    MOVIMENTACOES(Rotas.MOVIMENTACOES, "Movimentações", Icons.AutoMirrored.Rounded.List),
+    A_PAGAR(Rotas.A_PAGAR, "A pagar", Icons.Rounded.DateRange),
+    OBJETIVOS(Rotas.OBJETIVOS, "Objetivos", Icons.Rounded.Star),
+    MAIS(Rotas.MAIS, "Mais", Icons.Rounded.Menu),
 }

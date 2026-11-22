@@ -1,5 +1,6 @@
 package com.nkpay.app.ui.contas
 
+import com.nkpay.app.ui.componentes.EstiloCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,10 +19,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.rounded.AccountBox
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -54,17 +55,23 @@ import com.nkpay.app.ui.LocalContainer
 import com.nkpay.app.ui.componentes.BotaoAdicionar
 import com.nkpay.app.ui.componentes.CampoData
 import com.nkpay.app.ui.componentes.CampoDinheiro
-import com.nkpay.app.ui.componentes.CampoTexto
-import com.nkpay.app.ui.componentes.CartaoSecao
+import com.nkpay.app.ui.componentes.NkCampo
+import com.nkpay.app.ui.componentes.NkCard
 import com.nkpay.app.ui.componentes.CoresDeConta
 import com.nkpay.app.ui.componentes.DialogoConfirmacao
 import com.nkpay.app.ui.componentes.EscolhaSegmentada
-import com.nkpay.app.ui.componentes.EstadoVazio
+import com.nkpay.app.ui.componentes.NkEstadoVazio
 import com.nkpay.app.ui.componentes.LinhaConta
 import com.nkpay.app.ui.componentes.LinhaMovimentacao
 import com.nkpay.app.ui.componentes.Opcao
-import com.nkpay.app.ui.componentes.RotuloDeSecao
+import com.nkpay.app.ui.componentes.NkCabecalhoSecao
 import com.nkpay.app.ui.componentes.Subtela
+import com.nkpay.app.ui.componentes.NkBotaoPrimario
+import com.nkpay.app.ui.componentes.NkValor
+import com.nkpay.app.ui.componentes.NkValorRotulado
+import com.nkpay.app.ui.componentes.TamanhoValor
+import com.nkpay.app.ui.componentes.TipoValor
+import com.nkpay.app.ui.theme.Espaco
 import com.nkpay.app.ui.componentes.lembrarSnackbar
 import com.nkpay.app.ui.movimentacoes.listaAgrupadaPorDia
 import com.nkpay.app.ui.nkViewModel
@@ -86,12 +93,12 @@ fun ContasTela(
     ) { modifier ->
         val v = visao ?: return@Subtela
         if (v.contas.isEmpty()) {
-            EstadoVazio(
-                icone = Icons.Filled.AccountBox,
+            NkEstadoVazio(
+                icone = Icons.Rounded.AccountBox,
                 titulo = "Nenhuma conta ainda",
                 texto = "Cadastre o Pix, o dinheiro físico, os bancos e também o VA e o VR, cada um com o saldo de hoje.",
                 modifier = modifier,
-                acao = { Button(onClick = aoNovaConta) { Text("Cadastrar conta") } },
+                acao = { NkBotaoPrimario("Cadastrar conta", aoNovaConta) },
             )
             return@Subtela
         }
@@ -106,20 +113,12 @@ fun ContasTela(
                 if (contas.isEmpty()) continue
                 item(key = "t-$titulo") {
                     val total = contas.sumOf { v.saldo(it.id) }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        RotuloDeSecao(titulo, Modifier.weight(1f))
-                        if (titulo != "Arquivadas") {
-                            Text(
-                                Dinheiro.formatar(total),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(end = 24.dp, top = 12.dp),
-                            )
-                        }
+                    NkCabecalhoSecao(titulo) {
+                        if (titulo != "Arquivadas") NkValor(total, tipo = TipoValor.SECUNDARIO, tamanho = TamanhoValor.PEQUENO)
                     }
                 }
                 item(key = "g-$titulo") {
-                    CartaoSecao {
+                    NkCard {
                         contas.forEachIndexed { i, conta ->
                             if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             LinhaConta(conta, v.saldo(conta.id)) { aoAbrirConta(conta.id) }
@@ -145,10 +144,10 @@ fun ContaFormTela(contaId: String?, aoVoltar: () -> Unit) {
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = Espaco.l, vertical = Espaco.xs),
+            verticalArrangement = Arrangement.spacedBy(Espaco.s),
         ) {
-            CampoTexto("Nome", vm.nome, { vm.nome = it }, erro = vm.erroNome, ajuda = "Ex.: Pix, Dinheiro, Banco X, VA")
+            NkCampo("Nome", vm.nome, { vm.nome = it }, erro = vm.erroNome, ajuda = "Ex.: Pix, Dinheiro, Banco X, VA")
 
             Text("Tipo de conta", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             EscolhaSegmentada(
@@ -190,17 +189,9 @@ fun ContaFormTela(contaId: String?, aoVoltar: () -> Unit) {
 
             vm.erroGeral?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = { vm.salvar(aoVoltar) },
-                enabled = !vm.salvando,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-            ) { Text(if (vm.editando) "Salvar alterações" else "Criar conta") }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(Espaco.xs))
+            NkBotaoPrimario(if (vm.editando) "Salvar alterações" else "Criar conta", { vm.salvar(aoVoltar) }, habilitado = !vm.salvando)
+            Spacer(Modifier.height(Espaco.l))
         }
     }
 }
@@ -219,7 +210,7 @@ private fun SeletorDeCor(selecionada: Long?, aoEscolher: (Long?) -> Unit) {
                     .clickable { aoEscolher(if (marcada) null else c) },
                 contentAlignment = Alignment.Center,
             ) {
-                if (marcada) Icon(Icons.Filled.Check, contentDescription = "Selecionada", tint = Color.Black, modifier = Modifier.size(18.dp))
+                if (marcada) Icon(Icons.Rounded.Check, contentDescription = "Selecionada", tint = Color.Black, modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -252,8 +243,8 @@ fun ContaDetalheTela(
         aoVoltar = aoVoltar,
         snackbar = snackbar,
         acoes = {
-            IconButton(onClick = aoEditar) { Icon(Icons.Filled.Edit, contentDescription = "Editar") }
-            IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "Mais opções") }
+            IconButton(onClick = aoEditar) { Icon(Icons.Rounded.Edit, contentDescription = "Editar") }
+            IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, contentDescription = "Mais opções") }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 DropdownMenuItem(
                     text = { Text(if (conta?.arquivada == true) "Desarquivar" else "Arquivar") },
@@ -277,15 +268,10 @@ fun ContaDetalheTela(
         val movs = v.movimentacoesDaConta(contaId)
         LazyColumn(modifier.fillMaxSize()) {
             item {
-                CartaoSecao(cor = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                    Column(Modifier.padding(20.dp)) {
-                        Text("Saldo atual", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(
-                            Dinheiro.formatar(saldo),
-                            style = EstiloValor.destaque,
-                            color = if (saldo < 0) RosaDespesa else MaterialTheme.colorScheme.onSurface,
-                        )
-                        Spacer(Modifier.height(8.dp))
+                NkCard(estilo = EstiloCard.ELEVADO) {
+                    Column(Modifier.padding(Espaco.l)) {
+                        NkValorRotulado("Saldo atual", saldo, tamanho = TamanhoValor.DESTAQUE)
+                        Spacer(Modifier.height(Espaco.xs))
                         val tipo = if (conta.natureza == Natureza.BENEFICIO) {
                             "Benefício · ${conta.tipoBeneficio?.rotulo ?: ""} · fora do Disponível"
                         } else {
