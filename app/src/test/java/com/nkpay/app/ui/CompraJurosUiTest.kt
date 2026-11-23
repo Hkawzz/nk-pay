@@ -68,12 +68,12 @@ class CompraJurosUiTest {
         regra.onNodeWithContentDescription("Nova compra").performClick()
         esperar("Valor total")
         regra.onNode(hasSetTextAction() and hasText("Descrição")).performTextInput("Celular")
-        regra.onNode(hasSetTextAction() and hasText("Valor total")).performTextInput("27300")
+        regra.onNode(hasSetTextAction() and hasText("Valor total")).performTextInput("30000")
         regra.onNode(hasSetTextAction() and hasText("Parcelas")).performTextClearance()
         regra.onNode(hasSetTextAction() and hasText("Parcelas")).performTextInput("12")
         esperar("Valor da parcela (se tiver juros)")
-        regra.onNode(hasSetTextAction() and hasText("Valor da parcela (se tiver juros)")).performTextInput("4358")
-        regra.waitUntil(10_000) { regra.onAllNodes(hasText("Juros do parcelamento: R$ 249,96", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+        regra.onNode(hasSetTextAction() and hasText("Valor da parcela (se tiver juros)")).performTextInput("4550")
+        regra.waitUntil(10_000) { regra.onAllNodes(hasText("Juros do parcelamento: R$ 246,00", substring = true)).fetchSemanticsNodes().isNotEmpty() }
         foto("v06-compra-com-juros")
         regra.onNodeWithText("Registrar compra").performScrollTo().performClick()
 
@@ -81,8 +81,8 @@ class CompraJurosUiTest {
         foto("v06-cartao-juros-a-pagar")
         val credito = container.visaoCredito.value!!
         val id = credito.contasDeCredito.single().id
-        regra.waitUntil(10_000) { container.visaoCredito.value!!.devido(id) == 27_300L }
-        assertEquals(24_996L, container.visaoCredito.value!!.jurosAPagar(id, LocalDate.of(2026, 12, 1)))
+        regra.waitUntil(10_000) { container.visaoCredito.value!!.devido(id) == 30_000L }
+        assertEquals(24_600L, container.visaoCredito.value!!.jurosAPagar(id, LocalDate.of(2026, 12, 1)))
     }
 
     @Test

@@ -43,20 +43,13 @@ jobs:
         with:
           name: capturas-de-tela
           path: app/build/outputs/roborazzi/
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: ignore
 
+      # Só confere que o APK de debug compila. Ele NÃO é enviado como artefato: o repositório
+      # é público, e builds de debug nunca são distribuídos (os de teste são feitos localmente).
       - name: Compilar APK de debug
         run: ./gradlew assembleDebug --console=plain
-
-      # O APK de debug é um app separado (com.nkpay.app.debug, ADR 0007): serve para
-      # testar a versão nova no celular com uma CÓPIA dos dados, sem tocar no app principal.
-      - name: Guardar o APK de debug
-        uses: actions/upload-artifact@v7
-        with:
-          name: apk-debug
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 30
 
       - name: Guardar relatório dos testes se algo falhar
         if: failure()
@@ -64,4 +57,4 @@ jobs:
         with:
           name: relatorio-testes
           path: app/build/reports/tests/
-          retention-days: 7
+          retention-days: 3

@@ -9,8 +9,8 @@ App Android de finanças pessoais (Kotlin + Compose + Room), 100% offline, de us
 - Decisões secundárias: escolha a opção mais simples e reversível e registre em `docs/decisoes/`. Pergunte ao dono só o que é difícil de desfazer (estrutura do banco, applicationId, assinatura).
 - Banco: toda mudança de esquema tem uma `Migration` explícita e um teste de migração. **Nunca** use `fallbackToDestructiveMigration`. Os esquemas ficam em `app/schemas/`.
 - Nenhum dado real (planilhas, bancos, backups `.nkpay`) entra no repositório. Os testes usam só valores fictícios.
-- A pasta `Documents\NK Pay` (com espaço) tem as planilhas reais do dono: nunca copie nada de lá para cá.
+- Material de planejamento e qualquer arquivo pessoal do dono ficam fora do repositório: nunca copie nada de lá para cá.
 
 ## Ambiente (Windows)
-- Ferramentas em `C:\Users\kawan\nk-pay-tools` (jdk21, android-sdk, git, gh, gradle). O login do `gh` fica em `nk-pay-tools\gh-config` (`GH_CONFIG_DIR`).
+- Ferramentas (JDK 21, Android SDK, Git, GitHub CLI, Gradle) numa pasta local de ferramentas, fora do repositório. O login do `gh` fica nessa pasta, apontado por `GH_CONFIG_DIR`.
 - Testes: `.\gradlew.bat testDebugUnitTest -Proborazzi.test.record=true` (as capturas de tela vão para `app/build/outputs/roborazzi/`).

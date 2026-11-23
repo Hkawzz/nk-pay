@@ -75,12 +75,12 @@ class BackupV06Test {
         val cartao = ok(contas.criar(Conta("", "Cartão", Natureza.CARTAO, null, 0, d, limite = 400_000, diaFechamento = 5, diaVencimento = 12)))
         val loja = ok(contas.criar(Conta("", "Loja", Natureza.CREDIARIO, null, 0, d, diaVencimento = 20)))
         // Compra com juros paga em parte (abatimento geral) e outra paga inteira.
-        compras.registrar(NovaCompra(cartao, "Celular", null, LocalDate.of(2026, 11, 3), 27_300, 12, LocalDate.of(2026, 11, 12), valorParcela = 4_358))
-        ok(pagar.pagarFatura(cartao, YearMonth.of(2026, 11), pix, LocalDate.of(2026, 11, 12), 4_358, null))
+        compras.registrar(NovaCompra(cartao, "Celular", null, LocalDate.of(2026, 11, 3), 30_000, 12, LocalDate.of(2026, 11, 12), valorParcela = 4_550))
+        ok(pagar.pagarFatura(cartao, YearMonth.of(2026, 11), pix, LocalDate.of(2026, 11, 12), 4_550, null))
         ok(pagar.pagarFatura(cartao, YearMonth.of(2026, 12), pix, LocalDate.of(2026, 12, 1), 3_000, null))
         // Compra anterior com juros, parcelas pagas, parcial e antecipada com desconto.
-        compras.registrar(NovaCompra(loja, "Sofá", null, LocalDate.of(2026, 8, 10), 27_300, 12, LocalDate.of(2026, 9, 20), anteriorAoApp = true,
-            parcelasJaPagas = 2, pagoEmParteDaSeguinte = 1_000, valorParcela = 4_358, antecipadas = listOf(Antecipada(12, 3_800))))
+        compras.registrar(NovaCompra(loja, "Sofá", null, LocalDate.of(2026, 8, 10), 30_000, 12, LocalDate.of(2026, 9, 20), anteriorAoApp = true,
+            parcelasJaPagas = 2, pagoEmParteDaSeguinte = 1_000, valorParcela = 4_550, antecipadas = listOf(Antecipada(12, 4_000))))
         // Pendência levada pelo Preparar mês.
         val f = (fixas.criar(com.nkpay.app.dominio.ContaFixa("", "Aluguel", 100_000, 10)) as Resultado.Sucesso).valor
         val conserto = ok(obrigs.criarAvulsa(com.nkpay.app.dominio.Obrigacao("", com.nkpay.app.dominio.OrigemObrigacao.AVULSA, "Conserto", 25_000, LocalDate.of(2026, 10, 15), YearMonth.of(2026, 10))))
@@ -101,7 +101,7 @@ class BackupV06Test {
         assertEquals(numeros, visao().let { v -> listOf(v.devido(cartao), v.devido(loja), v.jurosAPagar(cartao, hoje), v.jurosAPagar(loja, hoje)) })
         assertTrue(visao().invarianteFecha(cartao, hoje))
         assertTrue(visao().invarianteFecha(loja, hoje))
-        assertTrue(banco.backupDao().compras().any { it.valorOriginalCentavos == 27_300L })
+        assertTrue(banco.backupDao().compras().any { it.valorOriginalCentavos == 30_000L })
         // Um backup da v0.6 tem versão 5: a v0.5 (versão 4) recusa versões maiores que a dela.
         assertEquals(NkPayBanco.VERSAO, backup.ler(ByteArrayInputStream(arquivo)).manifesto.versaoBanco) // v0.7: a versão atual é a 6
     }

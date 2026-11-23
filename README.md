@@ -62,7 +62,7 @@ Requisitos: JDK 21 e Android SDK (plataforma `android-37.2`), com as variáveis 
 .\gradlew.bat assembleDebug
 ```
 
-Em cada PR, o CI publica as capturas de tela como o artefato **capturas-de-tela**: abra a execução em *Actions* e role até *Artifacts*.
+Em cada PR, o CI publica as capturas de tela como o artefato **capturas-de-tela** (guardado por 3 dias): abra a execução em *Actions* e role até *Artifacts*. O APK de debug **não** é publicado pelo CI; ele é compilado localmente quando necessário.
 
 O APK de debug tem outro identificador (`com.nkpay.app.debug`) e se chama "NK Pay" também. Ele é instalado **ao lado** do app oficial, nunca por cima, para que os testes não toquem nos dados reais.
 
