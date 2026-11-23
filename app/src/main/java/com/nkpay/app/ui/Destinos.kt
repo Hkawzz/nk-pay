@@ -33,6 +33,7 @@ object Rotas {
     fun compra(id: String) = "mais/compra/$id"
     const val PARCELA = "mais/parcela/{id}"
     fun parcela(id: String) = "mais/parcela/$id"
+    const val ANALISES = "mais/analises"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
     const val BACKUP = "mais/backup"
