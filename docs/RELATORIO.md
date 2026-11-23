@@ -26,6 +26,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 |---|---|---|---|
 | [#20](https://github.com/Hkawzz/nk-pay/pull/20) | F0 | Regras 6B, 6C e 6D em `regras-financeiras.md` e as decisões 0014 a 0018. Sem código | ✅ |
 | [#21](https://github.com/Hkawzz/nk-pay/pull/21) | V0 | Capturas de referência das telas atuais (`ref-*` no artefato do CI) e o APK de debug guardado pelo CI | ✅ |
+| [#22](https://github.com/Hkawzz/nk-pay/pull/22) | V1 | Design system v2: tokens, `NkCardDestaque`, `NkIconeComFundo`, `NkCardConta`, `NkCartaoCredito`, `NkValorAjustavel`, 40 ícones próprios e 12 cores, com vitrine no Android 8, 9 e atual | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
@@ -34,6 +35,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Pagar compras específicas** quita o restante exato das compras escolhidas e é recusado se passar do restante da fatura.
 - **Contas de crédito nascem com saldo inicial zero**: a dívida anterior entra como compra anterior ao app.
 - **Ícones próprios** (caminhos do Material Icons, Apache 2.0) em vez do pacote "extended"; 12 cores predefinidas e uma personalizada com ajuste de contraste para 3:1. ([0018](decisoes/0018-categorias-com-aparencia.md))
+- **Sem a biblioteca Haze** (vidro de verdade): o brilho é um degradê radial igual em todas as versões do Android, e a sombra colorida aparece no Android 9+. ([0019](decisoes/0019-design-system-v2.md))
 
 **Pendências:** nenhuma até aqui.
 
