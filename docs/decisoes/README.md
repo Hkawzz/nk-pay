@@ -22,3 +22,4 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0016](0016-compra-anterior-ao-app.md) | Compra feita antes de usar o app | Aceita |
 | [0017](0017-integridade-das-contas-de-credito.md) | Integridade das contas de crédito | Aceita |
 | [0018](0018-categorias-com-aparencia.md) | Categorias com ícone e cor | Aceita |
+| [0019](0019-design-system-v2.md) | Design system v2 e a regra dos 2 destaques | Aceita |
