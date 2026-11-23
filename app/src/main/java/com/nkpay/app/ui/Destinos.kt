@@ -19,6 +19,8 @@ object Rotas {
     // Telas dentro de "Mais"
     const val CONTAS = "mais/contas"
     const val CATEGORIAS = "mais/categorias"
+    const val CATEGORIA_FORM = "mais/categoria-form?id={id}"
+    fun categoriaForm(id: String? = null) = if (id == null) "mais/categoria-form" else "mais/categoria-form?id=$id"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
     const val BACKUP = "mais/backup"

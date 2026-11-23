@@ -30,6 +30,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#23](https://github.com/Hkawzz/nk-pay/pull/23) | F1 | Banco v3: tabelas `compra` e `pagamento_fatura`, `icone` e `cor` na categoria, migração 2→3 explícita, backup com as tabelas novas. Testes de migração com banco v2 fiel e a matriz de backup | ✅ |
 | [#24](https://github.com/Hkawzz/nk-pay/pull/24) | F2 | Domínio de crédito: datas por fechamento e vencimento, arredondamento das parcelas, fatura calculada, devido, limite, invariante, distribuição de um pagamento entre faturas, validação por natureza na camada de dados | ✅ |
 | [#25](https://github.com/Hkawzz/nk-pay/pull/25) | C1 | Aparência sugerida às categorias pelo nome (auditada, só nas sem ícone, idempotente), também depois de restaurar um backup da v0.3; categorias novas já nascem com ícone e cor | ✅ |
+| [#26](https://github.com/Hkawzz/nk-pay/pull/26) | C2 | Tela da categoria (nome, ícone, cor, cor personalizada com ajuste de contraste, arquivar); ícone e cor nas listas de movimentações, nas escolhas de categoria e nas contas (que também ganham escolha de ícone) | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
@@ -41,6 +42,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Sem a biblioteca Haze** (vidro de verdade): o brilho é um degradê radial igual em todas as versões do Android, e a sombra colorida aparece no Android 9+. ([0019](decisoes/0019-design-system-v2.md))
 
 - **Uma conta com lançamentos não vira cartão ou crediário** (nem o contrário): a mudança de natureza é recusada, porque o devido deixaria de bater.
+- **Editar a categoria virou uma tela própria** (era um diálogo): a grade de ícones não cabe bem num diálogo, e o diálogo travava o layout nos testes.
+- **Nas listas de movimentações**, entradas e despesas mostram o ícone da categoria; transferências e ajustes, o ícone da conta.
 - **Movimentações de conta de crédito** (compra, encargo, desconto, pagamento) ficam bloqueadas em Movimentações, com uma mensagem que aponta para a tela do cartão.
 
 **Pendências**

@@ -211,7 +211,10 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
             }
         val opcoesCategoria = v.categorias
             .filter { !it.arquivada || it.id == vm.categoriaId }
-            .map { Opcao(it.id, it.nome) }
+            .map {
+                val a = com.nkpay.app.dominio.AparenciaSugerida.NEUTRA
+                Opcao(it.id, it.nome, icone = com.nkpay.app.ui.icones.IconesNk.de(it.icone ?: a.icone), cor = it.cor ?: a.cor)
+            }
 
         Column(
             modifier

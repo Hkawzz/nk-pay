@@ -167,10 +167,15 @@ class CategoriaRepositorio(
         }
     }
 
-    private suspend fun inserirComAuditoria(grupo: String, nome: String, codigo: String?, resumo: String): String {
-        val agora = relogio.agora()
+    private suspend fun inserirComAuditoria(
+        grupo: String,
+        nome: String,
+        codigo: String?,
+        resumo: String,
         // v0.4: toda categoria nova já nasce com aparência (sugerida pelo nome, ou neutra).
-        val aparencia = AparenciaSugerida.ouNeutra(nome)
+        aparencia: com.nkpay.app.dominio.Aparencia = AparenciaSugerida.ouNeutra(nome),
+    ): String {
+        val agora = relogio.agora()
         val nova = CategoriaEntidade(
             id = relogio.novoId(), nome = nome, codigoSistema = codigo,
             arquivadaEm = null, criadoEm = agora, atualizadoEm = agora, excluidoEm = null,
@@ -181,11 +186,12 @@ class CategoriaRepositorio(
         return nova.id
     }
 
-    suspend fun criar(nome: String): Resultado<String> {
+    /** Cria a categoria. Sem [aparencia], usa a sugerida pelo nome (ou a neutra). */
+    suspend fun criar(nome: String, aparencia: com.nkpay.app.dominio.Aparencia? = null): Resultado<String> {
         val limpo = nome.trim()
         Validacao.categoria(Categoria(id = "", nome = limpo))?.let { return Resultado.Falha(it) }
         val id = banco.withTransaction {
-            inserirComAuditoria(relogio.novoId(), limpo, null, "Categoria “$limpo” criada")
+            inserirComAuditoria(relogio.novoId(), limpo, null, "Categoria “$limpo” criada", aparencia ?: AparenciaSugerida.ouNeutra(limpo))
         }
         return Resultado.Sucesso(id)
     }

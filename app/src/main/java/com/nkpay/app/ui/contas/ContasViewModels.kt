@@ -27,6 +27,10 @@ class ContaFormViewModel(private val container: AppContainer, private val contaI
     var saldoTexto by mutableStateOf("0,00")
     var data by mutableStateOf(container.relogio.hoje())
     var cor by mutableStateOf<Long?>(null)
+    /** Nome do ícone (v0.4). Null = o padrão do tipo de conta. */
+    var icone by mutableStateOf<String?>(null)
+    /** A conta como estava (na edição), para não perder campos que este formulário não mostra. */
+    private var original: Conta? = null
 
     var erroNome by mutableStateOf<String?>(null); private set
     var erroSaldo by mutableStateOf<String?>(null); private set
@@ -45,6 +49,8 @@ class ContaFormViewModel(private val container: AppContainer, private val contaI
                     saldoTexto = Dinheiro.formatarSemSimbolo(c.saldoInicial).let { if (c.saldoInicial < 0) "-$it" else it }
                     data = c.dataSaldoInicial
                     cor = c.cor
+                    icone = c.icone
+                    original = c
                 }
                 carregado = true
             }
@@ -60,7 +66,8 @@ class ContaFormViewModel(private val container: AppContainer, private val contaI
     fun salvar(aoTerminar: () -> Unit) {
         val saldo = Dinheiro.ler(saldoTexto)
         erroSaldo = if (saldo == null) "Valor inválido. Exemplo: 1.234,56" else null
-        val conta = Conta(
+        val base = original ?: Conta(id = "", nome = "", natureza = natureza, saldoInicial = 0, dataSaldoInicial = data)
+        val conta = base.copy(
             id = contaId ?: "",
             nome = nome.trim(),
             natureza = natureza,
@@ -68,6 +75,7 @@ class ContaFormViewModel(private val container: AppContainer, private val contaI
             saldoInicial = saldo ?: 0,
             dataSaldoInicial = data,
             cor = cor,
+            icone = icone,
         )
         val erro = Validacao.conta(conta)
         erroNome = erro?.takeIf { "nome" in it }

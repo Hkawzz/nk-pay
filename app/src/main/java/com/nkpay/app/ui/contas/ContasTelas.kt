@@ -184,8 +184,13 @@ fun ContaFormTela(contaId: String?, aoVoltar: () -> Unit) {
             )
             CampoData("Data do saldo inicial", vm.data, { vm.data = it })
 
-            Text("Cor (opcional)", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            SeletorDeCor(vm.cor) { vm.cor = it }
+            val padrao = com.nkpay.app.dominio.AparenciaSugerida.daConta(vm.natureza, vm.tipoBeneficio)
+            com.nkpay.app.ui.componentes.SeletorDeAparencia(
+                icone = vm.icone ?: padrao.icone,
+                cor = vm.cor ?: padrao.cor,
+                aoMudarIcone = { vm.icone = it },
+                aoMudarCor = { vm.cor = it },
+            )
 
             vm.erroGeral?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
