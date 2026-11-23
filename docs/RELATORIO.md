@@ -34,6 +34,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#52](https://github.com/Hkawzz/nk-pay/pull/52) | Excluir e arquivar (A3, A5) | Cartões, crediários e pessoas: excluir só sem vínculos (senão oferece Arquivar), arquivar recusado com algo em aberto, "Mostrar arquivados" e Desarquivar; tela Pessoas com edição do nome | ✅ |
 | [#53](https://github.com/Hkawzz/nk-pay/pull/53) | Empréstimo anterior (A4) | Campos "Total de parcelas do contrato" e "Parcelas já pagas": só as pendentes são criadas, numeradas no contrato (ex.: 5/12). Nenhuma regra financeira mudou | ✅ |
 | [#54](https://github.com/Hkawzz/nk-pay/pull/54) | Preparar mês: domínio e serviço | Sugestões (fixas com o valor do mês anterior, parcelas para conferência, pendências), confirmação numa transação com um grupo de auditoria, pendência levada aparece também no mês novo sem mudar nada dela; repetir não duplica | ✅ |
+| [#55](https://github.com/Hkawzz/nk-pay/pull/55) | Preparar mês: tela | Assistente em 4 passos (fixas marcadas e editáveis, parcelas para conferência com juros, pendências desmarcadas, revisão com total previsto); botão "Preparar [mês]" sempre em A pagar e card de sugestão na virada do mês | ✅ |
 
 **Decisões tomadas sozinho**
 - **A seção 8 da análise não existe no arquivo** (ele termina na seção 7). Segui a regra D-A1 (c) como o próprio briefing a descreve em detalhe; as fórmulas da regra 6B.8 vêm dessa descrição.
@@ -55,6 +56,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **A sugestão de preparar o mês** é um card em A pagar quando o mês escolhido ainda tem contas fixas a lançar (só pendências antigas não bastam: elas existiriam sempre e o card nunca sairia).
 - **Pendências do Preparar mês** são as contas a pagar fixas e avulsas. Parcelas de cartão, crediário e empréstimo ficam fora: elas já aparecem nas suas seções (faturas atrasadas no mês original pela 6B.4; parcelas de empréstimo atrasadas já são listadas em A pagar).
 - **No mês novo, a pendência levada aparece em "Deste mês"** (com "ref." do mês original e o status Atrasada) e sai de "Pendentes de meses anteriores" daquele mês, para não aparecer duas vezes. Nos meses seguintes ela volta a ser uma pendência anterior comum.
+- **Assistente em tela cheia, não em diálogo** (diálogos com listas travaram o Robolectric na v0.4). O botão "Preparar [mês]" fica sempre em A pagar; o card de sugestão aparece no mês atual, ou no próximo durante a última semana do mês, enquanto houver contas fixas a lançar. O "Lançar contas fixas" da v0.3 continua lá.
 - **O serviço do Preparar mês confere tudo antes de gravar**: uma falha no meio não deixa meio preparo.
 
 **Pendências:** nenhuma até aqui.

@@ -128,6 +128,8 @@ fun APagarTela(
     aoContasFixas: () -> Unit,
     aoAbrirFatura: (String, YearMonth) -> Unit = { _, _ -> },
     aoAbrirParcelaEmprestimo: (String) -> Unit = {},
+    aoPreparar: (YearMonth) -> Unit = {},
+    avisoExterno: String? = null,
 ) {
     val container = LocalContainer.current
     val vm = nkViewModel { APagarViewModel(it) }
@@ -195,9 +197,27 @@ fun APagarTela(
                             habilitado = disponiveis.isNotEmpty(),
                         )
                     }
+                    // v0.6 (7.6): o assistente fica sempre à mão.
+                    Spacer(Modifier.height(Espaco.xs))
+                    NkBotaoSecundario("Preparar ${Formatos.mes(vm.mes).lowercase()}", { aoPreparar(vm.mes) })
                 }
             }
-            aviso?.let { item { NkTextoAjuda(it) } }
+            // v0.6: sugerido na virada do mês (mês atual, ou o próximo na última semana), enquanto houver fixas a lançar.
+            val mesAtual = YearMonth.from(hoje)
+            val naVirada = vm.mes == mesAtual || (vm.mes == mesAtual.plusMonths(1) && hoje.dayOfMonth > hoje.lengthOfMonth() - 7)
+            if (naVirada && com.nkpay.app.dominio.PrepararMes.deveSugerir(v, vm.mes)) {
+                item {
+                    NkCard(estilo = com.nkpay.app.ui.componentes.EstiloCard.ELEVADO, modifier = Modifier.padding(horizontal = Espaco.m)) {
+                        NkListItem(
+                            "Preparar ${Formatos.mes(vm.mes).lowercase()}?",
+                            subtitulo = "Contas fixas, parcelas do mês e pendências numa conferência só. Nada é gravado antes de confirmar.",
+                            linhas = 3,
+                            aoClicar = { aoPreparar(vm.mes) },
+                        )
+                    }
+                }
+            }
+            (aviso ?: avisoExterno)?.let { item { NkTextoAjuda(it) } }
 
             if (anteriores.isNotEmpty()) {
                 item { NkCabecalhoSecao("Pendentes de meses anteriores") }

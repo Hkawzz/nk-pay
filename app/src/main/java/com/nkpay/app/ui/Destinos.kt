@@ -42,6 +42,9 @@ object Rotas {
     fun emprestimo(id: String) = "mais/emprestimo/$id"
     const val EMPRESTIMO_PARCELA = "mais/emprestimo-parcela/{id}"
     fun emprestimoParcela(id: String) = "mais/emprestimo-parcela/$id"
+    // v0.6 (7.6): o assistente Preparar mês (fora de Mais: a aba continua A pagar).
+    const val PREPARAR_MES = "preparar-mes/{mes}"
+    fun prepararMes(mes: java.time.YearMonth) = "preparar-mes/$mes"
     // v0.6 (A5): pessoas e instituições dos empréstimos.
     const val PESSOAS = "mais/pessoas"
     const val PESSOA = "mais/pessoa/{id}"

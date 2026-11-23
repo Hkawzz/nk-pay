@@ -1,5 +1,6 @@
 package com.nkpay.app.ui
 
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -159,8 +160,12 @@ fun NkPayApp() {
                     aoNova = { navController.navigate(Rotas.movimentacaoForm()) },
                 )
             }
-            composable(Rotas.A_PAGAR) {
+            composable(Rotas.A_PAGAR) { entrada ->
+                // v0.6: o resultado do Preparar mês volta para cá como um aviso.
+                val avisoPreparo by entrada.savedStateHandle.getStateFlow<String?>("aviso", null).collectAsState()
                 APagarTela(
+                    avisoExterno = avisoPreparo,
+                    aoPreparar = { mes -> navController.navigate(Rotas.prepararMes(mes)) },
                     aoNova = { mes -> navController.navigate(Rotas.obrigacaoForm(mes = mes)) },
                     aoAbrir = { navController.navigate(Rotas.obrigacaoForm(id = it)) },
                     aoContasFixas = { navController.navigate(Rotas.CONTAS_FIXAS) },
@@ -196,6 +201,16 @@ fun NkPayApp() {
                     mes = java.time.YearMonth.parse(entrada.arguments?.getString("mes")),
                     aoVoltar = { navController.popBackStack() },
                     aoAbrirParcela = { navController.navigate(Rotas.parcela(it)) },
+                )
+            }
+            composable(Rotas.PREPARAR_MES, arguments = listOf(navArgument("mes") { type = NavType.StringType })) { entrada ->
+                com.nkpay.app.ui.apagar.PrepararMesTela(
+                    mes = java.time.YearMonth.parse(entrada.arguments?.getString("mes")),
+                    aoVoltar = { navController.popBackStack() },
+                    aoTerminar = { aviso ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set("aviso", aviso)
+                        navController.popBackStack()
+                    },
                 )
             }
             // v0.5: a parcela de empréstimo aberta a partir de A pagar (fora de Mais, para a aba continuar A pagar).
