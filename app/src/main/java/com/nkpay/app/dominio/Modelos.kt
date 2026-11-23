@@ -19,10 +19,21 @@ enum class Natureza(val rotulo: String) {
 
     /** Credor de carnê/boleto parcelado, sem limite. Telas na v0.4. */
     CREDIARIO("Crediário"),
+
+    /** v0.5: pessoa ou instituição de quem peguei dinheiro (eu devo). */
+    EMPRESTIMO_RECEBIDO("Empréstimo recebido"),
+
+    /** v0.5: pessoa a quem emprestei (me deve). */
+    EMPRESTIMO_CONCEDIDO("Empréstimo concedido"),
     ;
 
-    /** Cartão e crediário: só mudam por compras e pagamentos (ADR 0017). */
+    /** Só cartão e crediário (telas de cartões, faturas e Análises de crédito). */
     val ehCredito: Boolean get() = this == CARTAO || this == CREDIARIO
+
+    /** v0.5: o ponto único de verdade da integridade (ADR 0022): cartão, crediário e empréstimos. */
+    val ehContaDeTerceiros: Boolean get() = ehCredito || ehEmprestimo
+
+    val ehEmprestimo: Boolean get() = this == EMPRESTIMO_RECEBIDO || this == EMPRESTIMO_CONCEDIDO
 
     companion object {
         /** Naturezas que a interface da v0.1 permite escolher. */
@@ -65,6 +76,7 @@ data class Conta(
     val diaVencimento: Int? = null,
 ) {
     val ehCredito: Boolean get() = natureza.ehCredito
+    val ehContaDeTerceiros: Boolean get() = natureza.ehContaDeTerceiros
 }
 
 data class Categoria(

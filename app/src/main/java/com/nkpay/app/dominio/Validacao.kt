@@ -19,8 +19,8 @@ object Validacao {
         conta.natureza != Natureza.BENEFICIO && conta.tipoBeneficio != null ->
             "Só contas de benefício têm tipo de benefício."
         // Contas de crédito (v0.4, regra 6B.1)
-        conta.ehCredito && conta.saldoInicial != 0L ->
-            "Cartões e crediários começam com saldo zero. O que já deve entra como compra anterior ao app."
+        conta.ehContaDeTerceiros && conta.saldoInicial != 0L ->
+            "Cartões, crediários e empréstimos começam com saldo zero. O que já existia entra como compra ou empréstimo anterior ao app."
         conta.natureza == Natureza.CARTAO && (conta.diaFechamento == null || conta.diaVencimento == null) ->
             "Informe o dia de fechamento e o dia de vencimento do cartão."
         conta.diaFechamento != null && conta.diaFechamento !in 1..31 -> "O dia de fechamento vai de 1 a 31."
@@ -30,10 +30,10 @@ object Validacao {
     }
 
     /** Regra 6B.7 / ADR 0017: contas de crédito não aceitam lançamentos avulsos. */
-    fun aceitaLancamentoAvulso(natureza: Natureza): Boolean = !natureza.ehCredito
+    fun aceitaLancamentoAvulso(natureza: Natureza): Boolean = !natureza.ehContaDeTerceiros
 
     const val MENSAGEM_CONTA_DE_CREDITO =
-        "Cartões e crediários só mudam por compras e pagamentos. Use a tela do cartão ou do crediário."
+        "Cartões, crediários e empréstimos só mudam pelas telas deles (compras, pagamentos e recebimentos)."
 
     fun compra(descricao: String, valorTotal: Long, parcelas: Int, primeiroVencimento: LocalDate?): String? = when {
         descricao.isBlank() -> "Dê uma descrição para a compra."
