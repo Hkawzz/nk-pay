@@ -42,6 +42,10 @@ interface CategoriaDao {
     @Query("SELECT COUNT(*) FROM categoria")
     suspend fun contarTodas(): Int
 
+    /** Categorias (inclusive arquivadas, sem as excluídas) ainda sem aparência (v0.4). */
+    @Query("SELECT * FROM categoria WHERE excluidoEm IS NULL AND (icone IS NULL OR icone = '') ORDER BY criadoEm, id")
+    suspend fun semAparencia(): List<CategoriaEntidade>
+
     @Query("SELECT * FROM categoria WHERE codigoSistema = :codigo LIMIT 1")
     suspend fun buscarPorCodigo(codigo: String): CategoriaEntidade?
 
