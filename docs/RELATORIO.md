@@ -24,7 +24,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 | # | Etapa | O que entrou | Estado |
 |---|---|---|---|
-| 1 | F0 | Regras 6B, 6C e 6D em `regras-financeiras.md` e as decisões 0014 a 0018. Sem código | em andamento |
+| [#20](https://github.com/Hkawzz/nk-pay/pull/20) | F0 | Regras 6B, 6C e 6D em `regras-financeiras.md` e as decisões 0014 a 0018. Sem código | ✅ |
+| [#21](https://github.com/Hkawzz/nk-pay/pull/21) | V0 | Capturas de referência das telas atuais (`ref-*` no artefato do CI) e o APK de debug guardado pelo CI | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
