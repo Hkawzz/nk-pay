@@ -46,6 +46,8 @@ import com.nkpay.app.dominio.TipoMovimentacao
 import com.nkpay.app.dominio.VisaoFinanceira
 import com.nkpay.app.ui.Formatos
 import com.nkpay.app.ui.LocalContainer
+import com.nkpay.app.ui.ajuda.ChaveAjuda
+import com.nkpay.app.ui.ajuda.NkAjuda
 import com.nkpay.app.ui.backup.diasDesde
 import com.nkpay.app.ui.componentes.EstiloCard
 import com.nkpay.app.ui.componentes.IconeDaCategoria
@@ -113,7 +115,10 @@ fun InicioTela(
             // --- 1. Disponível (destaque 1 de 1) ---
             NkCardDestaque {
                 Column(Modifier.fillMaxWidth().padding(Espaco.l), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Saldo disponível", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Saldo disponível", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        NkAjuda(ChaveAjuda.SALDO_DISPONIVEL, cor = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
                     Spacer(Modifier.height(Espaco.xxs))
                     NkValorAjustavel(
                         r.disponivel,
@@ -126,8 +131,8 @@ fun InicioTela(
                     if (r.reservado > 0) {
                         Spacer(Modifier.height(Espaco.m))
                         Row(Modifier.fillMaxWidth()) {
-                            ValorCentral("Saldo total", r.dinheiroProprio, Modifier.weight(1f))
-                            ValorCentral("Guardado", r.reservado, Modifier.weight(1f))
+                            ValorCentral("Saldo total", r.dinheiroProprio, Modifier.weight(1f), ChaveAjuda.SALDO_TOTAL)
+                            ValorCentral("Guardado", r.reservado, Modifier.weight(1f), ChaveAjuda.GUARDADO)
                         }
                     }
                 }
@@ -173,7 +178,10 @@ fun InicioTela(
                 GradeDeContas(
                     "Benefícios · fora do Disponível", beneficios, v, colunas = 3, visiveis = BENEFICIOS_VISIVEIS,
                     textoVerTodas = "Ver todos os benefícios", aoAbrir = aoAbrirConta,
-                    complemento = { NkValor(r.totalBeneficios, tipo = TipoValor.SECUNDARIO, tamanho = com.nkpay.app.ui.componentes.TamanhoValor.PEQUENO) },
+                    complemento = {
+                        NkAjuda(ChaveAjuda.BENEFICIOS)
+                        NkValor(r.totalBeneficios, tipo = TipoValor.SECUNDARIO, tamanho = com.nkpay.app.ui.componentes.TamanhoValor.PEQUENO)
+                    },
                 )
             }
 
@@ -191,9 +199,12 @@ fun InicioTela(
 }
 
 @Composable
-private fun ValorCentral(rotulo: String, centavos: Long, modifier: Modifier) {
+private fun ValorCentral(rotulo: String, centavos: Long, modifier: Modifier, ajuda: ChaveAjuda) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(rotulo, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(rotulo, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            NkAjuda(ajuda, cor = MaterialTheme.colorScheme.onPrimaryContainer)
+        }
         NkValorAjustavel(centavos, estilo = EstiloValor.lista, cor = MaterialTheme.colorScheme.onBackground, alinhamento = TextAlign.Center)
     }
 }
@@ -279,7 +290,10 @@ private fun ResumoDoMes(v: VisaoFinanceira, mes: YearMonth, aoMudarMes: (YearMon
         Column(
             Modifier.fillMaxWidth().clip(RaioV2.formaCard).background(MaterialTheme.colorScheme.surfaceContainer).padding(Espaco.m),
         ) {
-            Text("Saldo das movimentações", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Saldo das movimentações", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                NkAjuda(ChaveAjuda.SALDO_MOVIMENTACOES)
+            }
             NkValorAjustavel(
                 resultado,
                 estilo = EstiloValor.medio,
