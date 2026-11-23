@@ -89,11 +89,12 @@ fun PerguntaDaDiferenca(texto: String, opcoes: List<ClassificacaoDiferenca>, esc
 
 /** Resumo do que um pagamento de crédito vai gravar. */
 @Composable
-fun ResumoPagamentoCredito(transferencia: Long, origem: String, credito: String, encargo: Long, desconto: Long, natureza: String?, restanteDepois: Long?) {
+fun ResumoPagamentoCredito(transferencia: Long, origem: String, credito: String, encargo: Long, desconto: Long, natureza: String?, restanteDepois: Long?, juros: Long = 0) {
     NkCard(estilo = EstiloCard.ELEVADO) {
         Column(Modifier.padding(Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xxs)) {
             Text("Vai ser registrado:", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("• Transferência de ${Dinheiro.formatar(transferencia)} de $origem para $credito (não é despesa)", style = MaterialTheme.typography.bodyMedium)
+            if (juros > 0) Text("• Despesa de ${Dinheiro.formatar(juros)} de juros do parcelamento (Encargos financeiros)", style = MaterialTheme.typography.bodyMedium)
             if (encargo > 0) Text("• Despesa de ${Dinheiro.formatar(encargo)} de ${natureza?.lowercase()} (Encargos financeiros)", style = MaterialTheme.typography.bodyMedium)
             if (desconto > 0) Text("• ${natureza} de ${Dinheiro.formatar(desconto)}: reduz o que você deve (não é receita)", style = MaterialTheme.typography.bodyMedium)
             if (restanteDepois != null) Text(
@@ -176,6 +177,15 @@ fun ParcelaTela(obrigacaoId: String, aoVoltar: () -> Unit) {
                         NkValorRotulado("Falta pagar", s.restante, Modifier.weight(1f), corValor = corDoStatus(s.status))
                         NkValorRotulado("Valor", o.valorPrevisto, Modifier.weight(1f))
                     }
+                    // v0.6 (6B.8): compra com juros, a parcela tem a parte da compra e os juros.
+                    if (s.jurosPrevistos > 0) Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Text(
+                            "Parte da compra ${Dinheiro.formatar(s.parteDaCompra)} · juros do parcelamento ${Dinheiro.formatar(s.jurosPrevistos)}" +
+                                (if (s.jurosPendentes > 0) " (${Dinheiro.formatar(s.jurosPendentes)} a pagar)" else ""),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f),
+                        )
+                        com.nkpay.app.ui.ajuda.NkAjuda(com.nkpay.app.ui.ajuda.ChaveAjuda.JUROS_DO_PARCELAMENTO)
+                    }
                 }
             }
 
@@ -218,7 +228,8 @@ fun ParcelaTela(obrigacaoId: String, aoVoltar: () -> Unit) {
                     }
                     if (resultado is ResultadoPlano.Pronto) {
                         val p: PlanoDePagamento = resultado.plano
-                        ResumoPagamentoCredito(p.totalPago, v.conta(vm.contaId)?.nome ?: "?", conta.nome, p.encargo, p.abatimento, p.classificacao?.rotulo, p.restanteDepois)
+                        ResumoPagamentoCredito(p.totalPago, v.conta(vm.contaId)?.nome ?: "?", conta.nome, p.encargo, p.abatimento, p.classificacao?.rotulo, p.restanteDepois,
+                            juros = com.nkpay.app.dominio.VisaoCredito.jurosDoPagamento(p.totalPago - p.encargo, s.restante, s.jurosPendentes, p.abatimento))
                     }
                     vm.erro?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     NkBotaoPrimario("Confirmar pagamento", vm::pagar, habilitado = resultado is ResultadoPlano.Pronto && vm.contaId != null && !vm.salvando)

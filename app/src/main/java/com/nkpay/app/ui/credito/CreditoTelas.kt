@@ -262,7 +262,7 @@ fun ContaCreditoTela(
                 NkCard {
                     NkListItem(
                         "Juros a pagar",
-                        subtitulo = "Das compras parceladas com juros. Viram despesa quando cada parcela é paga.",
+                        subtitulo = "Viram despesa ao pagar cada parcela.",
                         fim = {
                             androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                 NkValor(juros)

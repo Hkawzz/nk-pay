@@ -146,6 +146,7 @@ fun FaturaTela(contaId: String, mes: YearMonth, aoVoltar: () -> Unit, aoAbrirPar
                         NkValorRotulado("Falta pagar", f.restante, Modifier.weight(1f), corValor = corDoStatus(f.status))
                         NkValorRotulado("Total", f.total, Modifier.weight(1f))
                     }
+                    if (f.jurosPendentes > 0) Text("Inclui ${Dinheiro.formatar(f.jurosPendentes)} de juros do parcelamento: viram despesa quando forem pagos.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (f.abatimentosGerais > 0) Text("${Dinheiro.formatar(f.abatimentosGerais)} abatidos sem escolher compras", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (f.status == StatusObrigacao.ATRASADA) Text("Atrasada: continua neste mês até ser paga. Nenhum juro é lançado sozinho.", style = MaterialTheme.typography.bodySmall, color = corDoStatus(f.status))
                 }
