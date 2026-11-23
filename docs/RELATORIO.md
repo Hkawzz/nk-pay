@@ -6,6 +6,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 | Versão | Data | Em uma frase | Release |
 |---|---|---|---|
+| v0.6.0 | 23/11/2026 | Compras com juros, parcelas antecipadas, excluir e arquivar, e o assistente Preparar próximo mês (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.6.0) |
 | v0.5.0 | 23/11/2026 | Empréstimos (J1 e K2), Resumo da Início pelo fluxo, Saldo disponível e ajuda "?" (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.5.0) |
 | v0.4.0 | 23/11/2026 | Cartões e crediários, categorias com ícone, nova Início e Análises (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.4.0) |
 | v0.3.0 | 22/11/2026 | Contas a pagar (fixas, avulsas, botão Pagar) e visual refinado | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.3.0) |
@@ -16,7 +17,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
-## v0.6.0 (em andamento) - Ajustes dos testes e Preparar próximo mês
+## v0.6.0 (em validação) - Ajustes dos testes e Preparar próximo mês
 
 **Objetivo:** os ajustes encontrados nos testes da v0.5 (compra com juros, parcelas antecipadas antes do app, excluir e arquivar cartões e pessoas, numeração do empréstimo anterior) e o assistente **Preparar próximo mês**. Fontes: `planejamento/briefing-v0.6-autonomo.md` e `planejamento/analise-ajustes-pos-testes-v0.6.md`.
 
@@ -35,11 +36,12 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#53](https://github.com/Hkawzz/nk-pay/pull/53) | Empréstimo anterior (A4) | Campos "Total de parcelas do contrato" e "Parcelas já pagas": só as pendentes são criadas, numeradas no contrato (ex.: 5/12). Nenhuma regra financeira mudou | ✅ |
 | [#54](https://github.com/Hkawzz/nk-pay/pull/54) | Preparar mês: domínio e serviço | Sugestões (fixas com o valor do mês anterior, parcelas para conferência, pendências), confirmação numa transação com um grupo de auditoria, pendência levada aparece também no mês novo sem mudar nada dela; repetir não duplica | ✅ |
 | [#55](https://github.com/Hkawzz/nk-pay/pull/55) | Preparar mês: tela | Assistente em 4 passos (fixas marcadas e editáveis, parcelas para conferência com juros, pendências desmarcadas, revisão com total previsto); botão "Preparar [mês]" sempre em A pagar e card de sugestão na virada do mês | ✅ |
+| [#56](https://github.com/Hkawzz/nk-pay/pull/56) | Qualidade e release | Backup da v0.6 ida e volta (compras com juros, juros pagos, antecipadas, pendência levada), roteiro `docs/roteiro-teste-v0.6.md`, CHANGELOG, README e tag `v0.6.0` | ✅ |
 
 **Decisões tomadas sozinho**
 - **A seção 8 da análise não existe no arquivo** (ele termina na seção 7). Segui a regra D-A1 (c) como o próprio briefing a descreve em detalhe; as fórmulas da regra 6B.8 vêm dessa descrição.
 - **`compra.valorOriginalCentavos` nasce vazia** (vazia = igual ao total), sem reescrever nenhuma compra existente.
-- **Os juros do parcelamento ficam ligados ao pagamento por um ajuste neutro** (`JUROS_DO_PARCELAMENTO`), como os juros recebidos da v0.5; no abatimento geral da fatura, o ajuste fica na primeira parcela em aberto, marcado com a transferência.
+- **Os juros do parcelamento ficam ligados ao pagamento por um ajuste neutro** (`JUROS_DO_PARCELAMENTO`), como os juros recebidos da v0.5 (no abatimento geral, ver abaixo).
 - **O desconto num crédito com juros consome primeiro os juros** da parcela (mesmo princípio das antecipadas e do desconto concedido).
 - **A marcação de pendência levada fica numa tabela nova** (`pendencia_levada`), e não numa coluna de `obrigacao`.
 - **Formulário da compra:** o campo "Valor total" continua com esse nome (com a ajuda "o preço da compra, sem os juros") e ganhou "Valor da parcela (se tiver juros)". Zerado, ou igual a original ÷ N, é compra sem juros. Assim a tela e os testes da v0.5 continuam iguais.
@@ -59,9 +61,31 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Assistente em tela cheia, não em diálogo** (diálogos com listas travaram o Robolectric na v0.4). O botão "Preparar [mês]" fica sempre em A pagar; o card de sugestão aparece no mês atual, ou no próximo durante a última semana do mês, enquanto houver contas fixas a lançar. O "Lançar contas fixas" da v0.3 continua lá.
 - **O serviço do Preparar mês confere tudo antes de gravar**: uma falha no meio não deixa meio preparo.
 
-**Pendências:** nenhuma até aqui.
+**Portões do briefing para publicar**
+
+| Portão | Resultado |
+|---|---|
+| CI verde | ✅ em todos os PRs (#47 a #56) |
+| Testes da v0.5 passando; mudanças inevitáveis justificadas | ✅ os **201** testes da v0.5 passam. **4 linhas** mudaram em 2 arquivos (`MigracaoV4Test` e `MigracaoV3Test`), todas pela versão 5 do banco (ver Problemas). Conferido com `git diff v0.5.0` |
+| Migração v4 fiel → v5 | ✅ `MigracaoV5Test` (banco v4 com dados em todas as tabelas, linhas idênticas campo a campo, compras sem juros) |
+| Matriz de backup (v0.5 → v0.6 restaura; v0.6 ida e volta com compras com juros e antecipadas; v0.5 recusa v0.6) | ✅ `MigracaoV5Test` e `BackupV06Test`. O backup da v0.6 tem versão 5, e a v0.5 recusa versões maiores que a 4 |
+| Regressão do Pagar das contas fixas, do crédito e dos empréstimos | ✅ `PagamentoServicoTest`, `APagarTest`, `PagamentoCreditoTest`, `CompraServicoTest`, `FaturaUiTest`, `CrediarioUiTest`, `PagamentoEmprestimoTest` e `EmprestimoServicoTest` sem alteração |
+
+No total, **231 testes** (201 da v0.5 + 30 novos), todos passando.
+
+**Proteção dos dados reais**
+- A migração 4→5 só acrescenta `compra.valorOriginalCentavos` vazia (as compras antigas continuam sem juros) e cria a tabela `pendencia_levada`. A cópia do banco antes de migrar continua valendo.
+- Backups da v0.5 restauram na v0.6; a v0.5 recusa backups da v0.6.
+- Nenhum dado real no repositório. APKs de debug (v0.5.0 e v0.6.0, mesma chave de debug) em `Documents\nk-pay-apks`, para o roteiro.
+
+**Limitação conhecida** (nota para o futuro, [0025](decisoes/0025-juros-do-parcelamento.md)): pela D-A3 (b), os juros das parcelas pagas antes do app não entram nas Análises. Se o app for usado por outras pessoas, os juros e os descontos de antes do app precisarão entrar nelas de forma completa.
+
+**Pendências:** nenhuma. A instalação no app principal continua sendo decisão sua, depois do roteiro no app de debug.
 
 **Problemas encontrados:**
+- O arquivo de análise não tem a "seção 8" citada no pedido; segui o briefing, que descreve a mesma regra (D-A1 c) em detalhe.
+- Preparar mês (#54): o primeiro rascunho do serviço podia gravar parte do preparo antes de recusar uma pendência inválida (retornar uma falha dentro da transação não a desfaz). O teste pegou; o serviço passou a conferir tudo antes de gravar.
+- APK de debug: um build local falhou por causa das aspas no parâmetro de versão e, por um instante, a cópia levou o APK antigo com o nome da v0.6. Apaguei a cópia, compilei de novo e conferi a versão dentro do APK (`0.6.0-debug`, código 600).
 - Banco v5 (#48): 4 linhas de testes antigos mudaram, sem como evitar, porque testam "termina na versão atual" e a forma exata da tabela compra. No `MigracaoV4Test`: a versão esperada passou a ser `NkPayBanco.VERSAO`, a foto da compra ignora a coluna nova `valorOriginalCentavos=NULL` e o nome da cópia passou a ser `banco-v3-antes-da-v5`. No `MigracaoV3Test`: a comparação do SQL da tabela compra desconta a coluna nova. Nenhuma regra testada mudou; o resto dos testes da v0.5 ficou igual.
 
 ---
