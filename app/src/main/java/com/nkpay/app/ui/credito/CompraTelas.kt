@@ -82,6 +82,19 @@ class CompraFormViewModel(private val container: AppContainer, private val conta
     /** v0.6 (6B.8): valor de cada parcela, só quando o parcelamento tem juros. */
     var parcelaTexto by mutableStateOf("0,00")
     val valorParcela: Long? get() = Dinheiro.ler(parcelaTexto)?.takeIf { it > 0 }
+    /** v0.6 (A2): números das parcelas antecipadas ("11, 12") e o valor pago de cada uma. */
+    var antecipadasTexto by mutableStateOf("")
+    val pagoDaAntecipada = androidx.compose.runtime.mutableStateMapOf<Int, String>()
+    val numerosAntecipados: List<Int> get() = antecipadasTexto.split(",", " ", ";").mapNotNull { it.trim().toIntOrNull() }.distinct()
+
+    /** Valor previsto de cada parcela, como o serviço vai criar. */
+    fun valoresPrevistos(): List<Long>? {
+        val valor = Dinheiro.ler(valorTexto) ?: return null
+        if (parcelas !in 1..120 || valor < parcelas) return null
+        val partes = DatasDeCredito.valoresDasParcelas(valor, parcelas)
+        val p = valorParcela
+        return if (p != null && p != partes.first() && p * parcelas >= valor) List(parcelas) { p } else partes
+    }
     var avisos by mutableStateOf<List<String>>(emptyList()); private set
     var erro by mutableStateOf<String?>(null); private set
     var salvando by mutableStateOf(false); private set
@@ -114,6 +127,11 @@ class CompraFormViewModel(private val container: AppContainer, private val conta
                     parcelasJaPagas = if (anterior) jaPagasTexto.toIntOrNull() ?: 0 else 0,
                     pagoEmParteDaSeguinte = if (anterior) Dinheiro.ler(parcialTexto) ?: 0 else 0,
                     valorParcela = valorParcela,
+                    antecipadas = if (!anterior) emptyList() else valoresPrevistos().let { previstos ->
+                        numerosAntecipados.map { k ->
+                            com.nkpay.app.dados.Antecipada(k, pagoDaAntecipada[k]?.let { Dinheiro.ler(it) } ?: previstos?.getOrNull(k - 1) ?: 0)
+                        }
+                    },
                 ),
             )
             salvando = false
@@ -196,6 +214,23 @@ fun CompraFormTela(contaId: String, aoVoltar: () -> Unit) {
             if (vm.anterior) {
                 NkCampo("Parcelas já pagas antes do app", vm.jaPagasTexto, { vm.jaPagasTexto = it.filter(Char::isDigit).take(3) }, ajuda = "As primeiras parcelas que você já pagou.")
                 CampoDinheiro("Já pago da parcela seguinte (opcional)", vm.parcialTexto, { vm.parcialTexto = it }, ajuda = "Se uma parcela foi paga só em parte antes do app.")
+                // v0.6 (A2, regra 6B.9): parcelas pagas adiantado (normalmente as últimas), com desconto.
+                NkCampo("Parcelas antecipadas (opcional)", vm.antecipadasTexto, { vm.antecipadasTexto = it.filter { c -> c.isDigit() || c == 44.toChar() || c == 32.toChar() }.take(40) },
+                    ajuda = "Números das parcelas que você adiantou, separados por vírgula. Ex.: 11, 12")
+                val previstos = vm.valoresPrevistos()
+                for (k in vm.numerosAntecipados) {
+                    val previsto = previstos?.getOrNull(k - 1) ?: continue
+                    val pagoTexto = vm.pagoDaAntecipada[k] ?: Dinheiro.formatarSemSimbolo(previsto)
+                    val pago = Dinheiro.ler(pagoTexto) ?: 0
+                    Text("Parcela $k: prevista ${Dinheiro.formatar(previsto)}", style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(Espaco.s)) {
+                        CampoDinheiro("Valor pago", pagoTexto, { vm.pagoDaAntecipada[k] = it }, modifier = Modifier.weight(1f))
+                        CampoDinheiro("Desconto", Dinheiro.formatarSemSimbolo(maxOf(0, previsto - pago)), { t ->
+                            val d = Dinheiro.ler(t) ?: 0
+                            vm.pagoDaAntecipada[k] = Dinheiro.formatarSemSimbolo(maxOf(0, previsto - d))
+                        }, modifier = Modifier.weight(1f))
+                    }
+                }
                 if (vm.avisos.isNotEmpty()) {
                     NkCard(estilo = EstiloCard.ELEVADO) {
                         Column(Modifier.padding(Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xxs)) {

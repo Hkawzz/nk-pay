@@ -84,4 +84,33 @@ class CompraJurosUiTest {
         regra.waitUntil(10_000) { container.visaoCredito.value!!.devido(id) == 27_300L }
         assertEquals(24_996L, container.visaoCredito.value!!.jurosAPagar(id, LocalDate.of(2026, 12, 1)))
     }
+
+    @Test
+    fun compraAnteriorComAntecipada() {
+        regra.setContent { NkPayTema { CompositionLocalProvider(LocalContainer provides container) { NkPayApp() } } }
+        regra.onNodeWithText("Mais").performClick()
+        regra.onNodeWithText("Cartões e crediários").performClick()
+        esperar("Cartão Teste")
+        regra.onNodeWithText("Cartão Teste").performClick()
+        esperar("Faturas")
+        regra.onNodeWithContentDescription("Nova compra").performClick()
+        esperar("Valor total")
+        regra.onNode(hasSetTextAction() and hasText("Descrição")).performTextInput("Geladeira")
+        regra.onNode(hasSetTextAction() and hasText("Valor total")).performTextInput("120000")
+        regra.onNode(hasSetTextAction() and hasText("Parcelas")).performTextClearance()
+        regra.onNode(hasSetTextAction() and hasText("Parcelas")).performTextInput("12")
+        regra.onNode(androidx.compose.ui.test.isToggleable()).performScrollTo().performClick()
+        esperar("Parcelas antecipadas (opcional)")
+        regra.onNode(hasSetTextAction() and hasText("Parcelas antecipadas (opcional)")).performScrollTo().performTextInput("12")
+        esperar("Parcela 12: prevista R$ 100,00")
+        regra.onNode(hasSetTextAction() and hasText("Desconto")).performScrollTo().performTextInput("1000")
+        foto("v06-compra-antecipada")
+        regra.onNodeWithText("Registrar compra").performScrollTo().performClick()
+        esperar("Compras")
+        val vc = container.visaoCredito.value!!
+        val id = vc.contasDeCredito.single().id
+        regra.waitUntil(10_000) { container.visaoCredito.value!!.devido(id) == 120_000L - 10_000L }
+        // A parcela 12 foi paga com R$ 90,00 + R$ 10,00 de desconto.
+        assertEquals(1_000L, container.visaoCredito.value!!.ajustes.filter { it.natureza.ehDesconto }.sumOf { it.valor })
+    }
 }
