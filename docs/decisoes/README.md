@@ -17,3 +17,8 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0011](0011-aba-mais-volta-ao-menu.md) | A aba Mais sempre reabre no menu principal | Aceita |
 | [0012](0012-banco-v2-obrigacoes.md) | Banco versão 2: contas fixas, obrigações, pagamentos e ajustes | Aceita |
 | [0013](0013-regras-de-pagamento.md) | Regras de pagamento de contas fixas e avulsas | Aceita |
+| [0014](0014-banco-v3.md) | Banco versão 3: compras, abatimentos de fatura e aparência das categorias | Aceita |
+| [0015](0015-fatura-e-pagamento-de-credito.md) | Fatura calculada e pagamento das contas de crédito | Aceita |
+| [0016](0016-compra-anterior-ao-app.md) | Compra feita antes de usar o app | Aceita |
+| [0017](0017-integridade-das-contas-de-credito.md) | Integridade das contas de crédito | Aceita |
+| [0018](0018-categorias-com-aparencia.md) | Categorias com ícone e cor | Aceita |
