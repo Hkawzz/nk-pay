@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -34,6 +35,15 @@ import kotlinx.coroutines.launch
  * Injeção de dependência manual: este objeto cria os repositórios UMA vez
  * e os entrega para quem precisar. Sem Hilt/Dagger (docs/decisoes/0001-stack.md).
  */
+/**
+ * Se o banco for fechado com uma leitura em andamento (acontece nos testes, que fecham o
+ * banco ao terminar), a visão mantém o último valor em vez de derrubar o processo.
+ * Qualquer outro erro continua sendo lançado.
+ */
+private fun semBanco(e: Throwable) {
+    if (e !is IllegalStateException) throw e
+}
+
 class AppContainer(
     val banco: NkPayBanco,
     val relogio: Relogio = RelogioDoSistema,
@@ -57,7 +67,7 @@ class AppContainer(
     val visao: StateFlow<VisaoFinanceira?> =
         combine(contas.observar(), categorias.observar(), movimentacoes.observar()) { c, cat, m ->
             VisaoFinanceira(c, cat, m)
-        }.stateIn(escopo, SharingStarted.Eagerly, null)
+        }.catch { semBanco(it) }.stateIn(escopo, SharingStarted.Eagerly, null)
 
     // --- Contas a pagar (v0.3) ---
     val contasFixas = ContaFixaRepositorio(banco, auditor, relogio)
@@ -72,7 +82,7 @@ class AppContainer(
             banco.pagamentoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
             banco.ajusteObrigacaoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
         ) { f, o, p, a -> VisaoAPagar(f, o, p, a) }
-            .stateIn(escopo, SharingStarted.Eagerly, null)
+            .catch { semBanco(it) }.stateIn(escopo, SharingStarted.Eagerly, null)
 
     // --- Cartões e crediários (v0.4) ---
     val compras = com.nkpay.app.dados.CompraServico(banco, auditor, relogio)
@@ -86,7 +96,7 @@ class AppContainer(
         combine(visao, visaoAPagar, banco.emprestimoDao().observarValidos().map { l -> l.map { it.paraDominio() } }) { v, a, e ->
             if (v == null || a == null) null
             else com.nkpay.app.dominio.VisaoEmprestimos(v.contas, v.movimentacoes, e, a.obrigacoes, a.pagamentos, a.ajustes)
-        }.stateIn(escopo, SharingStarted.Eagerly, null)
+        }.catch { semBanco(it) }.stateIn(escopo, SharingStarted.Eagerly, null)
 
     /** Último filtro das Análises: só na memória, enquanto o app estiver aberto (nada é gravado). */
     val filtroAnalises = MutableStateFlow(com.nkpay.app.dominio.FiltroPeriodo.MES_ATUAL)
@@ -100,7 +110,7 @@ class AppContainer(
         ) { (v, a), gerais, compras ->
             if (v == null || a == null) null
             else com.nkpay.app.dominio.VisaoCredito(v.contas, v.movimentacoes, a.obrigacoes.filter { it.ehParcela }, a.pagamentos, a.ajustes, gerais, compras)
-        }.stateIn(escopo, SharingStarted.Eagerly, null)
+        }.catch { semBanco(it) }.stateIn(escopo, SharingStarted.Eagerly, null)
 }
 
 /** Guarda a data do último backup exportado nas preferências do app (não é dado financeiro). */
