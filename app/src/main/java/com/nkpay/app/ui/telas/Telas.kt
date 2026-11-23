@@ -50,18 +50,6 @@ import com.nkpay.app.ui.theme.EstiloValor
 
 // Telas simples: A pagar e Objetivos (chegam em versões futuras), Mais, Sobre e o aviso "em breve".
 
-@Composable
-fun ObjetivosTela() {
-    Column(Modifier.fillMaxSize()) {
-        NkTituloTela("Objetivos")
-        NkEstadoVazio(
-            icone = Icons.Rounded.Star,
-            titulo = "Chega na próxima versão",
-            texto = "Reservas para os seus objetivos, separadas do disponível.",
-        )
-    }
-}
-
 private data class ItemMais(val rota: String, val titulo: String, val icone: ImageVector)
 
 private val itensMais = listOf(
