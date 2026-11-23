@@ -119,7 +119,14 @@ data class VisaoAPagar(
     val obrigacoes: List<Obrigacao>,
     val pagamentos: List<Pagamento>,
     val ajustes: List<AjusteObrigacao>,
+    /** v0.6 (7.6, ADR 0026): pendências levadas para aparecer também num mês novo. */
+    val levadas: List<PendenciaLevada> = emptyList(),
 ) {
+    private val levadasPorMes by lazy { levadas.groupBy({ it.mes }, { it.obrigacaoId }).mapValues { it.value.toSet() } }
+
+    /** v0.6: a obrigação foi levada para aparecer também em [mes]? */
+    fun foiLevada(obrigacaoId: String, mes: YearMonth): Boolean = levadasPorMes[mes]?.contains(obrigacaoId) == true
+
     fun situacao(o: Obrigacao, hoje: LocalDate) = Obrigacoes.situacao(o, pagamentos, ajustes, hoje)
     fun situacoes(hoje: LocalDate) = obrigacoes.map { situacao(it, hoje) }
     fun obrigacao(id: String?): Obrigacao? = id?.let { i -> obrigacoes.firstOrNull { it.id == i } }
@@ -127,12 +134,15 @@ data class VisaoAPagar(
 
     /** Obrigações do mês (pelo mês de referência). */
     // As parcelas de cartão/crediário (v0.4) não entram aqui: elas aparecem por fatura.
-    fun doMes(mes: YearMonth, hoje: LocalDate) = situacoes(hoje).filter { it.obrigacao.mesReferencia == mes && !it.obrigacao.ehParcela }
+    // v0.6: inclui as pendências levadas para este mês (com o mês de referência e o vencimento originais).
+    fun doMes(mes: YearMonth, hoje: LocalDate) = situacoes(hoje).filter {
+        (it.obrigacao.mesReferencia == mes || foiLevada(it.obrigacao.id, mes)) && !it.obrigacao.ehParcela
+    }
 
     /** Pendências de meses anteriores ao [mes], ainda não quitadas (continuam no mês original). */
     fun pendentesAnteriores(mes: YearMonth, hoje: LocalDate) = situacoes(hoje).filter {
         val m = it.obrigacao.mesReferencia
-        m != null && m < mes && it.status != StatusObrigacao.QUITADA && !it.obrigacao.ehParcela
+        m != null && m < mes && it.status != StatusObrigacao.QUITADA && !it.obrigacao.ehParcela && !foiLevada(it.obrigacao.id, mes)
     }
 
     companion object {

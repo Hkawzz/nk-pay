@@ -81,12 +81,15 @@ class AppContainer(
             obrigacoes.observar(),
             banco.pagamentoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
             banco.ajusteObrigacaoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
-        ) { f, o, p, a -> VisaoAPagar(f, o, p, a) }
+            banco.pendenciaLevadaDao().observarValidas().map { l -> l.map { it.paraDominio() } },
+        ) { f, o, p, a, l -> VisaoAPagar(f, o, p, a, l) }
             .catch { semBanco(it) }.stateIn(escopo, SharingStarted.Eagerly, null)
 
     // --- Cartões e crediários (v0.4) ---
     val compras = com.nkpay.app.dados.CompraServico(banco, auditor, relogio)
     val pagamentosCredito = com.nkpay.app.dados.PagamentoCreditoServico(banco, auditor, relogio)
+    /** v0.6: Preparar próximo mês (regra 7.6). */
+    val prepararMes = com.nkpay.app.dados.PrepararMesServico(banco, auditor, relogio)
 
     // --- Empréstimos (v0.5) ---
     val emprestimos = com.nkpay.app.dados.EmprestimoServico(banco, auditor, relogio)
