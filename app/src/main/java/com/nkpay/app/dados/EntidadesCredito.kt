@@ -40,6 +40,11 @@ data class CompraEntidade(
     val criadoEm: Long,
     val atualizadoEm: Long,
     val excluidoEm: Long?,
+    /**
+     * Versão 5 (v0.6, D-A1 c): o valor ORIGINAL (a despesa). Vazio = igual ao total
+     * (compra sem juros; é o caso de todas as compras feitas antes da v0.6).
+     */
+    val valorOriginalCentavos: Long? = null,
 )
 
 /**

@@ -39,7 +39,10 @@ fun CompraEntidade.paraDominio() = com.nkpay.app.dominio.Compra(
     id = id, contaCreditoId = contaCreditoId, descricao = descricao, categoriaId = categoriaId,
     dataCompra = LocalDate.parse(dataCompra), valorTotal = valorTotalCentavos, totalParcelas = totalParcelas,
     movimentacaoId = movimentacaoId, anteriorAoApp = anteriorAoApp,
+    valorOriginal = valorOriginalCentavos ?: valorTotalCentavos,
 )
+
+fun PendenciaLevadaEntidade.paraDominio() = com.nkpay.app.dominio.PendenciaLevada(id, obrigacaoId, java.time.YearMonth.parse(mes))
 
 fun EmprestimoEntidade.paraDominio() = com.nkpay.app.dominio.Emprestimo(
     id = id, contaId = contaId, descricao = descricao, categoriaId = categoriaId, valorOriginal = valorOriginalCentavos,

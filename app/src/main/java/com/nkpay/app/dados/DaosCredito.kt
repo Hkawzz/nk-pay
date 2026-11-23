@@ -28,6 +28,17 @@ interface CompraDao {
 }
 
 @Dao
+interface PendenciaLevadaDao {
+    @Query("SELECT p.* FROM pendencia_levada p JOIN obrigacao o ON o.id = p.obrigacaoId WHERE p.excluidoEm IS NULL AND o.excluidoEm IS NULL")
+    fun observarValidas(): Flow<List<PendenciaLevadaEntidade>>
+
+    @Query("SELECT COUNT(*) FROM pendencia_levada WHERE obrigacaoId = :obrigacaoId AND mes = :mes AND excluidoEm IS NULL")
+    suspend fun contar(obrigacaoId: String, mes: String): Int
+
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun inserir(p: PendenciaLevadaEntidade)
+}
+
+@Dao
 interface EmprestimoDao {
     @Query("SELECT * FROM emprestimo WHERE excluidoEm IS NULL ORDER BY dataContratacao DESC, criadoEm DESC")
     fun observarValidos(): Flow<List<EmprestimoEntidade>>

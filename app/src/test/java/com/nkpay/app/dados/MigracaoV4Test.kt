@@ -113,8 +113,9 @@ class MigracaoV4Test {
         val banco = abrirComoOApp()
         try {
             val db = banco.openHelper.writableDatabase
-            assertEquals(4, db.version)
-            for (t in tabelasV3) assertEquals("tabela $t mudou", antes.getValue(t), foto({ db.query(it) }, consultaDe(t)))
+            assertEquals(NkPayBanco.VERSAO, db.version) // v0.6: o caminho 3 → 4 → 5 termina na versão atual (ADR 0024)
+            // v0.6: a compra ganhou valorOriginalCentavos no fim, que precisa nascer vazia.
+            for (t in tabelasV3) assertEquals("tabela $t mudou", antes.getValue(t), foto({ db.query(it) }, consultaDe(t)).map { it.removeSuffix("|valorOriginalCentavos=NULL") })
             db.query("SELECT COUNT(*) FROM obrigacao WHERE emprestimoId IS NOT NULL").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
             db.query("SELECT COUNT(*) FROM emprestimo").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
             val o = esquema(4).getValue("entities").jsonArray.map { it.jsonObject }.first { it.getValue("tableName").jsonPrimitive.content == "emprestimo" }
@@ -151,7 +152,7 @@ class MigracaoV4Test {
         criarBancoV3()
         val copia = copiarAntesDeMigrar(arquivo, pasta.newFolder("c"), NkPayBanco.VERSAO, 1000)
         assertNotNull(copia)
-        assertTrue(copia!!.name.startsWith("banco-v3-antes-da-v4"))
+        assertTrue(copia!!.name.startsWith("banco-v3-antes-da-v${NkPayBanco.VERSAO}")) // v0.6: a versão atual é a 5
     }
 
     // ------------------------------------------------------------ matriz de backup

@@ -144,7 +144,8 @@ class MigracaoV3Test {
                 val t = o.getValue("tableName").jsonPrimitive.content
                 val sql = o.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", t).replace("CREATE TABLE IF NOT EXISTS", "CREATE TABLE")
                 db.query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(t)).use { c ->
-                    assertTrue(c.moveToFirst()); assertEquals(sql, c.getString(0))
+                    // v0.6: a migração 4 → 5 acrescenta valorOriginalCentavos à compra (ADR 0024).
+                    assertTrue(c.moveToFirst()); assertEquals(sql, c.getString(0).replace("`valorOriginalCentavos` INTEGER, ", ""))
                 }
             }
         } finally {
