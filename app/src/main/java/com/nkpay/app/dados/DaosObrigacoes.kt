@@ -45,6 +45,10 @@ interface ObrigacaoDao {
     @Query("SELECT * FROM obrigacao WHERE contaCreditoId = :contaId AND excluidoEm IS NULL AND canceladaEm IS NULL")
     suspend fun parcelasDaConta(contaId: String): List<ObrigacaoEntidade>
 
+    /** Parcelas (não excluídas) de um empréstimo, em ordem. */
+    @Query("SELECT * FROM obrigacao WHERE emprestimoId = :emprestimoId AND excluidoEm IS NULL ORDER BY numeroParcela")
+    suspend fun doEmprestimo(emprestimoId: String): List<ObrigacaoEntidade>
+
     /** Parcelas (não excluídas) de uma compra, em ordem. */
     @Query("SELECT * FROM obrigacao WHERE compraId = :compraId AND excluidoEm IS NULL ORDER BY numeroParcela")
     suspend fun daCompra(compraId: String): List<ObrigacaoEntidade>

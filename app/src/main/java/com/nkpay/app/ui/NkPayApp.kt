@@ -225,6 +225,26 @@ fun NkPayApp() {
                 ) { entrada ->
                     ContaFormTela(contaId = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
                 }
+                composable(Rotas.EMPRESTIMOS) {
+                    com.nkpay.app.ui.emprestimos.EmprestimosTela(
+                        aoVoltar = { navController.popBackStack() },
+                        aoAbrir = { navController.navigate(Rotas.emprestimo(it)) },
+                        aoNovo = { navController.navigate(Rotas.emprestimoForm(it)) },
+                    )
+                }
+                composable(Rotas.EMPRESTIMO_FORM, arguments = listOf(navArgument("tipo") { type = NavType.StringType; defaultValue = "RECEBIDO" })) { entrada ->
+                    com.nkpay.app.ui.emprestimos.EmprestimoFormTela(
+                        tipoInicial = com.nkpay.app.dominio.TipoEmprestimo.valueOf(entrada.arguments?.getString("tipo") ?: "RECEBIDO"),
+                        aoVoltar = { navController.popBackStack() },
+                    )
+                }
+                composable(Rotas.EMPRESTIMO, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                    com.nkpay.app.ui.emprestimos.EmprestimoTela(
+                        id = entrada.arguments?.getString("id").orEmpty(),
+                        aoVoltar = { navController.popBackStack() },
+                        aoAbrirParcela = {},
+                    )
+                }
                 composable(Rotas.ANALISES) { com.nkpay.app.ui.analises.AnalisesTela(aoVoltar = { navController.popBackStack() }) }
                 composable(Rotas.CARTOES) {
                     com.nkpay.app.ui.credito.CartoesTela(
