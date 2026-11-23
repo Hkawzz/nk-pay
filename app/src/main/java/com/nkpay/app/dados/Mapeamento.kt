@@ -42,6 +42,14 @@ fun CompraEntidade.paraDominio() = com.nkpay.app.dominio.Compra(
     valorOriginal = valorOriginalCentavos ?: valorTotalCentavos,
 )
 
+fun ObjetivoEntidade.paraDominio() = com.nkpay.app.dominio.Objetivo(
+    id, nome, icone, cor, metaCentavos, prazo?.let { java.time.LocalDate.parse(it) }, concluidoEm, arquivado,
+)
+
+fun MovimentoReservaEntidade.paraDominio() = com.nkpay.app.dominio.MovimentoReserva(
+    id, objetivoId, java.time.LocalDate.parse(data), valorCentavos, com.nkpay.app.dominio.TipoMovimentoReserva.valueOf(tipo), grupoId, criadoEm,
+)
+
 fun PendenciaLevadaEntidade.paraDominio() = com.nkpay.app.dominio.PendenciaLevada(id, obrigacaoId, java.time.YearMonth.parse(mes))
 
 fun EmprestimoEntidade.paraDominio() = com.nkpay.app.dominio.Emprestimo(

@@ -28,6 +28,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | # | Etapa | O que entrou | Estado |
 |---|---|---|---|
 | [#57](https://github.com/Hkawzz/nk-pay/pull/57) | Docs | Regra 6F (objetivos, com exemplos e O1 a O3), 7.5, 4 e 6E.3 atualizadas; decisões 0028 e 0029. Sem código | ✅ |
+| [#58](https://github.com/Hkawzz/nk-pay/pull/58) | Banco v6 | Migração 5 → 6 só com tabelas novas (`objetivo` e `movimento_reserva`), backup com as duas, banco v5 fiel e matriz de backup (v0.6 → v0.7, ida e volta com objetivos, v0.6 recusa v0.7) | ✅ |
 
 **Decisões tomadas sozinho**
 - **Desfazer uma retirada** (que aumenta o guardado) segue o mesmo bloqueio do Guardar: não pode passar do disponível. É a opção mais segura e coerente com a regra "nova reserva bloqueada sem disponível".
@@ -37,7 +38,9 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 **Pendências:** nenhuma até aqui.
 
-**Problemas encontrados:** nenhum até aqui.
+**Problemas encontrados:**
+- Banco v6 (#58): 3 linhas de testes da v0.6 mudaram, sem como evitar, porque fixavam a versão 5 do banco: `MigracaoV5Test` (versão atual e nome da cópia "banco-v4-antes-da-v6") e `BackupV06Test` (versão do manifesto). Agora usam `NkPayBanco.VERSAO`. Nenhuma regra testada mudou.
+
 ---
 
 ## v0.6.0 (em validação) - Ajustes dos testes e Preparar próximo mês
