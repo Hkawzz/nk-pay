@@ -38,6 +38,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#31](https://github.com/Hkawzz/nk-pay/pull/31) | V2 | Nova tela Início (adendo): Disponível em destaque, grades de contas (2 colunas) e benefícios (3 colunas) com Ver todas/Recolher, resumo do mês com seletor e quantidades, últimas movimentações por dia. Design v2 nas outras telas pelos componentes | ✅ |
 | [#32](https://github.com/Hkawzz/nk-pay/pull/32) | A1 | Cálculos das Análises (regra 6D): totais, fluxo do dinheiro próprio, despesas por categoria, saldos no fim do mês, evolução mensal, crédito e descontos obtidos (sem quitada antes do app) | ✅ |
 | [#33](https://github.com/Hkawzz/nk-pay/pull/33) | A2 | Tela de Análises em Mais: filtros (guardados na memória), resultado, categorias, evolução mensal, fluxo, contas e crédito, com gráficos próprios e valores em texto | ✅ |
+| [#34](https://github.com/Hkawzz/nk-pay/pull/34) | Q | Rodada de qualidade: backup e restauração com todos os registros de crédito, roteiro de teste no celular, app de debug com o nome "NK Pay debug" | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
