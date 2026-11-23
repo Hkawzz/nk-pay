@@ -95,6 +95,29 @@ class PagamentoCreditoServico(
         return null
     }
 
+    /**
+     * v0.6 (regra 6B.8, D-A1 c): os juros do parcelamento que este pagamento resolve viram
+     * despesa em "Encargos financeiros", na data do pagamento, na conta de crédito, e um
+     * ajuste JUROS_DO_PARCELAMENTO (não muda o restante) liga a despesa à parcela. No
+     * pagamento de uma parcela, o ajuste aponta para a ligação; no abatimento geral da
+     * fatura, não há ligação e a [observacao] guarda "geral:<transferência>" para o desfazer.
+     */
+    private suspend fun Contexto.jurosDoParcelamento(
+        credito: ContaEntidade, obrigacao: ObrigacaoEntidade, pagamentoId: String?, valor: Long, observacao: String = "",
+    ): Resultado.Falha? {
+        if (valor <= 0) return null
+        val categoria = categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) ?: return Resultado.Falha(SEM_ENCARGOS)
+        val e = mov(TipoMovimentacao.DESPESA, valor, credito.id, null, categoria.id, "Juros do parcelamento: ${obrigacao.descricao}",
+            "Despesa de ${Dinheiro.formatar(valor)} de juros do parcelamento (“${obrigacao.descricao}”) no ${credito.nome}")
+        val a = ObrigacaoAjusteEntidade(relogio.novoId(), obrigacao.id, pagamentoId, NaturezaAjuste.JUROS_DO_PARCELAMENTO.name, valor, e.id, observacao, agora, agora, null)
+        ajusteDao.inserir(a)
+        auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, a.id,
+            "Juros do parcelamento de ${Dinheiro.formatar(valor)} pagos em “${obrigacao.descricao}”", ObrigacaoAjusteEntidade.serializer(), null, a)
+        return null
+    }
+
+    private fun jurosDoValor(aplicado: Long, restante: Long, jurosPendentes: Long): Long = VisaoCredito.jurosDoPagamento(aplicado, restante, jurosPendentes)
+
     // ------------------------------------------------------------------ parcela (crediário)
 
     /** Paga UMA parcela (crediário), com as perguntas da v0.3 (parcial, desconto, encargos). */
@@ -108,14 +131,19 @@ class PagamentoCreditoServico(
         // v0.5: empréstimo concedido não se "paga": recebe-se (receberParcela, com os juros K2).
         if (Natureza.valueOf(credito.natureza) == Natureza.EMPRESTIMO_CONCEDIDO) return@withTransaction Resultado.Falha("Empréstimo concedido: use Receber.")
         val origem = contaOrigemValida(contaOrigemId) ?: return@withTransaction Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
-        val restante = visao(credito.id).situacaoDaParcela(o.id, relogio.hoje())?.restante ?: 0
+        val situacao = visao(credito.id).situacaoDaParcela(o.id, relogio.hoje())
+        val restante = situacao?.restante ?: 0
+        val jurosPendentes = situacao?.jurosPendentes ?: 0
         val plano = when (val r = Pagamentos.planejar(restante, valorPago, classificacao)) {
             is ResultadoPlano.Pronto -> r.plano
             is ResultadoPlano.PrecisaClassificar -> return@withTransaction Resultado.Falha("Diga o que é a diferença de ${Dinheiro.formatar(r.diferenca)}.")
             is ResultadoPlano.Invalido -> return@withTransaction Resultado.Falha(r.mensagem)
         }
         // Confere ANTES de gravar qualquer coisa (uma falha no meio não pode deixar meio pagamento).
-        if (plano.encargo > 0 && categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) == null) {
+        // v0.6 (6B.8): o desconto consome primeiro os juros pendentes; o resto dos juros vira despesa.
+        val descontoNosJuros = minOf(plano.abatimento, jurosPendentes)
+        val juros = VisaoCredito.jurosDoPagamento(plano.totalPago - plano.encargo, restante, jurosPendentes, plano.abatimento)
+        if ((plano.encargo > 0 || juros > 0) && categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) == null) {
             return@withTransaction Resultado.Falha(SEM_ENCARGOS)
         }
         val c = Contexto(relogio.novoId(), relogio.agora(), data)
@@ -124,11 +152,20 @@ class PagamentoCreditoServico(
                 "Transferência de ${Dinheiro.formatar(plano.totalPago)} ${origem.nome} → ${credito.nome} (pagamento de “${o.descricao}”)")
             val p = ligar(o, t.id, plano.totalPago)
             if (plano.encargo > 0) encargo(credito, o, p.id, plano.classificacao!!, plano.encargo)?.let { return@withTransaction it }
+            jurosDoParcelamento(credito, o, p.id, juros)?.let { return@withTransaction it }
             if (plano.abatimento > 0) {
                 val natureza = plano.classificacao!!.natureza!!
-                val d = mov(TipoMovimentacao.AJUSTE, plano.abatimento, credito.id, null, null, "${natureza.rotulo}: ${o.descricao}",
-                    "Ajuste de ${Dinheiro.formatarComSinal(plano.abatimento)} no ${credito.nome} (${natureza.rotulo.lowercase()})")
-                ajustar(o, p.id, natureza, plano.abatimento, d.id)
+                // Só a parte do desconto que passa dos juros mexe no devido (os juros não estão nele).
+                val noDevido = plano.abatimento - descontoNosJuros
+                val d = if (noDevido > 0) mov(TipoMovimentacao.AJUSTE, noDevido, credito.id, null, null, "${natureza.rotulo}: ${o.descricao}",
+                    "Ajuste de ${Dinheiro.formatarComSinal(noDevido)} no ${credito.nome} (${natureza.rotulo.lowercase()})") else null
+                if (d != null && descontoNosJuros == 0L) ajustar(o, p.id, natureza, plano.abatimento, d.id)
+                else {
+                    val a = ObrigacaoAjusteEntidade(relogio.novoId(), o.id, p.id, natureza.name, plano.abatimento, d?.id, "juros:$descontoNosJuros", agora, agora, null)
+                    ajusteDao.inserir(a)
+                    auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, a.id,
+                        "${natureza.rotulo} de ${Dinheiro.formatar(plano.abatimento)} em “${o.descricao}” (${Dinheiro.formatar(descontoNosJuros)} nos juros)", ObrigacaoAjusteEntidade.serializer(), null, a)
+                }
             }
             Resultado.Sucesso(t.id)
         }
@@ -148,13 +185,26 @@ class PagamentoCreditoServico(
         val credito = contaDao.buscar(contaCreditoId)?.takeIf { it.excluidoEm == null && it.natureza == Natureza.CARTAO.name }
             ?: return@withTransaction Resultado.Falha("Cartão não encontrado.")
         val origem = contaOrigemValida(contaOrigemId) ?: return@withTransaction Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
-        val dist = visao(credito.id).distribuir(credito.id, valor, ateMes, relogio.hoje())
+        val vc = visao(credito.id)
+        val dist = vc.distribuir(credito.id, valor, ateMes, relogio.hoje())
+        // v0.6 (6B.8): os juros que cada parte resolve. Fatura inteira: todos os pendentes dela,
+        // parcela a parcela; abatimento geral: proporcionais ao restante da fatura.
+        val faturas = vc.faturas(credito.id, relogio.hoje()).associateBy { it.mes }
+        val jurosPorParte = dist.partes.associateWith { parte ->
+            val f = faturas.getValue(parte.mes)
+            val total = when (parte) {
+                is ParteDoPagamento.FaturaInteira -> f.jurosPendentes
+                is ParteDoPagamento.AbatimentoGeral -> jurosDoValor(parte.valor, f.restante, f.jurosPendentes)
+            }
+            var resto = total
+            f.parcelas.mapNotNull { sp -> minOf(resto, sp.jurosPendentes).takeIf { it > 0 }?.let { j -> resto -= j; sp.obrigacao.id to j } }.toMap()
+        }
         if (dist.partes.isEmpty()) return@withTransaction Resultado.Falha("Não há fatura em aberto até ${ateMes}.")
         val classificacaoValida = classificacao?.takeIf { it in ClassificacaoDiferenca.quandoPagaMais }
         if (dist.excedente > 0 && classificacaoValida == null) {
             return@withTransaction Resultado.Falha("Diga o que é a diferença de ${Dinheiro.formatar(dist.excedente)}.")
         }
-        if (dist.excedente > 0 && categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) == null) {
+        if ((dist.excedente > 0 || jurosPorParte.values.any { it.isNotEmpty() }) && categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) == null) {
             return@withTransaction Resultado.Falha(SEM_ENCARGOS)
         }
         val c = Contexto(relogio.novoId(), relogio.agora(), data)
@@ -169,12 +219,23 @@ class PagamentoCreditoServico(
                     val comExcedente = dist.excedente > 0 && parte === ultimaInteira && i == 0
                     val p = ligar(o, t.id, aplicado + if (comExcedente) dist.excedente else 0)
                     if (comExcedente) encargo(credito, o, p.id, classificacaoValida!!, dist.excedente)?.let { return@withTransaction it }
+                }.also {
+                    // Juros de parcelas da fatura que ficaram sem ligação (já cobertas por abatimentos gerais).
+                    for ((obrigacaoId, j) in jurosPorParte.getValue(parte)) {
+                        val ligada = parte.aplicacoes.any { it.first == obrigacaoId }
+                        val o = obrigacaoDao.buscar(obrigacaoId)!!
+                        val ligacao = if (ligada) pagamentoDao.daMovimentacao(t.id).first { it.obrigacaoId == obrigacaoId }.id else null
+                        jurosDoParcelamento(credito, o, ligacao, j, if (ligada) "" else "geral:${t.id}")?.let { return@withTransaction it }
+                    }
                 }
                 is ParteDoPagamento.AbatimentoGeral -> {
                     val g = PagamentoFaturaEntidade(relogio.novoId(), credito.id, parte.mes.toString(), t.id, parte.valor, agora, agora, null)
                     faturaDao.inserir(g)
                     auditor.registrar(grupo, Operacao.CRIACAO, Auditor.PAGAMENTO_FATURA, g.id,
                         "Abatimento de ${Dinheiro.formatar(parte.valor)} na fatura de ${parte.mes} do ${credito.nome}", PagamentoFaturaEntidade.serializer(), null, g)
+                    for ((obrigacaoId, j) in jurosPorParte.getValue(parte)) {
+                        jurosDoParcelamento(credito, obrigacaoDao.buscar(obrigacaoId)!!, null, j, "geral:${t.id}")?.let { return@withTransaction it }
+                    }
                 }
             }
             Resultado.Sucesso(t.id)
@@ -194,6 +255,9 @@ class PagamentoCreditoServico(
         val escolhidas = fatura.parcelas.filter { it.obrigacao.id in parcelas && it.restante > 0 }
         if (escolhidas.size != parcelas.toSet().size) return@withTransaction Resultado.Falha("Alguma compra escolhida já está paga ou não é desta fatura.")
         val total = escolhidas.sumOf { it.restante }
+        if (escolhidas.any { it.jurosPendentes > 0 } && categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) == null) {
+            return@withTransaction Resultado.Falha(SEM_ENCARGOS)
+        }
         if (total > fatura.restante) {
             return@withTransaction Resultado.Falha("A fatura já tem ${Dinheiro.formatar(fatura.abatimentosGerais)} abatidos. Pague o restante da fatura (${Dinheiro.formatar(fatura.restante)}).")
         }
@@ -201,7 +265,11 @@ class PagamentoCreditoServico(
         with(c) {
             val t = mov(TipoMovimentacao.TRANSFERENCIA, total, origem.id, credito.id, null, "Fatura: ${credito.nome}",
                 "Transferência de ${Dinheiro.formatar(total)} ${origem.nome} → ${credito.nome} (compras escolhidas)")
-            for (s in escolhidas) ligar(obrigacaoDao.buscar(s.obrigacao.id)!!, t.id, s.restante)
+            for (s in escolhidas) {
+                val o = obrigacaoDao.buscar(s.obrigacao.id)!!
+                val p = ligar(o, t.id, s.restante)
+                jurosDoParcelamento(credito, o, p.id, s.jurosPendentes)?.let { return@withTransaction it }
+            }
             Resultado.Sucesso(t.id)
         }
     }
@@ -391,6 +459,13 @@ class PagamentoCreditoServico(
             val d = p.copy(excluidoEm = agora, atualizadoEm = agora)
             pagamentoDao.atualizar(d)
             auditor.registrar(grupo, Operacao.EXCLUSAO, Auditor.PAGAMENTO, p.id, "Pagamento de ${Dinheiro.formatar(p.valorAplicadoCentavos)} excluído", PagamentoEntidade.serializer(), p, d)
+        }
+        // v0.6: os juros do parcelamento ligados a um abatimento geral desta transferência.
+        for (a in ajusteDao.validosTodos().filter { it.observacao == "geral:${t.id}" }) {
+            val d = a.copy(excluidoEm = agora, atualizadoEm = agora)
+            ajusteDao.atualizar(d)
+            auditor.registrar(grupo, Operacao.EXCLUSAO, Auditor.AJUSTE_OBRIGACAO, a.id, "Ajuste de ${Dinheiro.formatar(a.valorCentavos)} excluído", ObrigacaoAjusteEntidade.serializer(), a, d)
+            a.movimentacaoId?.let { id -> movDao.buscar(id)?.let { excluirMov(it) } }
         }
         for (g in faturaDao.daMovimentacao(t.id)) {
             val d = g.copy(excluidoEm = agora, atualizadoEm = agora)

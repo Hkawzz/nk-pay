@@ -223,6 +223,19 @@ data class VisaoCredito(
     }
 
     companion object {
+        /**
+         * v0.6 (6B.8): juros do parcelamento que um pagamento de [aplicado] resolve numa parcela
+         * (ou fatura) com [restante] e [jurosPendentes]: proporcionais; o que quita fecha os centavos.
+         * Com [desconto], a parcela é quitada e o desconto consome primeiro os juros.
+         */
+        fun jurosDoPagamento(aplicado: Long, restante: Long, jurosPendentes: Long, desconto: Long = 0): Long = when {
+            jurosPendentes <= 0 || restante <= 0 -> 0
+            desconto > 0 -> jurosPendentes - minOf(desconto, jurosPendentes)
+            aplicado <= 0 -> 0
+            aplicado >= restante -> jurosPendentes
+            else -> minOf(jurosPendentes, aplicado * jurosPendentes / restante)
+        }
+
         val VAZIA = VisaoCredito(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
     }
 }
