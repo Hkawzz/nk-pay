@@ -33,7 +33,12 @@ data class NovaCompra(
      * Vazio, ou igual a original ÷ N, é uma compra sem juros (como na v0.5).
      */
     val valorParcela: Long? = null,
+    /** v0.6 (A2, regra 6B.9): parcelas pagas adiantado antes do app, fora das primeiras. */
+    val antecipadas: List<Antecipada> = emptyList(),
 )
+
+/** Uma parcela antecipada antes do app: o [valorPago]; o desconto é o previsto − pago. */
+data class Antecipada(val numero: Int, val valorPago: Long)
 
 /**
  * Compras parceladas (regras 6B.2 e 6B.6, ADRs 0015 e 0016). Tudo em UMA transação,
@@ -79,7 +84,16 @@ class CompraServico(
             if (n.pagoEmParteDaSeguinte < 0 || (n.pagoEmParteDaSeguinte > 0 &&
                     (n.parcelasJaPagas >= n.parcelas || n.pagoEmParteDaSeguinte >= valores[n.parcelasJaPagas]))
             ) return Resultado.Falha("O valor já pago da parcela seguinte precisa ser menor que ela.")
-        } else if (n.parcelasJaPagas != 0 || n.pagoEmParteDaSeguinte != 0L) {
+            // v0.6 (6B.9): antecipadas não repetem parcela, não se misturam com as pagas e não passam do previsto.
+            val parcial = if (n.pagoEmParteDaSeguinte > 0) n.parcelasJaPagas + 1 else null
+            val numeros = n.antecipadas.map { it.numero }
+            if (numeros.size != numeros.toSet().size) return Resultado.Falha("Uma parcela antecipada foi informada duas vezes.")
+            for (a in n.antecipadas) {
+                if (a.numero !in 1..n.parcelas) return Resultado.Falha("A parcela antecipada ${a.numero} não existe (são ${n.parcelas}).")
+                if (a.numero <= n.parcelasJaPagas || a.numero == parcial) return Resultado.Falha("A parcela ${a.numero} já está entre as pagas: ela não pode ser antecipada também.")
+                if (a.valorPago < 0 || a.valorPago > valores[a.numero - 1]) return Resultado.Falha("O valor pago da parcela ${a.numero} vai de zero a ${Dinheiro.formatar(valores[a.numero - 1])}.")
+            }
+        } else if (n.parcelasJaPagas != 0 || n.pagoEmParteDaSeguinte != 0L || n.antecipadas.isNotEmpty()) {
             return Resultado.Falha("Parcelas já pagas só existem em compras anteriores ao app.")
         }
         return banco.withTransaction {
@@ -140,7 +154,9 @@ class CompraServico(
                     val juros = p.valorPrevistoCentavos - partes[i]
                     return if (juros <= 0) 0 else if (pago >= p.valorPrevistoCentavos) juros else pago * juros / p.valorPrevistoCentavos
                 }
-                val soma = quitadas.sumOf { (p, pago) -> pago - jurosDoPago(p, pago) }
+                val antecipadas = n.antecipadas.map { a -> parcelas[a.numero - 1] to a.valorPago }
+                // A antecipada fica quitada: o ajuste soma a parte da compra inteira dela (o desconto sai primeiro dos juros).
+                val soma = quitadas.sumOf { (p, pago) -> pago - jurosDoPago(p, pago) } + antecipadas.sumOf { (p, _) -> partes[p.numeroParcela!! - 1] }
                 if (soma > 0) {
                     val ajuste = MovimentacaoEntidade(
                         relogio.novoId(), TipoMovimentacao.AJUSTE.name, n.dataCompra.toString(), soma, conta.id, null, null,
@@ -161,6 +177,18 @@ class CompraServico(
                             ajusteDao.inserir(j)
                             auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, j.id,
                                 "Parcela ${p.numeroParcela}/${n.parcelas}: ${Dinheiro.formatar(juros)} de juros pagos antes do app", ObrigacaoAjusteEntidade.serializer(), null, j)
+                        }
+                    }
+                    // v0.6 (A2, D-A2 b): antecipadas = "quitada antes do app" pelo valor pago + "desconto
+                    // antes do app" pelo resto, os dois ligados ao ajuste datado na data da compra.
+                    for ((p, pago) in antecipadas) {
+                        val desconto = p.valorPrevistoCentavos - pago
+                        for ((natureza, valor) in listOf(NaturezaAjuste.QUITADA_ANTES_DO_APP to pago, NaturezaAjuste.DESCONTO_ANTES_DO_APP to desconto)) {
+                            if (valor <= 0) continue
+                            val a = ObrigacaoAjusteEntidade(relogio.novoId(), p.id, null, natureza.name, valor, ajuste.id, "antecipada", agora, agora, null)
+                            ajusteDao.inserir(a)
+                            auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, a.id,
+                                "Parcela ${p.numeroParcela}/${n.parcelas} antecipada antes do app: ${natureza.rotulo.lowercase()} de ${Dinheiro.formatar(valor)}", ObrigacaoAjusteEntidade.serializer(), null, a)
                         }
                     }
                 }
