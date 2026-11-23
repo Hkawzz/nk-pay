@@ -153,7 +153,29 @@ val MIGRACAO_4_5 = object : Migration(4, 5) {
 }
 
 /** Todas as migrações, em ordem. */
-val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5)
+/**
+ * 5 → 6 (v0.7, ADR 0028): só tabelas novas, `objetivo` e `movimento_reserva`. Nenhuma
+ * tabela existente muda. SQL copiado do esquema 6 exportado pelo Room.
+ */
+val MIGRACAO_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `objetivo` (`id` TEXT NOT NULL, `nome` TEXT NOT NULL, `icone` TEXT, `cor` INTEGER, `metaCentavos` INTEGER, " +
+                "`prazo` TEXT, `concluidoEm` INTEGER, `arquivado` INTEGER NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, " +
+                "`excluidoEm` INTEGER, PRIMARY KEY(`id`))",
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `movimento_reserva` (`id` TEXT NOT NULL, `objetivoId` TEXT NOT NULL, `data` TEXT NOT NULL, " +
+                "`valorCentavos` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `grupoId` TEXT NOT NULL, `criadoEm` INTEGER NOT NULL, " +
+                "`atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`), " +
+                "FOREIGN KEY(`objetivoId`) REFERENCES `objetivo`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_movimento_reserva_objetivoId` ON `movimento_reserva` (`objetivoId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_movimento_reserva_grupoId` ON `movimento_reserva` (`grupoId`)")
+    }
+}
+
+val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5, MIGRACAO_5_6)
 
 /**
  * Rede de segurança: ANTES de o Room migrar, copia o arquivo do banco (e os arquivos

@@ -107,7 +107,7 @@ class MigracaoV5Test {
         val banco = abrirComoOApp()
         try {
             val db = banco.openHelper.writableDatabase
-            assertEquals(5, db.version)
+            assertEquals(NkPayBanco.VERSAO, db.version) // v0.7: o caminho 4 → 5 → 6 termina na versão atual (ADR 0028)
             for (t in tabelasV4) assertEquals("tabela $t mudou", antes.getValue(t), foto({ db.query(it) }, consultaDe(t)))
             db.query("SELECT COUNT(*) FROM compra WHERE valorOriginalCentavos IS NOT NULL").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
             db.query("SELECT COUNT(*) FROM pendencia_levada").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
@@ -131,7 +131,7 @@ class MigracaoV5Test {
     @Test
     fun `copia antes de migrar e backup da v0_5 restaura na v0_6 e a v0_5 recusa a v0_6`() {
         criarBancoV4()
-        assertTrue(copiarAntesDeMigrar(arquivo, pasta.newFolder("c"), NkPayBanco.VERSAO, 1000)!!.name.startsWith("banco-v4-antes-da-v5"))
+        assertTrue(copiarAntesDeMigrar(arquivo, pasta.newFolder("c"), NkPayBanco.VERSAO, 1000)!!.name.startsWith("banco-v4-antes-da-v${NkPayBanco.VERSAO}")) // v0.7: a versão atual é a 6
         val banco = abrirComoOApp()
         try {
             val servico = BackupServico(banco, RelogioFalso(), "teste", pasta.newFolder("copias"), RegistroDeBackupEmMemoria())

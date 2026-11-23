@@ -1,0 +1,54 @@
+package com.nkpay.app.dados
+
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
+
+// Tabelas novas do esquema versão 6 (v0.7): objetivos e reservas (ADR 0028 e 0029, regra 6F).
+
+/** Um objetivo: reserva virtual sobre o dinheiro próprio. O guardado é calculado pelos movimentos. */
+@Serializable
+@Entity(tableName = "objetivo")
+data class ObjetivoEntidade(
+    @PrimaryKey val id: String,
+    val nome: String,
+    val icone: String?,
+    /** Cor ARGB (como nas categorias). */
+    val cor: Long?,
+    /** Meta opcional: sem meta é uma "caixinha" livre. */
+    val metaCentavos: Long?,
+    /** "AAAA-MM-DD", opcional. */
+    val prazo: String?,
+    val concluidoEm: Long?,
+    val arquivado: Boolean,
+    val criadoEm: Long,
+    val atualizadoEm: Long,
+    val excluidoEm: Long?,
+)
+
+/**
+ * Um movimento de reserva. NÃO é movimentação de dinheiro: só muda o guardado do
+ * objetivo. Mover grava duas linhas com o mesmo [grupoId]; desfazer exclui o grupo.
+ */
+@Serializable
+@Entity(
+    tableName = "movimento_reserva",
+    foreignKeys = [ForeignKey(entity = ObjetivoEntidade::class, parentColumns = ["id"], childColumns = ["objetivoId"], onDelete = ForeignKey.RESTRICT)],
+    indices = [Index("objetivoId"), Index("grupoId")],
+)
+data class MovimentoReservaEntidade(
+    @PrimaryKey val id: String,
+    val objetivoId: String,
+    /** "AAAA-MM-DD". */
+    val data: String,
+    /** + aumenta o guardado, − diminui. */
+    val valorCentavos: Long,
+    /** GUARDAR | RETIRAR | MOVER | AJUSTE */
+    val tipo: String,
+    val grupoId: String,
+    val criadoEm: Long,
+    val atualizadoEm: Long,
+    val excluidoEm: Long?,
+)

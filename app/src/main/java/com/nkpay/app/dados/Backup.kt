@@ -48,6 +48,8 @@ data class ManifestoBackup(
     val compras: Int = 0,
     // Versão 4 (v0.5).
     val emprestimos: Int = 0,
+    // Versão 6 (v0.7).
+    val objetivos: Int = 0,
 )
 
 @Serializable
@@ -69,6 +71,9 @@ data class DadosBackup(
     val emprestimos: List<EmprestimoEntidade> = emptyList(),
     // Versão 5 do banco (v0.6). Lista vazia para backups antigos.
     val pendenciasLevadas: List<PendenciaLevadaEntidade> = emptyList(),
+    // Versão 6 do banco (v0.7). Lista vazia para backups antigos.
+    val objetivos: List<ObjetivoEntidade> = emptyList(),
+    val movimentosReserva: List<MovimentoReservaEntidade> = emptyList(),
 )
 
 /** Um backup lido e validado, pronto para ser restaurado. */
@@ -109,6 +114,7 @@ class BackupServico(
                 dao.contas(), dao.categorias(), dao.movimentacoes(), dao.auditoria(),
                 dao.contasFixas(), dao.obrigacoes(), dao.pagamentos(), dao.ajustesDeObrigacao(),
                 dao.compras(), dao.pagamentosDeFatura(), dao.emprestimos(), dao.pendenciasLevadas(),
+                dao.objetivos(), dao.movimentosReserva(),
             )
         }
         val bytesDados = json.encodeToString(DadosBackup.serializer(), dados).toByteArray(Charsets.UTF_8)
@@ -126,6 +132,7 @@ class BackupServico(
             obrigacoes = dados.obrigacoes.size,
             compras = dados.compras.size,
             emprestimos = dados.emprestimos.size,
+            objetivos = dados.objetivos.size,
         )
         ZipOutputStream(saida).use { zip ->
             zip.putNextEntry(ZipEntry(MANIFESTO))
@@ -210,6 +217,8 @@ class BackupServico(
         }
         if (!okV4) throw BackupInvalido("O backup está inconsistente: há empréstimos que apontam para registros que não existem nele.")
         if (!d.pendenciasLevadas.all { it.obrigacaoId in obrigs }) throw BackupInvalido("O backup está inconsistente: há pendências levadas de contas que não existem nele.")
+        val objetivos = d.objetivos.map { it.id }.toSet()
+        if (!d.movimentosReserva.all { it.objetivoId in objetivos }) throw BackupInvalido("O backup está inconsistente: há movimentos de reserva de objetivos que não existem nele.")
     }
 
     private fun lerComLimite(entrada: InputStream): ByteArray {
@@ -241,6 +250,8 @@ class BackupServico(
         val d = backup.dados
         banco.withTransaction {
             // Apaga de "fora para dentro" (quem aponta antes de quem é apontado)...
+            dao.apagarMovimentosReserva()
+            dao.apagarObjetivos()
             dao.apagarPendenciasLevadas()
             dao.apagarEmprestimos()
             dao.apagarPagamentosDeFatura()
@@ -265,6 +276,8 @@ class BackupServico(
             dao.inserirPagamentosDeFatura(d.pagamentosDeFatura)
             dao.inserirEmprestimos(d.emprestimos)
             dao.inserirPendenciasLevadas(d.pendenciasLevadas)
+            dao.inserirObjetivos(d.objetivos)
+            dao.inserirMovimentosReserva(d.movimentosReserva)
             dao.inserirAuditoria(d.auditoria)
             val m = backup.manifesto
             dao.inserirAuditoria(

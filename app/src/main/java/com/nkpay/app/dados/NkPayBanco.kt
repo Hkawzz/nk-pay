@@ -25,6 +25,8 @@ import androidx.room.RoomDatabase
         EmprestimoEntidade::class,
         // Versão 5 (v0.6): pendências levadas; compra ganha valorOriginalCentavos (ADR 0024).
         PendenciaLevadaEntidade::class,
+        // Versão 6 (v0.7): objetivos e movimentos de reserva; só tabelas novas (ADR 0028).
+        ObjetivoEntidade::class, MovimentoReservaEntidade::class,
     ],
     version = NkPayBanco.VERSAO,
     exportSchema = true,
@@ -43,10 +45,12 @@ abstract class NkPayBanco : RoomDatabase() {
     abstract fun pagamentoFaturaDao(): PagamentoFaturaDao
     abstract fun emprestimoDao(): EmprestimoDao
     abstract fun pendenciaLevadaDao(): PendenciaLevadaDao
+    abstract fun objetivoDao(): ObjetivoDao
+    abstract fun movimentoReservaDao(): MovimentoReservaDao
 
     companion object {
         /** Versão do esquema. Também vai no manifesto de cada backup. */
-        const val VERSAO = 5
+        const val VERSAO = 6
         const val NOME_ARQUIVO = "nk-pay.db"
 
         fun criar(context: Context): NkPayBanco {

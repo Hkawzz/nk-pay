@@ -103,6 +103,6 @@ class BackupV06Test {
         assertTrue(visao().invarianteFecha(loja, hoje))
         assertTrue(banco.backupDao().compras().any { it.valorOriginalCentavos == 27_300L })
         // Um backup da v0.6 tem versão 5: a v0.5 (versão 4) recusa versões maiores que a dela.
-        assertEquals(5, backup.ler(ByteArrayInputStream(arquivo)).manifesto.versaoBanco)
+        assertEquals(NkPayBanco.VERSAO, backup.ler(ByteArrayInputStream(arquivo)).manifesto.versaoBanco) // v0.7: a versão atual é a 6
     }
 }
