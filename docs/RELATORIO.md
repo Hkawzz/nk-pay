@@ -37,6 +37,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#30](https://github.com/Hkawzz/nk-pay/pull/30) | F6 | Tela da fatura (pagar um valor ou escolher compras, faturas anteriores primeiro, encargo classificado, desfazer) e as faturas em A pagar, deste mês e atrasadas | ✅ |
 | [#31](https://github.com/Hkawzz/nk-pay/pull/31) | V2 | Nova tela Início (adendo): Disponível em destaque, grades de contas (2 colunas) e benefícios (3 colunas) com Ver todas/Recolher, resumo do mês com seletor e quantidades, últimas movimentações por dia. Design v2 nas outras telas pelos componentes | ✅ |
 | [#32](https://github.com/Hkawzz/nk-pay/pull/32) | A1 | Cálculos das Análises (regra 6D): totais, fluxo do dinheiro próprio, despesas por categoria, saldos no fim do mês, evolução mensal, crédito e descontos obtidos (sem quitada antes do app) | ✅ |
+| [#33](https://github.com/Hkawzz/nk-pay/pull/33) | A2 | Tela de Análises em Mais: filtros (guardados na memória), resultado, categorias, evolução mensal, fluxo, contas e crédito, com gráficos próprios e valores em texto | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
@@ -56,6 +57,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Início:** o título dos benefícios continua "Benefícios · fora do Disponível" (deixa claro que não somam). Uma entrada sem categoria mostra o ícone neutro. O estado de "Ver todas" não é salvo (como pede o adendo).
 - **Fluxo financeiro:** ajustes ficam fora (são correções, não dinheiro entrando ou saindo); uma transferência de benefício para conta própria conta como entrada, e o contrário como saída.
 - **Descontos obtidos** são datados pelo pagamento que os criou.
+- **Análises sem a referência visual** (não estava disponível): segui a lista 2.6 da proposta e o design v2. A ordem das seções fica em ORDEM_DAS_SECOES, para ajustar sem mexer no resto. Gráficos próprios em Canvas, sem biblioteca nova.
 - **Movimentações de conta de crédito** (compra, encargo, desconto, pagamento) ficam bloqueadas em Movimentações, com uma mensagem que aponta para a tela do cartão.
 
 **Pendências**

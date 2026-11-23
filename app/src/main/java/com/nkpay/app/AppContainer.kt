@@ -78,6 +78,9 @@ class AppContainer(
     val compras = com.nkpay.app.dados.CompraServico(banco, auditor, relogio)
     val pagamentosCredito = com.nkpay.app.dados.PagamentoCreditoServico(banco, auditor, relogio)
 
+    /** Último filtro das Análises: só na memória, enquanto o app estiver aberto (nada é gravado). */
+    val filtroAnalises = MutableStateFlow(com.nkpay.app.dominio.FiltroPeriodo.MES_ATUAL)
+
     /** Contas, movimentações, parcelas, pagamentos, ajustes, abatimentos gerais e compras, sempre atualizados. */
     val visaoCredito: StateFlow<com.nkpay.app.dominio.VisaoCredito?> =
         combine(

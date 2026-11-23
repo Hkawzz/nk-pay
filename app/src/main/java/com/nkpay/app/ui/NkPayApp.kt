@@ -225,6 +225,7 @@ fun NkPayApp() {
                 ) { entrada ->
                     ContaFormTela(contaId = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
                 }
+                composable(Rotas.ANALISES) { com.nkpay.app.ui.analises.AnalisesTela(aoVoltar = { navController.popBackStack() }) }
                 composable(Rotas.CARTOES) {
                     com.nkpay.app.ui.credito.CartoesTela(
                         aoVoltar = { navController.popBackStack() },
