@@ -127,11 +127,13 @@ fun APagarTela(
     aoAbrir: (String) -> Unit,
     aoContasFixas: () -> Unit,
     aoAbrirFatura: (String, YearMonth) -> Unit = { _, _ -> },
+    aoAbrirParcelaEmprestimo: (String) -> Unit = {},
 ) {
     val container = LocalContainer.current
     val vm = nkViewModel { APagarViewModel(it) }
     val visao by container.visaoAPagar.collectAsState()
     val credito by container.visaoCredito.collectAsState()
+    val emprestimos by container.visaoEmprestimos.collectAsState()
     val hoje = container.relogio.hoje()
     var lancando by rememberSaveable { mutableStateOf(false) }
     var aviso by remember { mutableStateOf<String?>(null) }
@@ -151,6 +153,12 @@ fun APagarTela(
                 .filter { (_, f) -> f.mes == vm.mes || (f.mes < vm.mes && f.emAberto) }
                 .sortedWith(compareBy({ it.second.mes }, { it.first.nome }))
         }.orEmpty()
+        // v0.5 (6E.11): parcelas de empréstimo RECEBIDO deste mês e atrasadas. As de concedido nunca aparecem aqui.
+        val parcelasEmprestimo = emprestimos?.let { ve ->
+            ve.situacoes(com.nkpay.app.dominio.TipoEmprestimo.RECEBIDO, hoje).flatMap { s -> s.parcelas.map { s to it } }
+                .filter { (_, p) -> val m = p.obrigacao.mesReferencia; m == vm.mes || (m != null && m < vm.mes && p.restante > 0) }
+                .sortedBy { it.second.obrigacao.vencimento }
+        }.orEmpty()
 
         LazyColumn(Modifier.padding(espaco).fillMaxSize()) {
             item { NkTituloTela("A pagar") }
@@ -167,7 +175,7 @@ fun APagarTela(
             }
             item {
                 val falta = (doMes + anteriores).filter { it.status != StatusObrigacao.QUITADA }.sumOf { it.restante } +
-                    faturas.sumOf { it.second.restante }
+                    faturas.sumOf { it.second.restante } + parcelasEmprestimo.sumOf { it.second.restante }
                 val pago = doMes.sumOf { it.pago }
                 NkCard {
                     Row(Modifier.padding(Espaco.l)) {
@@ -221,6 +229,25 @@ fun APagarTela(
                                     }
                                 },
                                 aoClicar = { aoAbrirFatura(c.id, f.mes) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (parcelasEmprestimo.isNotEmpty()) {
+                item { NkCabecalhoSecao("Empréstimos a pagar") }
+                item {
+                    NkCard {
+                        parcelasEmprestimo.forEachIndexed { i, (s, p) ->
+                            if (i > 0) NkDivisor()
+                            NkListItem(
+                                titulo = p.obrigacao.descricao,
+                                subtitulo = com.nkpay.app.ui.emprestimos.rotuloDaParcela(p) + (emprestimos?.conta(s.emprestimo.contaId)?.let { " · " + it.nome } ?: ""),
+                                corSubtitulo = if (p.atrasada) RosaDespesa else corDoStatus(p.situacao.status),
+                                inicio = { NkIconeRedondo(iconeDoStatus(if (p.atrasada) StatusObrigacao.ATRASADA else p.situacao.status), if (p.atrasada) RosaDespesa else corDoStatus(p.situacao.status)) },
+                                fim = { if (p.restante > 0) NkValor(p.restante) else NkValor(p.obrigacao.valorPrevisto, cor = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                aoClicar = { aoAbrirParcelaEmprestimo(p.obrigacao.id) },
                             )
                         }
                     }

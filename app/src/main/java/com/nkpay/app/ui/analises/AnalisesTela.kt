@@ -73,12 +73,12 @@ import java.time.LocalDate
 // Para reordenar as seções, mude só a lista ORDEM_DAS_SECOES.
 // =====================================================================================
 
-enum class SecaoAnalise { RESUMO, CATEGORIAS, EVOLUCAO, FLUXO, CONTAS, CREDITO }
+enum class SecaoAnalise { RESUMO, CATEGORIAS, EVOLUCAO, FLUXO, CONTAS, CREDITO, EMPRESTIMOS }
 
 /** Ordem das seções na tela (fácil de ajustar depois, como pede o briefing). */
 val ORDEM_DAS_SECOES = listOf(
     SecaoAnalise.RESUMO, SecaoAnalise.CATEGORIAS, SecaoAnalise.EVOLUCAO,
-    SecaoAnalise.FLUXO, SecaoAnalise.CONTAS, SecaoAnalise.CREDITO,
+    SecaoAnalise.FLUXO, SecaoAnalise.CONTAS, SecaoAnalise.CREDITO, SecaoAnalise.EMPRESTIMOS,
 )
 
 @Composable
@@ -88,6 +88,7 @@ fun AnalisesTela(aoVoltar: () -> Unit) {
     val aPagar by container.visaoAPagar.collectAsState()
     val credito by container.visaoCredito.collectAsState()
     val filtro by container.filtroAnalises.collectAsState()
+    val emprestimos by container.visaoEmprestimos.collectAsState()
     val hoje = container.relogio.hoje()
 
     Subtela(titulo = "Análises", aoVoltar = aoVoltar) { modifier ->
@@ -120,12 +121,21 @@ fun AnalisesTela(aoVoltar: () -> Unit) {
             }
             for (secao in ORDEM_DAS_SECOES) item(key = secao.name) {
                 when (secao) {
-                    SecaoAnalise.RESUMO -> SecaoResumo(v, periodo, aPagar?.let { Analises.descontosObtidos(it.ajustes, it.pagamentos, v.movimentacoes, periodo) } ?: 0)
+                    SecaoAnalise.RESUMO -> {
+                        // v0.5: descontos de empréstimos concedidos são "concedidos", nunca "obtidos".
+                        val concedidas = emprestimos?.let { ve -> ve.situacoes(com.nkpay.app.dominio.TipoEmprestimo.CONCEDIDO, hoje).flatMap { it.parcelas.map { p -> p.obrigacao.id } }.toSet() }.orEmpty()
+                        SecaoResumo(
+                            v, periodo,
+                            aPagar?.let { Analises.descontosObtidos(it.ajustes, it.pagamentos, v.movimentacoes, periodo, concedidas) } ?: 0,
+                            aPagar?.let { Analises.descontosConcedidos(it.ajustes, it.pagamentos, v.movimentacoes, periodo, concedidas) } ?: 0,
+                        )
+                    }
                     SecaoAnalise.CATEGORIAS -> SecaoCategorias(v, periodo)
                     SecaoAnalise.EVOLUCAO -> SecaoEvolucao(v, periodo)
                     SecaoAnalise.FLUXO -> SecaoFluxo(v, periodo)
                     SecaoAnalise.CONTAS -> SecaoContas(v, periodo)
                     SecaoAnalise.CREDITO -> SecaoCredito(vc, hoje)
+                    SecaoAnalise.EMPRESTIMOS -> emprestimos?.let { SecaoEmprestimos(Analises.emprestimos(it, periodo, hoje)) }
                 }
             }
             item { Spacer(Modifier.height(Espaco.xl)) }
@@ -152,7 +162,7 @@ private fun SemDados(texto: String = "Sem dados neste período.") {
 // ---------------------------------------------------------------- 1. resumo (destaque)
 
 @Composable
-private fun SecaoResumo(v: VisaoFinanceira, periodo: Periodo, descontos: Long) {
+private fun SecaoResumo(v: VisaoFinanceira, periodo: Periodo, descontos: Long, descontosConcedidos: Long = 0) {
     val t = Analises.totais(v.movimentacoes, periodo)
     NkCardDestaque {
         Column(Modifier.padding(Espaco.l), verticalArrangement = Arrangement.spacedBy(Espaco.s)) {
@@ -178,6 +188,7 @@ private fun SecaoResumo(v: VisaoFinanceira, periodo: Periodo, descontos: Long) {
                 Text("Descontos obtidos: ${Dinheiro.formatar(descontos)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 NkAjuda(ChaveAjuda.DESCONTOS_OBTIDOS, cor = MaterialTheme.colorScheme.onPrimaryContainer)
             }
+            if (descontosConcedidos > 0) Text("Descontos concedidos: ${Dinheiro.formatar(descontosConcedidos)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
             Text("Compras no cartão contam no mês da compra. Transferências, ajustes e pagamentos de fatura não entram.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
@@ -365,6 +376,32 @@ private fun SecaoCredito(vc: VisaoCredito, hoje: LocalDate) {
                 inicio = { IconeDaConta(r.conta, tamanho = 36.dp) },
                 fim = { NkValor(r.devido, tipo = if (r.devido > 0) TipoValor.NEUTRO else TipoValor.SECUNDARIO, tamanho = TamanhoValor.LISTA) },
             )
+        }
+    }
+}
+
+// ---------------------------------------------------------------- 7. empréstimos (v0.5)
+
+@Composable
+private fun SecaoEmprestimos(r: com.nkpay.app.dominio.ResumoDeEmprestimos) {
+    if (r.quantidade == 0) return
+    Titulo("Empréstimos", "O valor emprestado nunca é receita nem despesa: só os juros entram.")
+    NkCard {
+        Column(Modifier.padding(Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
+            LinhaValor("Total a pagar", r.totalAPagar, MaterialTheme.colorScheme.onSurface)
+            LinhaValor("Total a receber", r.totalAReceber, MaterialTheme.colorScheme.onSurface)
+            NkDivisor()
+            LinhaValor("Juros pagos no período (encargos)", r.jurosPagos, RosaDespesa)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Juros recebidos no período", style = MaterialTheme.typography.bodyMedium)
+                NkAjuda(ChaveAjuda.EMPRESTIMO_JUROS_RECEBIDOS)
+                Spacer(Modifier.weight(1f))
+                Text(Dinheiro.formatar(r.jurosRecebidos), style = EstiloValor.lista, color = VerdeEntrada)
+            }
+            if (r.parcelasAtrasadas > 0) Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("${r.parcelasAtrasadas} ${if (r.parcelasAtrasadas == 1) "parcela atrasada" else "parcelas atrasadas"}", color = RosaDespesa, style = MaterialTheme.typography.bodyMedium)
+                NkAjuda(ChaveAjuda.EMPRESTIMO_ATRASADA)
+            }
         }
     }
 }

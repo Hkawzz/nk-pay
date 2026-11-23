@@ -165,6 +165,7 @@ fun NkPayApp() {
                     aoAbrir = { navController.navigate(Rotas.obrigacaoForm(id = it)) },
                     aoContasFixas = { navController.navigate(Rotas.CONTAS_FIXAS) },
                     aoAbrirFatura = { conta, mes -> navController.navigate(Rotas.fatura(conta, mes)) },
+                    aoAbrirParcelaEmprestimo = { navController.navigate("parcela-emprestimo/$it") },
                 )
             }
             composable(
@@ -196,6 +197,10 @@ fun NkPayApp() {
                     aoVoltar = { navController.popBackStack() },
                     aoAbrirParcela = { navController.navigate(Rotas.parcela(it)) },
                 )
+            }
+            // v0.5: a parcela de empréstimo aberta a partir de A pagar (fora de Mais, para a aba continuar A pagar).
+            composable("parcela-emprestimo/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                com.nkpay.app.ui.emprestimos.ParcelaEmprestimoTela(obrigacaoId = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
             }
             composable(Rotas.OBJETIVOS) { ObjetivosTela() }
 

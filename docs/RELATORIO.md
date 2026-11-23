@@ -33,6 +33,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#41](https://github.com/Hkawzz/nk-pay/pull/41) | 6 | Domínio de empréstimos (J1, K2 com fechamento exato, invariantes, atraso) e `ehContaDeTerceiros` como ponto único da integridade | ✅ |
 | [#42](https://github.com/Hkawzz/nk-pay/pull/42) | 7 | Área Empréstimos: abas Recebidos/Concedidos agrupadas por pessoa, cadastro (automático ou personalizado, total e juros na hora), anterior ao app (D5) com aviso de duplicidade, tela do empréstimo com atraso e excluir | ✅ |
 | [#43](https://github.com/Hkawzz/nk-pay/pull/43) | 8 | Pagar (recebido) e receber (concedido, K2 com fechamento exato) parcelas, parciais, as quatro diferenças, desfazer em qualquer ordem e edição das parcelas sem pagamento. O Pagar das contas fixas não mudou | ✅ |
+| [#44](https://github.com/Hkawzz/nk-pay/pull/44) | 9 | Seção Empréstimos nas Análises (a pagar, a receber, juros pagos e recebidos, atrasadas), descontos concedidos separados dos obtidos, parcelas de empréstimo recebido em A pagar | ✅ |
 
 **Decisões tomadas sozinho** (a opção mais simples, mais segura para os dados e mais fácil de reverter; detalhes na [0021](decisoes/0021-emprestimos.md))
 - **Juros K2 ligados ao recebimento** por um ajuste neutro (`JUROS_RECEBIDOS`), em vez de duas linhas de `pagamento`. O desfazer da v0.4 já remove esse ajuste e a entrada de juros junto, sem código novo de exclusão.
