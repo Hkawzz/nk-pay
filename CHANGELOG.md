@@ -4,6 +4,29 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.4.0] - 2026-11-23
+
+> ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
+> Esta versão atualiza o banco de dados (cria as tabelas de compras e de pagamentos de fatura e acrescenta ícone e cor às categorias; nenhum dado existente é reescrito). O app guarda sozinho uma cópia do banco antes de atualizar. Sugestão: teste antes no app de debug, com uma cópia dos dados (`docs/roteiro-teste-v0.4.md`).
+
+**Cartões e crediários**, categorias com ícone e cor, a nova tela Início e as Análises.
+
+### Adicionado
+- **Cartões e crediários** (Mais → Cartões e crediários): cadastro com limite, dia de fechamento e dia de vencimento; cartão visual com o devido e o limite disponível. O devido **nunca** entra no Disponível.
+- **Compra parcelada:** a compra inteira entra como despesa no mês da compra, e as parcelas caem nas faturas pelo dia de fechamento (a última parcela absorve os centavos).
+- **Compra feita antes de usar o app:** registra uma dívida que você já tinha, com as parcelas já pagas (ou pagas em parte), sem mexer no Pix nem no Disponível. O app **avisa** quando encontra algo parecido já lançado e nunca converte nada sozinho.
+- **Fatura:** pagar um valor (total ou parcial; o valor cobre primeiro as faturas mais antigas em aberto) ou escolher as compras que está pagando. Pagar a fatura é uma transferência, não uma despesa nova. Se pagar a mais, o app pergunta se foi juros, multa, tarifa ou IOF. Fatura vencida fica atrasada no mês original, sem juros automáticos. Todo pagamento pode ser **desfeito**.
+- **Crediário:** cada parcela é paga na tela dela, com parcial, desconto (que reduz o que você deve, sem virar receita) e encargos.
+- **Faturas em A pagar:** uma linha por fatura, deste mês e atrasadas.
+- **Categorias com ícone e cor:** 40 ícones, 12 cores e uma cor personalizada (clareada automaticamente para ficar legível). As categorias que você já tinha recebem uma aparência sugerida pelo nome, registrada no Registro de alterações.
+- **Análises** (Mais → Análises): resultado do período, despesas por categoria, evolução mensal, fluxo do dinheiro próprio, contas e carteiras, e cartões. Filtros de este mês, 3, 6 e 12 meses.
+
+### Alterado
+- **Nova tela Início:** Disponível em destaque, Minhas contas em 2 colunas, Benefícios em 3 colunas (com Ver todas), o Resumo do mês com seletor e as últimas movimentações agrupadas por dia, com o ícone da categoria.
+- **Visual v2:** cards com cantos maiores, destaque com degradê roxo e ícones em quadrados com a cor da categoria.
+- Cartões e crediários não aparecem nas listas para lançar movimentações nem no Pagar das contas fixas.
+- O app de debug passa a se chamar "NK Pay debug".
+
 ## [0.3.0] - 2026-11-22
 
 > ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**

@@ -6,6 +6,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 | Versão | Data | Em uma frase | Release |
 |---|---|---|---|
+| v0.4.0 | 23/11/2026 | Cartões e crediários, categorias com ícone, nova Início e Análises (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.4.0) |
 | v0.3.0 | 22/11/2026 | Contas a pagar (fixas, avulsas, botão Pagar) e visual refinado | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.3.0) |
 | v0.2.0 | 22/11/2026 | Backup e restauração | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.2.0) |
 | v0.1.1 | 22/11/2026 | Valor estilo app de banco, transições e saldo por conta na Início | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.1.1) |
@@ -39,6 +40,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#32](https://github.com/Hkawzz/nk-pay/pull/32) | A1 | Cálculos das Análises (regra 6D): totais, fluxo do dinheiro próprio, despesas por categoria, saldos no fim do mês, evolução mensal, crédito e descontos obtidos (sem quitada antes do app) | ✅ |
 | [#33](https://github.com/Hkawzz/nk-pay/pull/33) | A2 | Tela de Análises em Mais: filtros (guardados na memória), resultado, categorias, evolução mensal, fluxo, contas e crédito, com gráficos próprios e valores em texto | ✅ |
 | [#34](https://github.com/Hkawzz/nk-pay/pull/34) | Q | Rodada de qualidade: backup e restauração com todos os registros de crédito, roteiro de teste no celular, app de debug com o nome "NK Pay debug" | ✅ |
+| [#35](https://github.com/Hkawzz/nk-pay/pull/35) | R | CHANGELOG, README e este relatório; tag `v0.4.0` | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
@@ -61,11 +63,40 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Análises sem a referência visual** (não estava disponível): segui a lista 2.6 da proposta e o design v2. A ordem das seções fica em ORDEM_DAS_SECOES, para ajustar sem mexer no resto. Gráficos próprios em Canvas, sem biblioteca nova.
 - **Movimentações de conta de crédito** (compra, encargo, desconto, pagamento) ficam bloqueadas em Movimentações, com uma mensagem que aponta para a tela do cartão.
 
+**Portões do briefing para publicar sem aprovação**
+
+| Portão | Resultado |
+|---|---|
+| CI verde | ✅ em todos os 16 PRs |
+| Os 97 testes antigos passam | ✅ os 97 passam. **Ressalva:** 2 linhas do `MigracaoTest` mudaram, sem como evitar (ver Problemas). Li o portão junto com a regra 5 do briefing ("se algum precisar mudar, justifique"), que permite essa justificativa. Os outros 96 não mudaram, conferidos contra a tag `v0.3.0` |
+| Migração (banco v2 fiel → v3) e matriz de backup e restauração | ✅ `MigracaoV3Test` e `BackupCreditoTest` |
+| Regressão do Pagar das contas fixas | ✅ `PagamentoServicoTest` (10) e `APagarTest` sem alteração |
+
+Com os portões passando, publiquei a tag `v0.4.0`. **A instalação no app principal continua sendo decisão sua**, depois do roteiro no app de debug.
+
+**Proteção dos dados reais**
+- A migração 2→3 só cria tabelas e acrescenta colunas vazias. Foi testada com um banco igual ao da v0.3, com todas as linhas idênticas campo a campo.
+- A cópia do arquivo do banco antes de migrar continua valendo.
+- Backups da v0.3 restauram na v0.4, e a v0.3 recusa backups da v0.4.
+- A aparência das categorias é um passo auditado, que nunca toca em tabelas financeiras.
+- Nenhum dado real entrou no repositório. As imagens de referência da Início não foram copiadas.
+- **APKs de debug** (v0.3.0 e v0.4.0, mesma chave de debug, `com.nkpay.app.debug`) ficam em `Documents\nk-pay-apks`, fora do repositório, para o roteiro `docs/roteiro-teste-v0.4.md`. O CI também guarda o APK de debug da `main` (artefato `apk-debug`), mas ele é assinado com outra chave de debug e não atualiza por cima do de `Documents\nk-pay-apks`.
+
 **Pendências**
+- **Teste no seu celular** (roteiro `docs/roteiro-teste-v0.4.md`): a migração de verdade, sobre uma cópia, no app de debug. Não dá para fazer daqui.
+- **Desempenho no celular** (efeitos e Análises com muitos dados): não foi medido num APK de release no A56.
+- **Referência visual de Análises:** não estava disponível. Quando houver, ajuste `ORDEM_DAS_SECOES` e os componentes.
 - **Revisão externa dos PRs F0, F1, F2, F5 e F6** (ChatGPT e o analista, seção 5 da proposta): não aconteceu, porque o dono estava indisponível. Os PRs ficam abertos para consulta no GitHub, e os testes automáticos cobrem os exemplos numéricos das regras.
 
 **Problemas encontrados**
 - **Duas linhas de um teste antigo (`MigracaoTest`, "migrar de 1 para 2") precisaram mudar**, e não havia como evitar: o teste conferia `db.version == 2` e comparava todas as colunas da `categoria`. Com o banco v3, o caminho 1→2→3 termina na versão 3, e a categoria tem duas colunas novas no fim. As mudanças foram: (1) conferir `NkPayBanco.VERSAO`; (2) comparar as linhas sem o sufixo `|icone=NULL|cor=NULL`, o que **também confere que as colunas novas nascem vazias**. Todo o resto do teste (todas as linhas idênticas, contagens, saldos) continua igual. **Contradição anotada:** o briefing pede os 97 testes "sem alteração" e também uma migração para a v3. As duas coisas não cabem juntas nesse teste, e a regra 5 do briefing permite mudar um teste com justificativa. Os outros 96 testes não mudaram.
+- **O diálogo de categoria travava** o layout nos testes (grade de ícones dentro de um diálogo). A edição virou uma tela própria.
+- **Dois testes de interface oscilavam** no CI: a visão de crédito junta listas que o banco entrega uma de cada vez. Os testes passaram a esperar as duas condições, e o aviso de invariante na tela do cartão só aparece se a diferença durar mais de 1,5 s.
+- **Uma espera do script de PR terminava cedo** (`-match` sem diferenciar maiúsculas achava "merged" na dica do `gh`). Nada foi juntado sem o CI verde; o script passou a usar `-cmatch`.
+- **Aspas curvas** em comandos do PowerShell quebraram uma troca de texto no código. O erro apareceu na compilação e foi corrigido antes do PR.
+- O app de debug tinha o mesmo nome do principal ("NK Pay"). A partir da v0.4, ele se chama "NK Pay debug". O roteiro explica como conferir a versão `-debug` antes de restaurar qualquer coisa.
+
+**Testes:** 160, todos com dados fictícios (eram 97 na v0.3), incluindo migração v2→v3, a matriz de backup, crédito (compras, faturas, compra anterior, pagamentos, desfazer, invariante), Análises e roteiros pela interface com capturas no Android 8, 9 e atual.
 
 ---
 
