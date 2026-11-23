@@ -32,7 +32,14 @@ data class TotaisPeriodo(val entradas: Long, val despesas: Long) {
     val resultado: Long get() = entradas - despesas
 }
 
-data class FluxoFinanceiro(val entrou: Long, val saiu: Long, val pagamentosDeCredito: Long) {
+data class FluxoFinanceiro(
+    val entrou: Long,
+    val saiu: Long,
+    val pagamentosDeCredito: Long,
+    /** Quantas movimentações formam as entradas e as saídas (Resumo da Início, v0.5). */
+    val quantidadeEntradas: Int = 0,
+    val quantidadeSaidas: Int = 0,
+) {
     val saldo: Long get() = entrou - saiu
 }
 
@@ -77,26 +84,30 @@ object Analises {
         var entrou = 0L
         var saiu = 0L
         var pagamentos = 0L
+        var nEntradas = 0
+        var nSaidas = 0
+        fun entra(v: Long) { entrou += v; nEntradas++ }
+        fun sai(v: Long) { saiu += v; nSaidas++ }
         for (m in movs) {
             if (m.data !in periodo) continue
             val deProprio = m.contaId in proprias
             when (m.tipo) {
-                TipoMovimentacao.ENTRADA -> if (deProprio) entrou += m.valor
-                TipoMovimentacao.DESPESA -> if (deProprio) saiu += m.valor
+                TipoMovimentacao.ENTRADA -> if (deProprio) entra(m.valor)
+                TipoMovimentacao.DESPESA -> if (deProprio) sai(m.valor)
                 TipoMovimentacao.TRANSFERENCIA -> {
                     val paraProprio = m.contaDestinoId in proprias
                     when {
                         deProprio && !paraProprio -> {
-                            saiu += m.valor
+                            sai(m.valor)
                             if (m.contaDestinoId in credito) pagamentos += m.valor
                         }
-                        !deProprio && paraProprio -> entrou += m.valor
+                        !deProprio && paraProprio -> entra(m.valor)
                     }
                 }
                 TipoMovimentacao.AJUSTE -> Unit
             }
         }
-        return FluxoFinanceiro(entrou, saiu, pagamentos)
+        return FluxoFinanceiro(entrou, saiu, pagamentos, nEntradas, nSaidas)
     }
 
     /** Despesas por categoria, do maior para o menor, com o percentual do total. */

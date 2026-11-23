@@ -159,7 +159,8 @@ class AceiteTest {
         // Disponível igual; a despesa entra no total do mês.
         regra.onNodeWithText("Início").performClick()
         esperarTexto("R$ 1.500,00")
-        esperarTexto("R$ 25,00")
+        // v0.5 (D1): o Resumo da Início é o fluxo do dinheiro próprio; a despesa do VA aparece nas últimas movimentações.
+        esperarTexto("-R$ 25,00")
         foto("04-inicio-depois")
 
         // Totais do mês: transferências não entram.
