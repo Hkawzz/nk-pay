@@ -51,7 +51,8 @@ class PagamentoCreditoServico(
             pagamentoDao.validosTodos().filter { it.obrigacaoId in ids }.map { it.paraDominio() },
             ajusteDao.validosTodos().filter { it.obrigacaoId in ids }.map { it.paraDominio() },
             faturaDao.validosDaConta(contaCreditoId).map { it.paraDominio() },
-            emptyList(),
+            // v0.6: as compras dizem a parte da compra e os juros de cada parcela (6B.8).
+            banco.backupDao().compras().filter { it.excluidoEm == null && it.contaCreditoId == contaCreditoId }.map { it.paraDominio() },
         )
     }
 

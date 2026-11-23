@@ -27,6 +27,12 @@ data class NovaCompra(
     val parcelasJaPagas: Int = 0,
     /** Valor já pago, antes do app, da parcela seguinte às quitadas (8.4). */
     val pagoEmParteDaSeguinte: Long = 0,
+    /**
+     * v0.6 (D-A1 c): o valor de cada parcela, quando o parcelamento tem juros. Nesse caso
+     * [valorTotal] é o valor ORIGINAL (a despesa) e o total das parcelas = parcela × N.
+     * Vazio, ou igual a original ÷ N, é uma compra sem juros (como na v0.5).
+     */
+    val valorParcela: Long? = null,
 )
 
 /**
@@ -56,7 +62,18 @@ class CompraServico(
     suspend fun registrar(n: NovaCompra): Resultado<String> {
         val descricao = n.descricao.trim()
         Validacao.compra(descricao, n.valorTotal, n.parcelas, n.primeiroVencimento)?.let { return Resultado.Falha(it) }
-        val valores = DatasDeCredito.valoresDasParcelas(n.valorTotal, n.parcelas)
+        // v0.6 (6B.8): as partes da compra (original ÷ N) e, com juros, parcelas iguais de valorParcela.
+        val partes = DatasDeCredito.valoresDasParcelas(n.valorTotal, n.parcelas)
+        val comJuros = n.valorParcela != null && n.valorParcela != partes.first()
+        if (comJuros) {
+            val p = n.valorParcela!!
+            if (p <= 0 || p > Long.MAX_VALUE / n.parcelas) return Resultado.Falha("Informe um valor de parcela válido.")
+            if (p * n.parcelas < n.valorTotal) return Resultado.Falha(
+                "O total das parcelas (${Dinheiro.formatar(p * n.parcelas)}) não pode ser menor que o valor original (${Dinheiro.formatar(n.valorTotal)}).",
+            )
+        }
+        val valores = if (comJuros) List(n.parcelas) { n.valorParcela!! } else partes
+        val total = valores.sum()
         if (n.anteriorAoApp) {
             if (n.parcelasJaPagas !in 0..n.parcelas) return Resultado.Falha("As parcelas já pagas vão de 0 a ${n.parcelas}.")
             if (n.pagoEmParteDaSeguinte < 0 || (n.pagoEmParteDaSeguinte > 0 &&
@@ -82,12 +99,14 @@ class CompraServico(
             )
             movDao.inserir(despesa)
             auditor.registrar(grupo, Operacao.CRIACAO, Auditor.MOVIMENTACAO, despesa.id,
-                "Compra de ${Dinheiro.formatar(n.valorTotal)} “$descricao” em ${n.parcelas}x no ${conta.nome}", MovimentacaoEntidade.serializer(), null, despesa)
+                "Compra de ${Dinheiro.formatar(n.valorTotal)} “$descricao” em ${n.parcelas}x no ${conta.nome}" +
+                    (if (comJuros) " (parcelas de ${Dinheiro.formatar(n.valorParcela!!)}, juros de ${Dinheiro.formatar(total - n.valorTotal)})" else ""),
+                MovimentacaoEntidade.serializer(), null, despesa)
 
             // 2) A compra.
             val compra = CompraEntidade(
-                relogio.novoId(), conta.id, descricao, n.categoriaId, n.dataCompra.toString(), n.valorTotal, n.parcelas, despesa.id,
-                n.anteriorAoApp, agora, agora, null,
+                relogio.novoId(), conta.id, descricao, n.categoriaId, n.dataCompra.toString(), total, n.parcelas, despesa.id,
+                n.anteriorAoApp, agora, agora, null, valorOriginalCentavos = if (comJuros) n.valorTotal else null,
             )
             compraDao.inserir(compra)
             auditor.registrar(grupo, Operacao.CRIACAO, Auditor.COMPRA, compra.id,
@@ -111,10 +130,17 @@ class CompraServico(
             }
 
             // 4) Compra anterior: o que já foi pago antes do app (abatimentos + um ajuste na conta de crédito).
+            // v0.6 (6B.9): o ajuste soma só a PARTE DA COMPRA do que foi pago; os juros dessas
+            // parcelas não viram despesa (D-A3 b). Na parcela paga em parte, a divisão é proporcional.
             if (n.anteriorAoApp) {
                 val quitadas = parcelas.take(n.parcelasJaPagas).map { it to it.valorPrevistoCentavos } +
                     (if (n.pagoEmParteDaSeguinte > 0) listOf(parcelas[n.parcelasJaPagas] to n.pagoEmParteDaSeguinte) else emptyList())
-                val soma = quitadas.sumOf { it.second }
+                fun jurosDoPago(p: ObrigacaoEntidade, pago: Long): Long {
+                    val i = p.numeroParcela!! - 1
+                    val juros = p.valorPrevistoCentavos - partes[i]
+                    return if (juros <= 0) 0 else if (pago >= p.valorPrevistoCentavos) juros else pago * juros / p.valorPrevistoCentavos
+                }
+                val soma = quitadas.sumOf { (p, pago) -> pago - jurosDoPago(p, pago) }
                 if (soma > 0) {
                     val ajuste = MovimentacaoEntidade(
                         relogio.novoId(), TipoMovimentacao.AJUSTE.name, n.dataCompra.toString(), soma, conta.id, null, null,
@@ -128,6 +154,14 @@ class CompraServico(
                         ajusteDao.inserir(a)
                         auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, a.id,
                             "Parcela ${p.numeroParcela}/${n.parcelas}: ${Dinheiro.formatar(valor)} pagos antes do app", ObrigacaoAjusteEntidade.serializer(), null, a)
+                        // Parcela paga em parte: os juros dessa parte ficam resolvidos, sem despesa.
+                        val juros = jurosDoPago(p, valor)
+                        if (juros > 0 && valor < p.valorPrevistoCentavos) {
+                            val j = ObrigacaoAjusteEntidade(relogio.novoId(), p.id, null, NaturezaAjuste.JUROS_DO_PARCELAMENTO.name, juros, null, "", agora, agora, null)
+                            ajusteDao.inserir(j)
+                            auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, j.id,
+                                "Parcela ${p.numeroParcela}/${n.parcelas}: ${Dinheiro.formatar(juros)} de juros pagos antes do app", ObrigacaoAjusteEntidade.serializer(), null, j)
+                        }
                     }
                 }
             }

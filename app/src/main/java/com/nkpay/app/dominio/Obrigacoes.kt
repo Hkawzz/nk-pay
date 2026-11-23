@@ -37,10 +37,18 @@ enum class NaturezaAjuste(
      * Desfazer o pagamento exclui este ajuste e a entrada juntos.
      */
     JUROS_RECEBIDOS("Juros recebidos", ehAcrescimo = false, ehEncargo = false, afetaRestante = false),
+    /**
+     * v0.6 (D-A1 c, ADR 0025): os juros do parcelamento já resolvidos numa parcela. No
+     * pagamento, aponta para a despesa em "Encargos financeiros"; antes do app, sem
+     * movimentação (D-A3 b). NÃO muda o restante; desfazer o pagamento o exclui junto.
+     */
+    JUROS_DO_PARCELAMENTO("Juros do parcelamento", ehAcrescimo = false, ehEncargo = false, afetaRestante = false),
+    /** v0.6 (D-A2 b): desconto de uma parcela antecipada antes do app. É desconto obtido. */
+    DESCONTO_ANTES_DO_APP("Desconto antes do app", ehAcrescimo = false, ehEncargo = false),
     ;
 
     /** Entra em "descontos obtidos" nas Análises (exclui "quitada antes do app"). */
-    val ehDesconto: Boolean get() = this == DESCONTO || this == OUTRO_ABATIMENTO
+    val ehDesconto: Boolean get() = this == DESCONTO || this == OUTRO_ABATIMENTO || this == DESCONTO_ANTES_DO_APP
 }
 
 enum class StatusObrigacao(val rotulo: String) {
