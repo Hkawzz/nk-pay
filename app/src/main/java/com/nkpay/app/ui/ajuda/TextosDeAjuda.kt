@@ -25,7 +25,7 @@ enum class ChaveAjuda {
     // Cartões e crediários (v0.6, regra 6B.8)
     JUROS_DO_PARCELAMENTO,
     // Objetivos (v0.7, regra 6F)
-    OBJETIVO, OBJETIVO_RETIRAR,
+    OBJETIVO, OBJETIVO_RETIRAR, ANALISES_OBJETIVOS,
 }
 
 object TextosDeAjuda {
@@ -36,6 +36,13 @@ object TextosDeAjuda {
             calculo = "Guardado do objetivo = tudo o que você guardou − o que retirou ± movimentos e ajustes. Saldo disponível = Saldo total − Guardado.",
             exemplo = "Saldo total R$ 1.000,00. Guardar R$ 300,00 no \"Fone\": Guardado R$ 300,00 e Saldo disponível R$ 700,00. O saldo do Pix continua R$ 1.000,00.",
             oQueNaoE = "Não é entrada, saída nem despesa. VA/VR, cartões e empréstimos não podem ser guardados. Vai gastar o dinheiro guardado? Retire do objetivo e depois lance a despesa.",
+        ),
+        ChaveAjuda.ANALISES_OBJETIVOS to TextoAjuda(
+            titulo = "Objetivos nas Análises",
+            oQueE = "Quanto está guardado agora e quanto foi guardado e retirado no período, pela data de cada movimento.",
+            calculo = "Guardado no período = guardar + ajustes para cima. Retirado no período = retirar + ajustes para baixo. Mover entre objetivos não conta.",
+            exemplo = "Guardar R$ 300,00 e retirar R$ 100,00 em dezembro: guardado no período R$ 300,00 e retirado R$ 100,00. Entradas, saídas e despesas de dezembro não mudam.",
+            oQueNaoE = "Objetivos não são entrada, saída nem despesa: o dinheiro continua na conta. Só o Saldo disponível muda.",
         ),
         ChaveAjuda.OBJETIVO_RETIRAR to TextoAjuda(
             titulo = "Gastar o dinheiro de um objetivo",
