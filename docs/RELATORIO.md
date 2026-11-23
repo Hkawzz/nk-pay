@@ -32,6 +32,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#40](https://github.com/Hkawzz/nk-pay/pull/40) | 5 | Banco v4: tabela `emprestimo`, `obrigacao.emprestimoId`, migração 3→4, backup com empréstimos, categoria "Juros recebidos" auditada. Migração com banco v3 fiel e a matriz de backup | ✅ |
 | [#41](https://github.com/Hkawzz/nk-pay/pull/41) | 6 | Domínio de empréstimos (J1, K2 com fechamento exato, invariantes, atraso) e `ehContaDeTerceiros` como ponto único da integridade | ✅ |
 | [#42](https://github.com/Hkawzz/nk-pay/pull/42) | 7 | Área Empréstimos: abas Recebidos/Concedidos agrupadas por pessoa, cadastro (automático ou personalizado, total e juros na hora), anterior ao app (D5) com aviso de duplicidade, tela do empréstimo com atraso e excluir | ✅ |
+| [#43](https://github.com/Hkawzz/nk-pay/pull/43) | 8 | Pagar (recebido) e receber (concedido, K2 com fechamento exato) parcelas, parciais, as quatro diferenças, desfazer em qualquer ordem e edição das parcelas sem pagamento. O Pagar das contas fixas não mudou | ✅ |
 
 **Decisões tomadas sozinho** (a opção mais simples, mais segura para os dados e mais fácil de reverter; detalhes na [0021](decisoes/0021-emprestimos.md))
 - **Juros K2 ligados ao recebimento** por um ajuste neutro (`JUROS_RECEBIDOS`), em vez de duas linhas de `pagamento`. O desfazer da v0.4 já remove esse ajuste e a entrada de juros junto, sem código novo de exclusão.
@@ -41,6 +42,9 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **A conta própria do empréstimo** só pode ser de dinheiro próprio.
 - **Desconto concedido** separado do obtido nas Análises, pela natureza da conta.
 - **A pagar:** cada parcela de empréstimo recebido aparece como uma linha.
+- **Desfazer foi generalizado:** aceita a movimentação principal de qualquer pagamento de terceiros (cartão, crediário, empréstimo), inclusive uma entrada de juros, e recusa o que não estiver ligado a parcelas de terceiros (nunca desfaz o Pagar das contas fixas por esse caminho).
+- **Receber tudo como juros** (caso raro em que não resta principal): a entrada de juros vira a movimentação principal do recebimento.
+- **Edição "esta e as futuras"** só altera as parcelas seguintes que também não têm pagamento; a nova data vale para a primeira e as outras seguem mês a mês.
 - **Sem a rosca** em Despesas por categoria (era opcional): as barras com valor e % já mostram tudo.
 - **A "folha" da ajuda é um diálogo simples com texto** (componente padrão, igual em todas as versões do Android).
 - **O título dos benefícios na Início continua "Benefícios · fora do Disponível"** (o roteiro de aceite da v0.1 confere esse texto); o "?" ao lado explica.

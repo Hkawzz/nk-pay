@@ -40,6 +40,8 @@ object Rotas {
     fun emprestimoForm(tipo: com.nkpay.app.dominio.TipoEmprestimo) = "mais/emprestimo-form?tipo=${tipo.name}"
     const val EMPRESTIMO = "mais/emprestimo/{id}"
     fun emprestimo(id: String) = "mais/emprestimo/$id"
+    const val EMPRESTIMO_PARCELA = "mais/emprestimo-parcela/{id}"
+    fun emprestimoParcela(id: String) = "mais/emprestimo-parcela/$id"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
     const val BACKUP = "mais/backup"
