@@ -15,6 +15,33 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
+## v0.5.0 (em andamento) - Empréstimos, Resumo pelo fluxo e ajuda "?"
+
+**Objetivo:** empréstimos recebidos (eu devo) e concedidos (me devem), com juros J1 e K2; o Resumo da Início pelo fluxo do dinheiro próprio; o Saldo disponível; a ajuda "?"; e refinos das Análises. Fontes: `planejamento/especificacao-v0.5.0.md` e `planejamento/briefing-v0.5-autonomo.md` (decisões D1 a D5).
+
+**Como foi feito:** de forma autônoma, na ordem de PRs da seção 6 da especificação. Cada PR termina com o CI verde e esta seção atualizada.
+
+**PRs**
+
+| # | Etapa | O que entrou | Estado |
+|---|---|---|---|
+| [#36](https://github.com/Hkawzz/nk-pay/pull/36) | 1 | Regras 6E (empréstimos, fluxo generalizado, Início) e decisões 0020 a 0023. Sem código | ✅ |
+
+**Decisões tomadas sozinho** (a opção mais simples, mais segura para os dados e mais fácil de reverter; detalhes na [0021](decisoes/0021-emprestimos.md))
+- **Juros K2 ligados ao recebimento** por um ajuste neutro (`JUROS_RECEBIDOS`), em vez de duas linhas de `pagamento`. O desfazer da v0.4 já remove esse ajuste e a entrada de juros junto, sem código novo de exclusão.
+- **Principal e juros não reconhecidos são calculados** a partir das movimentações de cada empréstimo, nunca gravados.
+- **Edição de parcela vira acréscimo ou abatimento** (o previsto nunca muda), datada no dia da edição.
+- **Total das parcelas menor que o valor original é recusado.**
+- **A conta própria do empréstimo** só pode ser de dinheiro próprio.
+- **Desconto concedido** separado do obtido nas Análises, pela natureza da conta.
+- **A pagar:** cada parcela de empréstimo recebido aparece como uma linha.
+
+**Pendências:** nenhuma até aqui.
+
+**Problemas encontrados:** nenhum até aqui.
+
+---
+
 ## v0.4.0 (em validação) — Cartões, crediários, categorias com ícone, nova Início e Análises
 
 **Objetivo:** cartões de crédito e crediários (compras parceladas, faturas, pagamento total, parcial ou por compras), categorias com ícone e cor, design system v2, a nova tela Início e a tela de Análises. Fontes: `planejamento/proposta-execucao-v0.4.md` (revisão 2), `planejamento/briefing-v0.4-autonomo.md` e `planejamento/adendo-inicio-v0.4.md`.

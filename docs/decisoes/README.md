@@ -1,4 +1,4 @@
-﻿# Registros de decisão
+# Registros de decisão
 
 Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão tomada e as consequências (o que ganhamos e o que perdemos). Os arquivos são numerados em ordem e nunca são reescritos: se uma decisão mudar, cria-se um arquivo novo que *substitui* o antigo.
 
@@ -23,3 +23,7 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0017](0017-integridade-das-contas-de-credito.md) | Integridade das contas de crédito | Aceita |
 | [0018](0018-categorias-com-aparencia.md) | Categorias com ícone e cor | Aceita |
 | [0019](0019-design-system-v2.md) | Design system v2 e a regra dos 2 destaques | Aceita |
+| [0020](0020-banco-v4.md) | Banco versão 4: empréstimos | Aceita |
+| [0021](0021-emprestimos.md) | Empréstimos recebidos (J1) e concedidos (K2) | Aceita |
+| [0022](0022-contas-de-terceiros.md) | Conta de terceiros: um ponto único de verdade | Aceita |
+| [0023](0023-inicio-saldo-e-ajuda.md) | Início: Saldo disponível, Resumo pelo fluxo e ajuda | Aceita |
