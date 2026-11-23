@@ -256,12 +256,29 @@ fun ContaCreditoTela(
         LaunchedEffect(fecha) { if (fecha) mostrarAviso = false else { kotlinx.coroutines.delay(1_500); mostrarAviso = true } }
         LazyColumn(modifier.fillMaxSize()) {
             item { NkCartaoCredito(conta.nome, descricaoDaContaDeCredito(conta), vc.devido(id), conta.limite) }
+            // v0.6 (6B.8): os juros do parcelamento ainda a pagar ficam fora do devido.
+            val juros = vc.jurosAPagar(id, hoje)
+            if (juros > 0) item {
+                NkCard {
+                    NkListItem(
+                        "Juros a pagar",
+                        subtitulo = "Das compras parceladas com juros. Viram despesa quando cada parcela é paga.",
+                        fim = {
+                            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                NkValor(juros)
+                                com.nkpay.app.ui.ajuda.NkAjuda(com.nkpay.app.ui.ajuda.ChaveAjuda.JUROS_DO_PARCELAMENTO)
+                            }
+                        },
+                        linhas = 2,
+                    )
+                }
+            }
             if (mostrarAviso && !fecha) {
                 item {
                     NkCard(estilo = EstiloCard.ELEVADO) {
                         NkListItem(
                             "O devido não bate com as parcelas",
-                            subtitulo = "Devido ${Dinheiro.formatar(vc.devido(id))} · parcelas em aberto ${Dinheiro.formatar(vc.restanteEmAberto(id, hoje))}. Confira o Registro de alterações.",
+                            subtitulo = "Devido ${Dinheiro.formatar(vc.devido(id))} · parcelas em aberto ${Dinheiro.formatar(vc.restanteEmAberto(id, hoje) - vc.jurosAPagar(id, hoje))} sem os juros. Confira o Registro de alterações.",
                             corTitulo = RosaDespesa,
                             linhas = 3,
                         )

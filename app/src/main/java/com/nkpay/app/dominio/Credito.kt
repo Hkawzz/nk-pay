@@ -47,7 +47,12 @@ data class SituacaoParcela(
     val situacao: SituacaoObrigacao,
     /** Quitada pelo restante da fatura, embora ela mesma ainda tenha restante. */
     val quitadaPelaFatura: Boolean,
+    /** v0.6 (6B.8): a parte da compra nesta parcela (sem juros: o valor previsto). */
+    val parteDaCompra: Long = situacao.obrigacao.valorPrevisto,
+    /** v0.6: juros previstos desta parcela ainda não resolvidos (no máximo o restante dela). */
+    val jurosPendentes: Long = 0,
 ) {
+    val jurosPrevistos: Long get() = maxOf(0, situacao.obrigacao.valorPrevisto - parteDaCompra)
     val obrigacao get() = situacao.obrigacao
     val status: StatusObrigacao get() = if (quitadaPelaFatura) StatusObrigacao.QUITADA else situacao.status
     /** Restante que ainda conta (zero se a fatura já foi quitada). */
@@ -63,7 +68,11 @@ data class Fatura(
     val abatimentosGerais: Long,
     val restante: Long,
     val status: StatusObrigacao,
+    /** v0.6 (6B.8): juros do parcelamento ainda a pagar nesta fatura (cabem no restante). */
+    val jurosPendentes: Long = 0,
 ) {
+    /** v0.6: a parte do restante que é compra (o que conta no devido). */
+    val restanteSemJuros: Long get() = restante - jurosPendentes
     val total: Long get() = parcelas.sumOf { it.situacao.obrigacao.valorPrevisto + it.situacao.acrescimos }
     val pago: Long get() = parcelas.sumOf { it.situacao.pago } + abatimentosGerais
     val emAberto: Boolean get() = restante > 0
@@ -121,7 +130,13 @@ data class VisaoCredito(
             val gerais = pagamentosFatura.filter { it.contaCreditoId == contaId && it.mesReferencia == mes }.sumOf { it.valor }
             val restante = situacoes.sumOf { maxOf(0, it.restante) } - gerais
             val quitadaPelaFatura = ehCartao && restante <= 0
-            val parcelas = situacoes.map { SituacaoParcela(it, quitadaPelaFatura && it.restante > 0) }
+            val parcelas = situacoes.map { s ->
+                val quitadaAqui = quitadaPelaFatura && s.restante > 0
+                val parte = parteDaCompra(s.obrigacao)
+                val restanteDela = if (quitadaAqui) 0 else maxOf(0, s.restante)
+                val pendentes = (maxOf(0, s.obrigacao.valorPrevisto - parte) - (jurosResolvidos[s.obrigacao.id] ?: 0)).coerceIn(0, restanteDela)
+                SituacaoParcela(s, quitadaAqui, parte, pendentes)
+            }
             val vencimento = situacoes.mapNotNull { it.obrigacao.vencimento }.maxOrNull()
             val status = when {
                 restante <= 0 -> StatusObrigacao.QUITADA
@@ -129,7 +144,7 @@ data class VisaoCredito(
                 gerais > 0 || situacoes.any { it.pago > 0 } -> StatusObrigacao.PARCIAL
                 else -> StatusObrigacao.PENDENTE
             }
-            Fatura(contaId, mes, vencimento, parcelas, gerais, maxOf(0, restante), status)
+            Fatura(contaId, mes, vencimento, parcelas, gerais, maxOf(0, restante), status, minOf(parcelas.sumOf { it.jurosPendentes }, maxOf(0, restante)))
         }
     }
 
@@ -144,11 +159,36 @@ data class VisaoCredito(
     /** Σ restante das faturas (cartão) ou parcelas (crediário) em aberto. */
     fun restanteEmAberto(contaId: String, hoje: LocalDate): Long = faturas(contaId, hoje).sumOf { it.restante }
 
-    /** Invariante da regra 6B.1: Devido = Σ restante em aberto. */
-    fun invarianteFecha(contaId: String, hoje: LocalDate): Boolean = devido(contaId) == restanteEmAberto(contaId, hoje)
+    /** v0.6 (6B.8): Σ juros do parcelamento ainda a pagar (fora do devido). */
+    fun jurosAPagar(contaId: String, hoje: LocalDate): Long = faturas(contaId, hoje).sumOf { it.jurosPendentes }
 
-    /** Total das compras anteriores ao app (para as Análises). */
-    fun totalComprasAnteriores(contaId: String): Long = comprasDa(contaId).filter { it.anteriorAoApp }.sumOf { it.valorTotal }
+    /** Invariante das regras 6B.1 e 6B.8: Devido = Σ restante em aberto − juros a pagar. */
+    fun invarianteFecha(contaId: String, hoje: LocalDate): Boolean = devido(contaId) == restanteEmAberto(contaId, hoje) - jurosAPagar(contaId, hoje)
+
+    /** Total das compras anteriores ao app (para as Análises): o valor da despesa (o original). */
+    fun totalComprasAnteriores(contaId: String): Long = comprasDa(contaId).filter { it.anteriorAoApp }.sumOf { it.valorOriginal }
+
+    private val comprasPorId by lazy { compras.associateBy { it.id } }
+    private val jurosResolvidos by lazy {
+        ajustes.filter { it.natureza == NaturezaAjuste.JUROS_DO_PARCELAMENTO }.groupBy { it.obrigacaoId }.mapValues { (_, l) -> l.sumOf { it.valor } }
+    }
+
+    /** v0.6 (6B.8): a parte da compra numa parcela = original ÷ N, a última absorve os centavos. */
+    fun parteDaCompra(o: Obrigacao): Long {
+        val c = o.compraId?.let { comprasPorId[it] } ?: return o.valorPrevisto
+        val k = o.numeroParcela ?: return o.valorPrevisto
+        if (c.juros <= 0 || k !in 1..c.totalParcelas) return o.valorPrevisto
+        return minOf(o.valorPrevisto, DatasDeCredito.valoresDasParcelas(c.valorOriginal, c.totalParcelas)[k - 1])
+    }
+
+    /** v0.6: juros ainda a pagar de uma compra. */
+    fun jurosAPagarDaCompra(compraId: String, hoje: LocalDate): Long {
+        val c = compra(compraId) ?: return 0
+        return faturas(c.contaCreditoId, hoje).flatMap { it.parcelas }.filter { it.obrigacao.compraId == compraId }.sumOf { it.jurosPendentes }
+    }
+
+    /** v0.6: juros do parcelamento já resolvidos (pagos ou antes do app) de uma parcela. */
+    fun jurosResolvidosDa(obrigacaoId: String): Long = jurosResolvidos[obrigacaoId] ?: 0
 
     /**
      * Distribui [valor] entre as faturas em aberto até [ateMes] (inclusive), da mais antiga

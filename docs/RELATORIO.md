@@ -28,6 +28,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 |---|---|---|---|
 | [#47](https://github.com/Hkawzz/nk-pay/pull/47) | Docs | Regras 6B.8 a 6B.10 e 7.6 e decisões 0024 a 0027. Sem código | ✅ |
 | [#48](https://github.com/Hkawzz/nk-pay/pull/48) | Banco v5 | Migração 4 → 5 explícita: `compra.valorOriginalCentavos` (vazia = sem juros) e tabela `pendencia_levada`; backup com as pendências levadas; testes com banco v4 fiel e matriz de backup | ✅ |
+| [#49](https://github.com/Hkawzz/nk-pay/pull/49) | Juros do parcelamento (cadastro) | Compra com valor da parcela: despesa = original, parte da compra e juros calculados por parcela, "Juros a pagar" no cartão com "?", novo invariante, compra anterior com juros (ajuste só da parte da compra) | ✅ |
 
 **Decisões tomadas sozinho**
 - **A seção 8 da análise não existe no arquivo** (ele termina na seção 7). Segui a regra D-A1 (c) como o próprio briefing a descreve em detalhe; as fórmulas da regra 6B.8 vêm dessa descrição.
@@ -35,6 +36,10 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Os juros do parcelamento ficam ligados ao pagamento por um ajuste neutro** (`JUROS_DO_PARCELAMENTO`), como os juros recebidos da v0.5; no abatimento geral da fatura, o ajuste fica na primeira parcela em aberto, marcado com a transferência.
 - **O desconto num crédito com juros consome primeiro os juros** da parcela (mesmo princípio das antecipadas e do desconto concedido).
 - **A marcação de pendência levada fica numa tabela nova** (`pendencia_levada`), e não numa coluna de `obrigacao`.
+- **Formulário da compra:** o campo "Valor total" continua com esse nome (com a ajuda "o preço da compra, sem os juros") e ganhou "Valor da parcela (se tiver juros)". Zerado, ou igual a original ÷ N, é compra sem juros. Assim a tela e os testes da v0.5 continuam iguais.
+- **Parcelas de uma compra com juros são todas iguais** (parcela × N = total); a parte da compra segue original ÷ N com os centavos na última.
+- **Parcela paga em parte antes do app:** a divisão entre parte da compra e juros é proporcional (como num pagamento parcial), e os juros dessa parte ficam marcados como resolvidos sem despesa (D-A3 b).
+- **Os juros a pagar de cada parcela nunca passam do restante dela**; parcelas quitadas (inclusive pela fatura) não têm juros a pagar.
 - **A sugestão de preparar o mês** é um card em A pagar quando o mês escolhido tem contas fixas a lançar ou pendências.
 
 **Pendências:** nenhuma até aqui.

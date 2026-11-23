@@ -79,6 +79,9 @@ class CompraFormViewModel(private val container: AppContainer, private val conta
     var anterior by mutableStateOf(false)
     var jaPagasTexto by mutableStateOf("0")
     var parcialTexto by mutableStateOf("0,00")
+    /** v0.6 (6B.8): valor de cada parcela, só quando o parcelamento tem juros. */
+    var parcelaTexto by mutableStateOf("0,00")
+    val valorParcela: Long? get() = Dinheiro.ler(parcelaTexto)?.takeIf { it > 0 }
     var avisos by mutableStateOf<List<String>>(emptyList()); private set
     var erro by mutableStateOf<String?>(null); private set
     var salvando by mutableStateOf(false); private set
@@ -110,6 +113,7 @@ class CompraFormViewModel(private val container: AppContainer, private val conta
                     anteriorAoApp = anterior,
                     parcelasJaPagas = if (anterior) jaPagasTexto.toIntOrNull() ?: 0 else 0,
                     pagoEmParteDaSeguinte = if (anterior) Dinheiro.ler(parcialTexto) ?: 0 else 0,
+                    valorParcela = valorParcela,
                 ),
             )
             salvando = false
@@ -152,13 +156,26 @@ fun CompraFormTela(contaId: String, aoVoltar: () -> Unit) {
                 { vm.categoriaId = it },
                 textoVazio = "Sem categoria",
             )
-            CampoDinheiro("Valor total", vm.valorTexto, { vm.valorTexto = it })
+            CampoDinheiro("Valor total", vm.valorTexto, { vm.valorTexto = it }, ajuda = "O preço da compra, sem os juros do parcelamento.")
             CampoData("Data da compra", vm.data, { vm.data = it })
             NkCampo("Parcelas", vm.parcelasTexto, { vm.parcelasTexto = it.filter(Char::isDigit).take(3) }, ajuda = "1 = à vista.")
             vm.primeiroVencimento?.let { venc ->
                 CampoData("Vencimento da 1ª parcela", venc, { vm.primeiroVencimento = it; vm.vencimentoEditado = true })
             }
-            if (vm.parcelas in 1..120 && valor >= vm.parcelas) {
+            if (vm.parcelas > 1) {
+                CampoDinheiro("Valor da parcela (se tiver juros)", vm.parcelaTexto, { vm.parcelaTexto = it }, ajuda = "Deixe zerado se as parcelas somam o valor total.")
+            }
+            val parcelaComJuros = vm.valorParcela?.takeIf { vm.parcelas in 2..120 && valor >= vm.parcelas && it != DatasDeCredito.valoresDasParcelas(valor, vm.parcelas).first() }
+            if (parcelaComJuros != null) {
+                val total = parcelaComJuros * vm.parcelas
+                Text(
+                    if (total < valor) "O total das parcelas (${Dinheiro.formatar(total)}) é menor que o valor da compra."
+                    else "${vm.parcelas}x de ${Dinheiro.formatar(parcelaComJuros)} = ${Dinheiro.formatar(total)}. Juros do parcelamento: ${Dinheiro.formatar(total - valor)}. " +
+                        "A despesa da compra é ${Dinheiro.formatar(valor)}; os juros viram despesa quando cada parcela for paga.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (total < valor) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                )
+            } else if (vm.parcelas in 1..120 && valor >= vm.parcelas) {
                 val valores = DatasDeCredito.valoresDasParcelas(valor, vm.parcelas)
                 Text(
                     if (vm.parcelas == 1) "1 parcela de ${Dinheiro.formatar(valor)}."
@@ -222,7 +239,7 @@ private fun LinhaCompra(c: Compra, vc: VisaoCredito, aoClicar: () -> Unit) {
         titulo = c.descricao,
         subtitulo = "${c.totalParcelas}x · ${Formatos.data(c.dataCompra)}" + if (c.anteriorAoApp) " · anterior ao app" else "",
         inicio = { IconeDaCategoria(v?.categoria(c.categoriaId)) },
-        fim = { NkValor(c.valorTotal, tipo = TipoValor.DESPESA) },
+        fim = { NkValor(c.valorOriginal, tipo = TipoValor.DESPESA) },
         aoClicar = aoClicar,
     )
 }
@@ -244,7 +261,12 @@ fun CompraTela(id: String, aoVoltar: () -> Unit, aoAbrirParcela: (String) -> Uni
             item {
                 NkCard {
                     Column(Modifier.padding(Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xxs)) {
-                        NkValor(compra.valorTotal, tamanho = com.nkpay.app.ui.componentes.TamanhoValor.MEDIO)
+                        NkValor(compra.valorOriginal, tamanho = com.nkpay.app.ui.componentes.TamanhoValor.MEDIO)
+                        if (compra.juros > 0) Text(
+                            "Parcelado com juros: total ${Dinheiro.formatar(compra.valorTotal)}, juros do parcelamento ${Dinheiro.formatar(compra.juros)} (" +
+                                "${Dinheiro.formatar(vc.jurosAPagarDaCompra(compra.id, hoje))} ainda a pagar).",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         Text("${compra.totalParcelas}x · comprado em ${Formatos.data(compra.dataCompra)} · ${vc.conta(compra.contaCreditoId)?.nome.orEmpty()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (compra.anteriorAoApp) Text("Compra anterior ao app: a despesa está no mês original.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }

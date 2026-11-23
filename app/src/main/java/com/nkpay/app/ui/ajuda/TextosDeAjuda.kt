@@ -22,10 +22,19 @@ enum class ChaveAjuda {
     RESULTADO, DESPESAS_REGISTRADAS, SAIDAS_PROPRIO, DESCONTOS_OBTIDOS, CARTOES_CREDIARIOS,
     // Empréstimos
     EMPRESTIMO_RESTANTE, EMPRESTIMO_JUROS_PREVISTOS, EMPRESTIMO_JUROS_RECEBIDOS, EMPRESTIMO_ATRASADA,
+    // Cartões e crediários (v0.6, regra 6B.8)
+    JUROS_DO_PARCELAMENTO,
 }
 
 object TextosDeAjuda {
     val todos: Map<ChaveAjuda, TextoAjuda> = mapOf(
+        ChaveAjuda.JUROS_DO_PARCELAMENTO to TextoAjuda(
+            titulo = "Juros a pagar",
+            oQueE = "Os juros das compras parceladas com juros que ainda não foram pagos. Eles ficam fora do devido: o devido é só o que falta da compra.",
+            calculo = "Juros de cada parcela = valor da parcela − parte da compra (valor original ÷ número de parcelas). Ao pagar uma parcela, os juros dela viram despesa em Encargos financeiros, na data do pagamento.",
+            exemplo = "Compra de R$ 273,00 em 12 × R$ 43,58: despesa de R$ 273,00 na compra e R$ 249,96 de juros a pagar. Ao pagar a 1ª parcela, R$ 20,83 viram despesa de juros e o devido cai R$ 22,75.",
+            oQueNaoE = "Não é como o empréstimo pego, em que os juros viram despesa de uma vez, na contratação. Aqui eles entram parcela a parcela, quando cada uma é paga.",
+        ),
         ChaveAjuda.SALDO_DISPONIVEL to TextoAjuda(
             titulo = "Saldo disponível",
             oQueE = "O dinheiro que é seu e está livre para usar agora.",
