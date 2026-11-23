@@ -73,7 +73,13 @@ class EmprestimosAnalisesTest {
 
     @Test
     fun resumoDosEmprestimosEDescontosSeparados() {
-        regra.waitUntil(10_000) { container.visaoEmprestimos.value?.situacao(concedido, hoje)?.pagoOuRecebido == 21_000L }
+        // Espera todas as listas do banco (pagamentos, ajustes e movimentações) chegarem.
+        regra.waitUntil(10_000) {
+            container.visaoEmprestimos.value?.let { ve ->
+                val r = Analises.emprestimos(ve, Periodo(YearMonth.of(2026, 12), YearMonth.of(2026, 12)), hoje)
+                r.jurosRecebidos == 1_909L && r.totalAReceber == 88_000L && container.visaoAPagar.value?.ajustes?.size == 3
+            } == true
+        }
         val ve = container.visaoEmprestimos.value!!
         val dez = Periodo(YearMonth.of(2026, 12), YearMonth.of(2026, 12))
         val r = Analises.emprestimos(ve, dez, hoje)
