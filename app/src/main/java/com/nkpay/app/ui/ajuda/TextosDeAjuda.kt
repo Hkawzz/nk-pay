@@ -24,10 +24,26 @@ enum class ChaveAjuda {
     EMPRESTIMO_RESTANTE, EMPRESTIMO_JUROS_PREVISTOS, EMPRESTIMO_JUROS_RECEBIDOS, EMPRESTIMO_ATRASADA,
     // Cartões e crediários (v0.6, regra 6B.8)
     JUROS_DO_PARCELAMENTO,
+    // Objetivos (v0.7, regra 6F)
+    OBJETIVO, OBJETIVO_RETIRAR,
 }
 
 object TextosDeAjuda {
     val todos: Map<ChaveAjuda, TextoAjuda> = mapOf(
+        ChaveAjuda.OBJETIVO to TextoAjuda(
+            titulo = "Objetivos",
+            oQueE = "Uma reserva sobre o seu dinheiro próprio: o dinheiro continua na conta, e o objetivo só separa uma parte dele. Guardar diminui o Saldo disponível; retirar devolve.",
+            calculo = "Guardado do objetivo = tudo o que você guardou − o que retirou ± movimentos e ajustes. Saldo disponível = Saldo total − Guardado.",
+            exemplo = "Saldo total R$ 1.000,00. Guardar R$ 300,00 no \"Fone\": Guardado R$ 300,00 e Saldo disponível R$ 700,00. O saldo do Pix continua R$ 1.000,00.",
+            oQueNaoE = "Não é entrada, saída nem despesa. VA/VR, cartões e empréstimos não podem ser guardados. Vai gastar o dinheiro guardado? Retire do objetivo e depois lance a despesa.",
+        ),
+        ChaveAjuda.OBJETIVO_RETIRAR to TextoAjuda(
+            titulo = "Gastar o dinheiro de um objetivo",
+            oQueE = "Vai gastar o dinheiro guardado? Retire do objetivo e depois lance a despesa.",
+            calculo = "1) Retirar devolve o valor ao Saldo disponível (não é despesa). 2) A despesa, lançada normalmente, tira o dinheiro da conta.",
+            exemplo = "Saldo total R$ 1.000,00 com R$ 300,00 guardados no \"Fone\". Retire R$ 300,00 e lance a despesa de R$ 300,00: Saldo total R$ 700,00 e Saldo disponível R$ 700,00.",
+            oQueNaoE = "Se você lançar só a despesa, o guardado continua R$ 300,00 e o disponível fica R$ 400,00. Para corrigir, retire do objetivo.",
+        ),
         ChaveAjuda.JUROS_DO_PARCELAMENTO to TextoAjuda(
             titulo = "Juros a pagar",
             oQueE = "Os juros das compras parceladas com juros que ainda não foram pagos. Eles ficam fora do devido: o devido é só o que falta da compra.",

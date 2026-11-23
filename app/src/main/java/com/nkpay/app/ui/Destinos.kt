@@ -45,6 +45,13 @@ object Rotas {
     // v0.6 (7.6): o assistente Preparar mês (fora de Mais: a aba continua A pagar).
     const val PREPARAR_MES = "preparar-mes/{mes}"
     fun prepararMes(mes: java.time.YearMonth) = "preparar-mes/$mes"
+    // v0.7 (6F): objetivos (fora de Mais: a aba continua Objetivos).
+    const val OBJETIVO = "objetivo/{id}"
+    fun objetivo(id: String) = "objetivo/$id"
+    const val OBJETIVO_FORM = "objetivo-form?id={id}"
+    fun objetivoForm(id: String? = null) = if (id == null) "objetivo-form" else "objetivo-form?id=$id"
+    const val OBJETIVO_OPERACAO = "objetivo-operacao/{id}/{tipo}"
+    fun objetivoOperacao(id: String, tipo: String) = "objetivo-operacao/$id/$tipo"
     // v0.6 (A5): pessoas e instituições dos empréstimos.
     const val PESSOAS = "mais/pessoas"
     const val PESSOA = "mais/pessoa/{id}"

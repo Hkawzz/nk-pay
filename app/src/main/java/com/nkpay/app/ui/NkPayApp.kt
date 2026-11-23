@@ -51,7 +51,6 @@ import com.nkpay.app.ui.registro.RegistroTela
 import com.nkpay.app.ui.telas.MaisTela
 import com.nkpay.app.ui.movimentacoes.MovimentacaoFormTela
 import com.nkpay.app.ui.movimentacoes.MovimentacoesTela
-import com.nkpay.app.ui.telas.ObjetivosTela
 import com.nkpay.app.ui.telas.SobreTela
 
 private const val DURACAO = 220
@@ -217,7 +216,31 @@ fun NkPayApp() {
             composable("parcela-emprestimo/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
                 com.nkpay.app.ui.emprestimos.ParcelaEmprestimoTela(obrigacaoId = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
             }
-            composable(Rotas.OBJETIVOS) { ObjetivosTela() }
+            composable(Rotas.OBJETIVOS) {
+                com.nkpay.app.ui.objetivos.ObjetivosTela(aoAbrir = { navController.navigate(Rotas.objetivo(it)) }, aoNovo = { navController.navigate(Rotas.objetivoForm()) })
+            }
+            composable(Rotas.OBJETIVO, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                val id = entrada.arguments?.getString("id").orEmpty()
+                com.nkpay.app.ui.objetivos.ObjetivoTela(
+                    id = id,
+                    aoVoltar = { navController.popBackStack() },
+                    aoEditar = { navController.navigate(Rotas.objetivoForm(id)) },
+                    aoOperar = { tipo -> navController.navigate(Rotas.objetivoOperacao(id, tipo)) },
+                )
+            }
+            composable(Rotas.OBJETIVO_FORM, arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null })) { entrada ->
+                com.nkpay.app.ui.objetivos.ObjetivoFormTela(id = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
+            }
+            composable(
+                Rotas.OBJETIVO_OPERACAO,
+                arguments = listOf(navArgument("id") { type = NavType.StringType }, navArgument("tipo") { type = NavType.StringType }),
+            ) { entrada ->
+                com.nkpay.app.ui.objetivos.OperacaoObjetivoTela(
+                    id = entrada.arguments?.getString("id").orEmpty(),
+                    tipo = com.nkpay.app.dominio.TipoMovimentoReserva.valueOf(entrada.arguments?.getString("tipo") ?: "GUARDAR"),
+                    aoVoltar = { navController.popBackStack() },
+                )
+            }
 
             // "Mais" é um subgrafo: as telas internas mantêm a aba "Mais" selecionada.
             navigation(startDestination = "mais/lista", route = Rotas.MAIS) {
