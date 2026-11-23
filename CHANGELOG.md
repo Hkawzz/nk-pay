@@ -4,6 +4,34 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.3.0] - 2026-11-22
+
+> ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
+> Esta versão atualiza o banco de dados (só adiciona tabelas novas; nada do que existe é alterado). Por segurança, o app também guarda sozinho uma cópia do banco antes de atualizar.
+
+**Contas a pagar** e um visual refinado.
+
+### Adicionado
+- **Aba A pagar:** as contas de cada mês, com o que falta pagar e o que já foi pago. As contas vencidas e não pagas continuam aparecendo como **atrasadas**, no mês original.
+- **Contas fixas** (Mais → Contas fixas): os modelos que se repetem todo mês. O botão **"Lançar contas fixas de [mês]"** deixa você escolher quais entram no mês e nunca duplica.
+- **Conta avulsa:** algo a pagar uma vez só, com vencimento opcional.
+- **Botão Pagar:** escolhe a conta de onde sai o dinheiro, o valor e a data, e mostra antes o que vai ser registrado.
+  - **Pagou menos:** pergunta se foi *pagamento parcial* (o restante continua pendente) ou *desconto* (quita, sem criar receita).
+  - **Pagou mais:** pergunta se foi juros, multa, tarifa ou IOF. O encargo vira uma despesa separada, em "Encargos financeiros".
+  - A despesa é sempre o valor efetivamente pago, no mês em que foi paga.
+  - Cada pagamento pode ser **desfeito** (a despesa, o encargo e o desconto saem juntos).
+
+### Alterado
+- Visual refinado, mantendo a identidade preta e roxa: espaçamentos, cantos e tipografia padronizados; ícones em um estilo só; item ativo da barra inferior mais claro.
+- O botão "+" saiu da Início (lançar continua na aba Movimentações).
+- A aba Mais sempre reabre no menu principal.
+- Transições mais rápidas.
+- Uma despesa criada pelo botão Pagar só pode ser mudada pela própria conta a pagar (desfazendo o pagamento).
+
+### Segurança dos dados
+- Migração do banco testada com cópia fiel do banco da v0.2: contas, movimentações, categorias, saldos e histórico ficam idênticos, sem duplicações.
+- Backups feitos na v0.2 continuam restauráveis.
+
 ## [0.2.0] - 2026-11-22
 
 **Backup e restauração.** A partir desta versão, perder ou trocar de celular não precisa mais significar perder os dados.

@@ -220,6 +220,13 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
                 .padding(horizontal = Espaco.l, vertical = Espaco.xs),
             verticalArrangement = Arrangement.spacedBy(Espaco.s),
         ) {
+            if (vm.ehPagamentoDeConta) {
+                Text(
+                    "Este lançamento é o pagamento de uma conta. Para mudar ou excluir, abra a conta em A pagar e desfaça o pagamento.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             EscolhaSegmentada(
                 // "Transf." para caber 4 opções em telas estreitas; a explicação abaixo usa o nome completo.
                 opcoes = TipoMovimentacao.entries.map { Opcao(it, if (it == TipoMovimentacao.TRANSFERENCIA) "Transf." else it.rotulo) },

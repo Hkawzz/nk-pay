@@ -169,9 +169,10 @@ fun ObrigacaoFormTela(id: String?, mesInicial: YearMonth, aoVoltar: () -> Unit, 
             if (ap != null && s != null) {
                 NkCard {
                     Row(Modifier.padding(Espaco.m)) {
-                        NkValorRotulado("Previsto", s.obrigacao.valorPrevisto, Modifier.weight(1f))
-                        NkValorRotulado("Pago", s.pago, Modifier.weight(1f))
-                        NkValorRotulado("Falta", s.restante, Modifier.weight(1f), corValor = corDoStatus(s.status))
+                        // Três colunas: valores no tamanho de lista para caberem inteiros.
+                        NkValorRotulado("Previsto", s.obrigacao.valorPrevisto, Modifier.weight(1f), tamanho = com.nkpay.app.ui.componentes.TamanhoValor.LISTA)
+                        NkValorRotulado("Pago", s.pago, Modifier.weight(1f), tamanho = com.nkpay.app.ui.componentes.TamanhoValor.LISTA)
+                        NkValorRotulado("Falta", s.restante, Modifier.weight(1f), tamanho = com.nkpay.app.ui.componentes.TamanhoValor.LISTA, corValor = corDoStatus(s.status))
                     }
                     NkTextoAjuda("${s.status.rotulo} · ${s.obrigacao.origem.rotulo}")
                 }
@@ -191,10 +192,12 @@ fun ObrigacaoFormTela(id: String?, mesInicial: YearMonth, aoVoltar: () -> Unit, 
                             val extras = ap.ajustes.filter { it.pagamentoId == p.id }.joinToString(" · ") {
                                 (if (it.natureza.ehAcrescimo) "+ " else "− ") + it.natureza.rotulo.lowercase() + " " + Dinheiro.formatar(it.valor)
                             }
+                            // Total que saiu da conta: o pagamento + o encargo (despesa separada) ligado a ele.
+                            val encargo = ap.ajustes.filter { it.pagamentoId == p.id && it.movimentacaoId != null }.sumOf { it.valor }
                             NkListItem(
                                 titulo = mov?.let { Formatos.data(it.data) } ?: "Pagamento",
                                 subtitulo = listOfNotNull(v.conta(mov?.contaId)?.nome, extras.ifEmpty { null }).joinToString(" · "),
-                                fim = { NkValor(p.valor) },
+                                fim = { NkValor(p.valor + encargo) },
                                 aoClicar = { pagamentoParaExcluir = p.id },
                             )
                         }
