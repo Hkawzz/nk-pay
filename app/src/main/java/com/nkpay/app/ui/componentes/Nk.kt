@@ -71,6 +71,11 @@ fun NkCard(
     aoClicar: (() -> Unit)? = null,
     conteudo: @Composable ColumnScope.() -> Unit,
 ) {
+    // v0.4 (design system v2, ADR 0019): o DESTAQUE vira o card com degradê e brilho.
+    if (estilo == EstiloCard.DESTAQUE) {
+        NkCardDestaque(modifier, aoClicar) { conteudo() }
+        return
+    }
     val cores = when (estilo) {
         EstiloCard.PADRAO -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
         EstiloCard.ELEVADO -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -79,7 +84,7 @@ fun NkCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         )
     }
-    val forma = if (estilo == EstiloCard.DESTAQUE) Raio.formaGrande else Raio.formaMedia
+    val forma = com.nkpay.app.ui.theme.RaioV2.formaCard
     val margem = modifier.fillMaxWidth().padding(horizontal = Espaco.m, vertical = Espaco.xs / 2 + 2.dp)
     if (aoClicar != null) {
         Card(onClick = aoClicar, modifier = margem, colors = cores, shape = forma, content = conteudo)
@@ -205,7 +210,8 @@ fun NkListItem(
 @Composable
 fun NkIconeRedondo(icone: ImageVector, cor: Color = MaterialTheme.colorScheme.primary) {
     Box(
-        Modifier.size(Tamanho.avatar).clip(CircleShape).background(cor.copy(alpha = 0.16f)),
+        // v0.4: quadrado arredondado, como os ícones de categoria (design system v2).
+        Modifier.size(Tamanho.avatar).clip(com.nkpay.app.ui.theme.RaioV2.formaIcone).background(cor.copy(alpha = 0.16f)),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icone, contentDescription = null, tint = cor, modifier = Modifier.size(Tamanho.icone - 2.dp))

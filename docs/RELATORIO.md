@@ -35,6 +35,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#28](https://github.com/Hkawzz/nk-pay/pull/28) | F4 | Compra parcelada (despesa do total + parcelas) e compra anterior ao app (despesa no mês original, parcelas quitadas antes, ajuste no crédito, aviso de possível duplicidade); excluir compra; parcelas fora de A pagar | ✅ |
 | [#29](https://github.com/Hkawzz/nk-pay/pull/29) | F5 | Pagamento em modo crédito num serviço separado: transferência (nunca despesa), desconto como ajuste no crédito, excedente como encargo classificado, distribuição entre faturas da mais antiga para a mais nova, compras específicas, desfazer. Tela da parcela do crediário. O Pagar das contas fixas não mudou | ✅ |
 | [#30](https://github.com/Hkawzz/nk-pay/pull/30) | F6 | Tela da fatura (pagar um valor ou escolher compras, faturas anteriores primeiro, encargo classificado, desfazer) e as faturas em A pagar, deste mês e atrasadas | ✅ |
+| [#31](https://github.com/Hkawzz/nk-pay/pull/31) | V2 | Nova tela Início (adendo): Disponível em destaque, grades de contas (2 colunas) e benefícios (3 colunas) com Ver todas/Recolher, resumo do mês com seletor e quantidades, últimas movimentações por dia. Design v2 nas outras telas pelos componentes | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
@@ -51,6 +52,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Editar valor ou parcelas de uma compra é excluir e cadastrar de novo**, só enquanto nada foi pago. Descrição e categoria também seguem essa regra (opção mais simples, com tudo auditado).
 - **O aviso de duplicidade** procura contas a pagar (fora do crédito) e despesas com nome parecido **ou** com o valor igual ao total ou a uma parcela. Ele só avisa.
 - **Dívidas:** o total devido aparece em Mais → Cartões e crediários (por tipo e por conta) e, mês a mês, nas faturas da aba A pagar. Não criei uma tela à parte de Dívidas (opção mais simples).
+- **Início:** o título dos benefícios continua "Benefícios · fora do Disponível" (deixa claro que não somam). Uma entrada sem categoria mostra o ícone neutro. O estado de "Ver todas" não é salvo (como pede o adendo).
 - **Movimentações de conta de crédito** (compra, encargo, desconto, pagamento) ficam bloqueadas em Movimentações, com uma mensagem que aponta para a tela do cartão.
 
 **Pendências**
