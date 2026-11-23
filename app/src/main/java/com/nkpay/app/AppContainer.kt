@@ -73,6 +73,18 @@ class AppContainer(
             banco.ajusteObrigacaoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
         ) { f, o, p, a -> VisaoAPagar(f, o, p, a) }
             .stateIn(escopo, SharingStarted.Eagerly, null)
+
+    // --- Cartões e crediários (v0.4) ---
+    /** Contas, movimentações, parcelas, pagamentos, ajustes, abatimentos gerais e compras, sempre atualizados. */
+    val visaoCredito: StateFlow<com.nkpay.app.dominio.VisaoCredito?> =
+        combine(
+            combine(visao, visaoAPagar) { v, a -> v to a },
+            banco.pagamentoFaturaDao().observarValidos().map { l -> l.map { it.paraDominio() } },
+            banco.compraDao().observarValidas().map { l -> l.map { it.paraDominio() } },
+        ) { (v, a), gerais, compras ->
+            if (v == null || a == null) null
+            else com.nkpay.app.dominio.VisaoCredito(v.contas, v.movimentacoes, a.obrigacoes.filter { it.ehParcela }, a.pagamentos, a.ajustes, gerais, compras)
+        }.stateIn(escopo, SharingStarted.Eagerly, null)
 }
 
 /** Guarda a data do último backup exportado nas preferências do app (não é dado financeiro). */

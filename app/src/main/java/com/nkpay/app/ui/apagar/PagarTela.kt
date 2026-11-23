@@ -128,7 +128,8 @@ fun PagarTela(obrigacaoId: String, aoVoltar: () -> Unit) {
 
             CampoEscolha(
                 "Pagar com",
-                v.contas.filter { !it.arquivada || it.id == vm.contaId }.map { c ->
+                // Contas de crédito não pagam contas (ADR 0017).
+                v.contas.filter { !it.ehCredito && (!it.arquivada || it.id == vm.contaId) }.map { c ->
                     Opcao(c.id, c.nome, (if (c.natureza == Natureza.BENEFICIO) "Benefício · " else "") + "Saldo " + Dinheiro.formatar(v.saldo(c.id)))
                 },
                 vm.contaId,

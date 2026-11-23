@@ -66,6 +66,7 @@ private data class ItemMais(val rota: String, val titulo: String, val icone: Ima
 
 private val itensMais = listOf(
     ItemMais(Rotas.CONTAS, "Contas e carteiras", Icons.Rounded.AccountBox),
+    ItemMais(Rotas.CARTOES, "Cartões e crediários", com.nkpay.app.ui.icones.IconesNk.de("cartao")),
     ItemMais(Rotas.CONTAS_FIXAS, "Contas fixas", Icons.Rounded.Refresh),
     ItemMais(Rotas.CATEGORIAS, "Categorias", Icons.Rounded.ShoppingCart),
     ItemMais(Rotas.BACKUP, "Backup e restauração", Icons.Rounded.Lock),

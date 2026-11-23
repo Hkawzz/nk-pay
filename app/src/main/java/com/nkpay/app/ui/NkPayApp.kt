@@ -213,6 +213,27 @@ fun NkPayApp() {
                 ) { entrada ->
                     ContaFormTela(contaId = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
                 }
+                composable(Rotas.CARTOES) {
+                    com.nkpay.app.ui.credito.CartoesTela(
+                        aoVoltar = { navController.popBackStack() },
+                        aoAbrir = { navController.navigate(Rotas.cartao(it)) },
+                        aoNovo = { navController.navigate(Rotas.cartaoForm()) },
+                    )
+                }
+                composable(
+                    Rotas.CARTAO_FORM,
+                    arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                ) { entrada ->
+                    com.nkpay.app.ui.credito.ContaCreditoFormTela(id = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
+                }
+                composable(Rotas.CARTAO, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                    val id = entrada.arguments?.getString("id").orEmpty()
+                    com.nkpay.app.ui.credito.ContaCreditoTela(
+                        id = id,
+                        aoVoltar = { navController.popBackStack() },
+                        aoEditar = { navController.navigate(Rotas.cartaoForm(id)) },
+                    )
+                }
                 composable(Rotas.CATEGORIAS) {
                     CategoriasTela(aoVoltar = { navController.popBackStack() }, aoAbrir = { navController.navigate(Rotas.categoriaForm(it)) })
                 }
