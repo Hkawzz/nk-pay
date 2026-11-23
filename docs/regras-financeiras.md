@@ -261,6 +261,41 @@ Para registrar algo que você já devia quando começou a usar o app (ex.: compr
 ### 6B.7 Integridade
 Contas de crédito **não podem** ser usadas em entradas, despesas, ajustes ou transferências **avulsas** (lançadas em Movimentações). Só mudam por compras, pagamentos e pelos registros de 6B.6. Essa regra fica na camada de dados, e não só na tela. Ver [0017](decisoes/0017-integridade-das-contas-de-credito.md).
 
+### 6B.8 Compra parcelada com juros ✅ v0.6 (D-A1 c)
+Aprovada no briefing da v0.6. Ver [0025](decisoes/0025-juros-do-parcelamento.md).
+
+**Cadastro:** valor original + valor da parcela + quantidade. Total = parcela × quantidade; juros do parcelamento = total − original. Total menor que o original é recusado. Sem juros (parcela = original ÷ N), tudo é igual à v0.5.
+
+```
+Despesa da compra          = valor ORIGINAL, na categoria e na data da compra
+Parte da compra da parcela = original ÷ N (a última absorve os centavos)   (calculada)
+Juros previstos da parcela = valor da parcela − parte da compra             (calculado)
+Devido = limite usado      = só a parte da compra ainda não paga
+Juros a pagar              = Σ juros previstos ainda não pagos
+Invariante                 = Devido = Σ restante das faturas em aberto − Juros a pagar
+```
+
+**Ao pagar:** a parte da compra abate o devido, e **os juros previstos viram despesa em "Encargos financeiros", na data do pagamento**, na conta de crédito. Pagamento parcial ou abatimento geral da fatura: o valor é dividido entre a parte da compra e os juros **na proporção do restante**. O pagamento que quita fecha os centavos. Valor diferente do esperado: o app pergunta (multa, parcial, desconto). O desconto reduz **primeiro os juros**. Desfazer um pagamento remove a despesa de juros junto.
+
+> **Diferente dos empréstimos (J1):** num empréstimo pego, os juros entram como despesa **na contratação**. Na compra parcelada, eles entram **parcela a parcela, quando cada uma é paga**.
+
+> **Exemplo.** Compra de R$ 273,00 em 12 × R$ 43,58 (total R$ 522,96; juros R$ 249,96).
+> - Compra: despesa de **R$ 273,00** na categoria da compra. Devido R$ 273,00; juros a pagar R$ 249,96.
+> - Paga a 1ª parcela (R$ 43,58): transferência Pix → Cartão de R$ 43,58 + despesa de **R$ 20,83** em Encargos financeiros (43,58 − 22,75). Devido R$ 250,25 (273,00 − 22,75); juros a pagar R$ 229,13.
+
+### 6B.9 Compra anterior ao app com juros e parcelas antecipadas ✅ v0.6
+- A despesa é o **valor original**, no mês original. As parcelas pagas antes do app (as primeiras k, a parcial e as **antecipadas**) têm o abatimento "quitada antes do app", e o ajuste na conta de crédito soma **só a parte da compra** delas.
+- **Os juros das parcelas pagas antes do app não viram despesa** (D-A3 b): ficam só no histórico da parcela.
+- **Parcelas antecipadas:** você informa quais e, para cada uma, o **valor pago** ou o **desconto** (o app calcula o outro). Uma parcela não pode estar nas pagas e nas antecipadas ao mesmo tempo, e o valor pago não passa do previsto. O desconto reduz **primeiro os juros previstos** da parcela.
+- **O desconto de antes do app aparece em "Descontos obtidos", datado na data da compra** (D-A2 b).
+
+> **Exemplo.** Parcela 12 de R$ 43,58 (parte R$ 22,75, juros R$ 20,83) antecipada por R$ 38,00: "quitada antes do app" R$ 38,00 + "desconto antes do app" R$ 5,58 (que sai dos juros). O ajuste no cartão soma R$ 22,75 (a parte da compra). Descontos obtidos no mês da compra: +R$ 5,58.
+
+### 6B.10 Excluir e arquivar cartões, crediários e pessoas ✅ v0.6
+- **Excluir** só sem nenhuma compra, pagamento, abatimento, empréstimo ou movimentação. Se houver, o app explica e oferece **Arquivar**.
+- **Arquivar** é recusado enquanto houver devido, valor a pagar ou a receber (sumiria das telas com algo em aberto). "Mostrar arquivados" e "Desarquivar" trazem de volta.
+- O nome de uma pessoa ou instituição pode ser editado, com auditoria (os registros apontam para a conta, não para o nome).
+
 ---
 
 ## 6C. Categorias com ícone e cor ✅ v0.4
@@ -446,9 +481,15 @@ São **reservas virtuais** sobre o dinheiro próprio: o dinheiro continua na con
 
 > Exemplo: com o dinheiro próprio em R$ 1.500,00, uma reserva de R$ 400,00 deixa o disponível em R$ 1.100,00. Uma nova reserva de R$ 1.200,00 é bloqueada.
 
-### 7.6 Virada do mês
-- O assistente "Preparar próximo mês" só age com a sua confirmação.
-- As pendências não levadas para o mês continuam visíveis.
+### 7.6 Virada do mês: Preparar próximo mês ✅ v0.6
+Assistente **"Preparar [mês]"** (em A pagar, e sugerido na virada do mês). **Nada é gravado antes da confirmação final.** Ver [0026](decisoes/0026-preparar-mes.md).
+1. **Contas fixas:** as ativas que ainda não entraram no mês, **todas marcadas**, com o valor sugerido (o do mês anterior; sem ele, o valor padrão), editável. Desmarcar = não entra.
+2. **Parcelas previstas:** faturas de cartão, parcelas de crediário e de empréstimo do mês, **só para conferência** (já existem), com o total que será cobrado, juros incluídos.
+3. **Pendências atrasadas:** contas a pagar não quitadas de meses anteriores (**fora** as faturas, que ficam no mês original pela 6B.4), todas **desmarcadas**. As marcadas passam a aparecer **também** no mês novo, com o vencimento, o valor e o mês de referência **originais**, e continuam "atrasadas". As não marcadas continuam visíveis como pendentes no mês original. **Nada some.**
+4. **Revisão:** o que entra e o total previsto do mês. Só então a confirmação grava tudo **numa transação**, com auditoria.
+
+Rodar o assistente de novo para o mesmo mês **não duplica nada** (contas fixas já lançadas e pendências já levadas não aparecem de novo).
+
 - O vencimento pode ficar vazio.
 
 ### 7.7 Empréstimos entre pessoas ✅ v0.5

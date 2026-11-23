@@ -16,6 +16,32 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
+## v0.6.0 (em andamento) - Ajustes dos testes e Preparar próximo mês
+
+**Objetivo:** os ajustes encontrados nos testes da v0.5 (compra com juros, parcelas antecipadas antes do app, excluir e arquivar cartões e pessoas, numeração do empréstimo anterior) e o assistente **Preparar próximo mês**. Fontes: `planejamento/briefing-v0.6-autonomo.md` e `planejamento/analise-ajustes-pos-testes-v0.6.md`.
+
+**Como foi feito:** de forma autônoma; primeiro os ajustes, depois o Preparar mês. O PR do pagamento com juros vai sozinho. Cada PR termina com o CI verde e esta seção atualizada.
+
+**PRs**
+
+| # | Etapa | O que entrou | Estado |
+|---|---|---|---|
+| [#47](https://github.com/Hkawzz/nk-pay/pull/47) | Docs | Regras 6B.8 a 6B.10 e 7.6 e decisões 0024 a 0027. Sem código | ✅ |
+
+**Decisões tomadas sozinho**
+- **A seção 8 da análise não existe no arquivo** (ele termina na seção 7). Segui a regra D-A1 (c) como o próprio briefing a descreve em detalhe; as fórmulas da regra 6B.8 vêm dessa descrição.
+- **`compra.valorOriginalCentavos` nasce vazia** (vazia = igual ao total), sem reescrever nenhuma compra existente.
+- **Os juros do parcelamento ficam ligados ao pagamento por um ajuste neutro** (`JUROS_DO_PARCELAMENTO`), como os juros recebidos da v0.5; no abatimento geral da fatura, o ajuste fica na primeira parcela em aberto, marcado com a transferência.
+- **O desconto num crédito com juros consome primeiro os juros** da parcela (mesmo princípio das antecipadas e do desconto concedido).
+- **A marcação de pendência levada fica numa tabela nova** (`pendencia_levada`), e não numa coluna de `obrigacao`.
+- **A sugestão de preparar o mês** é um card em A pagar quando o mês escolhido tem contas fixas a lançar ou pendências.
+
+**Pendências:** nenhuma até aqui.
+
+**Problemas encontrados:** nenhum até aqui.
+
+---
+
 ## v0.5.0 (em validação) - Empréstimos, Resumo pelo fluxo e ajuda "?"
 
 **Objetivo:** empréstimos recebidos (eu devo) e concedidos (me devem), com juros J1 e K2; o Resumo da Início pelo fluxo do dinheiro próprio; o Saldo disponível; a ajuda "?"; e refinos das Análises. Fontes: `planejamento/especificacao-v0.5.0.md` e `planejamento/briefing-v0.5-autonomo.md` (decisões D1 a D5).

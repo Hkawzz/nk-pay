@@ -27,3 +27,7 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0021](0021-emprestimos.md) | Empréstimos recebidos (J1) e concedidos (K2) | Aceita |
 | [0022](0022-contas-de-terceiros.md) | Conta de terceiros: um ponto único de verdade | Aceita |
 | [0023](0023-inicio-saldo-e-ajuda.md) | Início: Saldo disponível, Resumo pelo fluxo e ajuda | Aceita |
+| [0024](0024-banco-v5.md) | Banco versão 5: juros do parcelamento e pendências levadas | Aceita |
+| [0025](0025-juros-do-parcelamento.md) | Juros do parcelamento no cartão e no crediário (D-A1 c), com a limitação conhecida | Aceita |
+| [0026](0026-preparar-mes.md) | Preparar próximo mês | Aceita |
+| [0027](0027-excluir-e-arquivar-terceiros.md) | Excluir e arquivar cartões, crediários e pessoas | Aceita |
