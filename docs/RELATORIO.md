@@ -6,6 +6,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 | Versão | Data | Em uma frase | Release |
 |---|---|---|---|
+| v0.5.0 | 23/11/2026 | Empréstimos (J1 e K2), Resumo da Início pelo fluxo, Saldo disponível e ajuda "?" (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.5.0) |
 | v0.4.0 | 23/11/2026 | Cartões e crediários, categorias com ícone, nova Início e Análises (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.4.0) |
 | v0.3.0 | 22/11/2026 | Contas a pagar (fixas, avulsas, botão Pagar) e visual refinado | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.3.0) |
 | v0.2.0 | 22/11/2026 | Backup e restauração | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.2.0) |
@@ -15,7 +16,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
-## v0.5.0 (em andamento) - Empréstimos, Resumo pelo fluxo e ajuda "?"
+## v0.5.0 (em validação) - Empréstimos, Resumo pelo fluxo e ajuda "?"
 
 **Objetivo:** empréstimos recebidos (eu devo) e concedidos (me devem), com juros J1 e K2; o Resumo da Início pelo fluxo do dinheiro próprio; o Saldo disponível; a ajuda "?"; e refinos das Análises. Fontes: `planejamento/especificacao-v0.5.0.md` e `planejamento/briefing-v0.5-autonomo.md` (decisões D1 a D5).
 
@@ -34,6 +35,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#42](https://github.com/Hkawzz/nk-pay/pull/42) | 7 | Área Empréstimos: abas Recebidos/Concedidos agrupadas por pessoa, cadastro (automático ou personalizado, total e juros na hora), anterior ao app (D5) com aviso de duplicidade, tela do empréstimo com atraso e excluir | ✅ |
 | [#43](https://github.com/Hkawzz/nk-pay/pull/43) | 8 | Pagar (recebido) e receber (concedido, K2 com fechamento exato) parcelas, parciais, as quatro diferenças, desfazer em qualquer ordem e edição das parcelas sem pagamento. O Pagar das contas fixas não mudou | ✅ |
 | [#44](https://github.com/Hkawzz/nk-pay/pull/44) | 9 | Seção Empréstimos nas Análises (a pagar, a receber, juros pagos e recebidos, atrasadas), descontos concedidos separados dos obtidos, parcelas de empréstimo recebido em A pagar | ✅ |
+| [#45](https://github.com/Hkawzz/nk-pay/pull/45) | 10 | Qualidade e release: backup com todos os tipos de empréstimo, roteiro `docs/roteiro-teste-v0.5.md`, "Arquivar" na tela do cartão ou crediário (para o roteiro do cartão fictício), CHANGELOG, README e tag `v0.5.0` | ✅ |
 
 **Decisões tomadas sozinho** (a opção mais simples, mais segura para os dados e mais fácil de reverter; detalhes na [0021](decisoes/0021-emprestimos.md))
 - **Juros K2 ligados ao recebimento** por um ajuste neutro (`JUROS_RECEBIDOS`), em vez de duas linhas de `pagamento`. O desfazer da v0.4 já remove esse ajuste e a entrada de juros junto, sem código novo de exclusão.
@@ -50,12 +52,35 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **A "folha" da ajuda é um diálogo simples com texto** (componente padrão, igual em todas as versões do Android).
 - **O título dos benefícios na Início continua "Benefícios · fora do Disponível"** (o roteiro de aceite da v0.1 confere esse texto); o "?" ao lado explica.
 
-**Pendências:** nenhuma até aqui.
+**Portões do briefing para publicar**
+
+| Portão | Resultado |
+|---|---|
+| CI verde em todos os PRs | ✅ (#36 a #45) |
+| Testes da v0.4 passando; mudanças inevitáveis justificadas | ✅ os **160** testes da v0.4 passam. **6 linhas** mudaram, todas justificadas nos PRs #37 e #40 e abaixo: `AceiteTest` (1, pela D1) e `MigracaoTest`/`MigracaoV3Test` (5, pela versão 4 do banco). Conferido com `git diff v0.4.0` |
+| Migração v3 fiel → v4 | ✅ `MigracaoV4Test` |
+| Matriz de backup (v0.4 → v0.5 restaura; v0.5 com empréstimos ida e volta; v0.4 recusa v0.5) | ✅ `MigracaoV4Test` e `BackupEmprestimosTest` |
+| Regressão do Pagar das contas fixas e do crédito da v0.4 | ✅ `PagamentoServicoTest`, `APagarTest`, `PagamentoCreditoTest`, `CompraServicoTest`, `FaturaUiTest` e `CrediarioUiTest` sem alteração |
+
+**Proteção dos dados reais**
+- A migração 3→4 só cria a tabela `emprestimo` e acrescenta `obrigacao.emprestimoId` vazia. Foi testada com um banco igual ao da v0.4 (inclusive cartões, compras e abatimentos de fatura), com todas as linhas idênticas campo a campo.
+- A cópia do arquivo do banco antes de migrar continua valendo.
+- Backups da v0.4 restauram na v0.5 (e a categoria "Juros recebidos" é recriada com auditoria). A v0.4 recusa backups da v0.5.
+- Nenhum dado real no repositório. APKs de debug (v0.4.0 e v0.5.0, mesma chave de debug) em `Documents\nk-pay-apks`, para o roteiro.
+
+**Pendências**
+- **Teste no seu celular**, pelo roteiro `docs/roteiro-teste-v0.5.md` (migração de verdade sobre uma cópia, empréstimos e a passagem de "cartões fictícios" para empréstimos).
+- **Desempenho** no aparelho não medido.
+- **A v0.6 (Preparar mês)** vai precisar considerar as parcelas de empréstimo (registrado na especificação; nada a fazer agora).
+- Recebimentos que forem **só juros** (sem principal) ficam sem a linha de "juros recebidos" separada na tela do empréstimo; o total das Análises os conta. Caso raro, sem efeito nos saldos.
 
 **Problemas encontrados**
 - **Uma linha de um teste antigo mudou** (`AceiteTest`, da v0.1): ele esperava ver na Início o valor de uma despesa paga com o VA como total do mês. Pela D1, ela não é saída do dinheiro próprio; a linha agora procura a despesa nas últimas movimentações. **Contradição anotada:** a regra aprovada (D1) vence o teste antigo, como manda o briefing.
 - **Cinco linhas de testes de migração antigos mudaram** por causa da versão 4 do banco, que a especificação pede: `MigracaoTest` (1, SQL da `obrigacao` sem a coluna nova) e `MigracaoV3Test` (4: versão atual em 3 lugares e a `obrigacao` sem o sufixo da coluna nova, que também confere que ela nasce vazia). Todas são do mesmo tipo das feitas na v0.4.
 - **Um teste novo deixava uma exceção "vazar" para o teste seguinte no CI** (`AjudaTest` abria o banco também para testes puros). Os testes puros foram para um arquivo sem banco.
+- **O roteiro do cartão fictício pedia "arquivar a conta"**, e a tela do cartão não tinha essa ação: entrou um botão "Arquivar" nela (PR #45).
+
+**Testes:** 201, todos com dados fictícios (eram 160 na v0.4), incluindo a migração v3→v4, a matriz de backup com empréstimos, o fluxo linha a linha, J1 e K2 com centavos, as quatro diferenças, desfazer fora de ordem, edição, anterior ao app e roteiros pela interface.
 
 ---
 

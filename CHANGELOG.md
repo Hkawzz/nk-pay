@@ -4,6 +4,31 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.5.0] - 2026-11-23
+
+> ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
+> Esta versão atualiza o banco de dados (cria a tabela de empréstimos e acrescenta uma coluna vazia às contas a pagar; nenhum dado existente é reescrito). O app guarda sozinho uma cópia do banco antes de atualizar. Sugestão: teste antes no app de debug, com uma cópia dos dados (`docs/roteiro-teste-v0.5.md`).
+
+**Empréstimos**, o Resumo da Início pelo dinheiro que entra e sai, e a ajuda "?".
+
+### Adicionado
+- **Empréstimos** (Mais → Empréstimos), em duas abas: **Recebidos** (eu devo) e **Concedidos** (me devem), agrupados por pessoa, com o total, as parcelas e as atrasadas ("vencida há N dias").
+  - **Cadastro** com parcelas automáticas ou personalizadas; o app mostra na hora o total e os juros previstos.
+  - **Peguei emprestado:** o dinheiro entra na conta, e os juros viram **uma** despesa (Encargos financeiros) na data. Pagar a parcela é só transferência.
+  - **Emprestei:** o dinheiro sai da conta. Cada parcela recebida é dividida em **devolução** e **juros recebidos** (receita), na proporção; o último recebimento fecha os centavos.
+  - Pagar ou receber **a mais ou a menos**: o app pergunta (parcial, desconto, juros, multa…). Todo pagamento pode ser **desfeito**.
+  - **Alterar parcelas** ainda sem pagamento (valor e data, uma ou as seguintes).
+  - **Empréstimo anterior ao app:** só as parcelas que faltam, sem mexer no Pix; no "emprestei", com os juros contidos opcionais. Aviso de possível duplicidade.
+  - As parcelas de empréstimo que você deve aparecem em **A pagar**.
+- **Ajuda "?"** nos indicadores da Início, das Análises e dos Empréstimos: o que é, como é calculado, exemplo e o que não é.
+- **Análises:** seção Empréstimos (a pagar, a receber, juros pagos e recebidos, atrasadas) e "Descontos concedidos" separados dos obtidos.
+- **Arquivar** cartões e crediários na tela deles.
+
+### Alterado
+- **Início:** o card passa a se chamar **Saldo disponível**. O **Resumo do mês** mostra **Entradas, Saídas e Saldo das movimentações** do seu dinheiro próprio: compras no cartão saem quando a fatura é paga, e despesas do VA/VR não são saídas.
+- **Análises:** "Despesas registradas" e "Saídas do dinheiro próprio" lado a lado, cada um com "?"; a evolução mensal destaca o mês atual.
+- Contas de empréstimo seguem as mesmas proteções dos cartões: não aparecem nas listas para lançar e não aceitam lançamentos avulsos.
+
 ## [0.4.0] - 2026-11-23
 
 > ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
