@@ -134,8 +134,26 @@ val MIGRACAO_3_4 = object : Migration(3, 4) {
     }
 }
 
+/**
+ * 4 → 5 (v0.6, ADR 0024): acrescenta `compra.valorOriginalCentavos` (VAZIA: vazia = igual
+ * ao total, então as compras existentes continuam sem juros e nenhuma linha é reescrita)
+ * e cria `pendencia_levada` (Preparar próximo mês).
+ */
+val MIGRACAO_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `compra` ADD COLUMN `valorOriginalCentavos` INTEGER")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `pendencia_levada` (`id` TEXT NOT NULL, `obrigacaoId` TEXT NOT NULL, `mes` TEXT NOT NULL, " +
+                "`criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`), " +
+                "FOREIGN KEY(`obrigacaoId`) REFERENCES `obrigacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_pendencia_levada_obrigacaoId` ON `pendencia_levada` (`obrigacaoId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_pendencia_levada_mes` ON `pendencia_levada` (`mes`)")
+    }
+}
+
 /** Todas as migrações, em ordem. */
-val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4)
+val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5)
 
 /**
  * Rede de segurança: ANTES de o Room migrar, copia o arquivo do banco (e os arquivos

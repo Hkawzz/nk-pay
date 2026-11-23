@@ -16,7 +16,14 @@ data class Compra(
     /** A despesa do valor total. */
     val movimentacaoId: String,
     val anteriorAoApp: Boolean,
-)
+    /** v0.6 (D-A1 c): o valor original (a despesa). Igual ao total quando não há juros. */
+    val valorOriginal: Long = valorTotal,
+) {
+    val juros: Long get() = valorTotal - valorOriginal
+}
+
+/** v0.6: uma pendência de mês anterior levada para aparecer também no [mes] (ADR 0026). */
+data class PendenciaLevada(val id: String, val obrigacaoId: String, val mes: YearMonth)
 
 /** Abatimento geral de uma fatura (pagamento parcial sem escolher compras). */
 data class PagamentoFatura(

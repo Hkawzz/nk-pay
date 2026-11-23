@@ -103,8 +103,10 @@ interface BackupDao {
     @Query("SELECT * FROM compra ORDER BY criadoEm, id") suspend fun compras(): List<CompraEntidade>
     @Query("SELECT * FROM pagamento_fatura ORDER BY criadoEm, id") suspend fun pagamentosDeFatura(): List<PagamentoFaturaEntidade>
     @Query("SELECT * FROM emprestimo ORDER BY criadoEm, id") suspend fun emprestimos(): List<EmprestimoEntidade>
+    @Query("SELECT * FROM pendencia_levada ORDER BY criadoEm, id") suspend fun pendenciasLevadas(): List<PendenciaLevadaEntidade>
 
     // A ordem importa por causa das chaves estrangeiras: primeiro quem aponta, depois quem é apontado.
+    @Query("DELETE FROM pendencia_levada") suspend fun apagarPendenciasLevadas()
     @Query("DELETE FROM emprestimo") suspend fun apagarEmprestimos()
     @Query("DELETE FROM pagamento_fatura") suspend fun apagarPagamentosDeFatura()
     @Query("DELETE FROM compra") suspend fun apagarCompras()
@@ -128,4 +130,5 @@ interface BackupDao {
     @Insert suspend fun inserirCompras(lista: List<CompraEntidade>)
     @Insert suspend fun inserirPagamentosDeFatura(lista: List<PagamentoFaturaEntidade>)
     @Insert suspend fun inserirEmprestimos(lista: List<EmprestimoEntidade>)
+    @Insert suspend fun inserirPendenciasLevadas(lista: List<PendenciaLevadaEntidade>)
 }

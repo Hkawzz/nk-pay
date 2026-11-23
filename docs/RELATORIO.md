@@ -27,6 +27,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | # | Etapa | O que entrou | Estado |
 |---|---|---|---|
 | [#47](https://github.com/Hkawzz/nk-pay/pull/47) | Docs | Regras 6B.8 a 6B.10 e 7.6 e decisões 0024 a 0027. Sem código | ✅ |
+| [#48](https://github.com/Hkawzz/nk-pay/pull/48) | Banco v5 | Migração 4 → 5 explícita: `compra.valorOriginalCentavos` (vazia = sem juros) e tabela `pendencia_levada`; backup com as pendências levadas; testes com banco v4 fiel e matriz de backup | ✅ |
 
 **Decisões tomadas sozinho**
 - **A seção 8 da análise não existe no arquivo** (ele termina na seção 7). Segui a regra D-A1 (c) como o próprio briefing a descreve em detalhe; as fórmulas da regra 6B.8 vêm dessa descrição.
@@ -38,7 +39,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 **Pendências:** nenhuma até aqui.
 
-**Problemas encontrados:** nenhum até aqui.
+**Problemas encontrados:**
+- Banco v5 (#48): 4 linhas de testes antigos mudaram, sem como evitar, porque testam "termina na versão atual" e a forma exata da tabela compra. No `MigracaoV4Test`: a versão esperada passou a ser `NkPayBanco.VERSAO`, a foto da compra ignora a coluna nova `valorOriginalCentavos=NULL` e o nome da cópia passou a ser `banco-v3-antes-da-v5`. No `MigracaoV3Test`: a comparação do SQL da tabela compra desconta a coluna nova. Nenhuma regra testada mudou; o resto dos testes da v0.5 ficou igual.
 
 ---
 

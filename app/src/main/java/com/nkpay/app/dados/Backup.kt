@@ -67,6 +67,8 @@ data class DadosBackup(
     val pagamentosDeFatura: List<PagamentoFaturaEntidade> = emptyList(),
     // Versão 4 do banco (v0.5). Lista vazia para backups antigos.
     val emprestimos: List<EmprestimoEntidade> = emptyList(),
+    // Versão 5 do banco (v0.6). Lista vazia para backups antigos.
+    val pendenciasLevadas: List<PendenciaLevadaEntidade> = emptyList(),
 )
 
 /** Um backup lido e validado, pronto para ser restaurado. */
@@ -106,7 +108,7 @@ class BackupServico(
             DadosBackup(
                 dao.contas(), dao.categorias(), dao.movimentacoes(), dao.auditoria(),
                 dao.contasFixas(), dao.obrigacoes(), dao.pagamentos(), dao.ajustesDeObrigacao(),
-                dao.compras(), dao.pagamentosDeFatura(), dao.emprestimos(),
+                dao.compras(), dao.pagamentosDeFatura(), dao.emprestimos(), dao.pendenciasLevadas(),
             )
         }
         val bytesDados = json.encodeToString(DadosBackup.serializer(), dados).toByteArray(Charsets.UTF_8)
@@ -207,6 +209,7 @@ class BackupServico(
                 (it.movimentacaoContratacaoId == null || it.movimentacaoContratacaoId in movs) && (it.movimentacaoJurosId == null || it.movimentacaoJurosId in movs)
         }
         if (!okV4) throw BackupInvalido("O backup está inconsistente: há empréstimos que apontam para registros que não existem nele.")
+        if (!d.pendenciasLevadas.all { it.obrigacaoId in obrigs }) throw BackupInvalido("O backup está inconsistente: há pendências levadas de contas que não existem nele.")
     }
 
     private fun lerComLimite(entrada: InputStream): ByteArray {
@@ -238,6 +241,7 @@ class BackupServico(
         val d = backup.dados
         banco.withTransaction {
             // Apaga de "fora para dentro" (quem aponta antes de quem é apontado)...
+            dao.apagarPendenciasLevadas()
             dao.apagarEmprestimos()
             dao.apagarPagamentosDeFatura()
             dao.apagarCompras()
@@ -260,6 +264,7 @@ class BackupServico(
             dao.inserirCompras(d.compras)
             dao.inserirPagamentosDeFatura(d.pagamentosDeFatura)
             dao.inserirEmprestimos(d.emprestimos)
+            dao.inserirPendenciasLevadas(d.pendenciasLevadas)
             dao.inserirAuditoria(d.auditoria)
             val m = backup.manifesto
             dao.inserirAuditoria(
