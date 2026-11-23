@@ -104,12 +104,13 @@ data class VisaoAPagar(
     fun contaFixa(id: String?): ContaFixa? = id?.let { i -> contasFixas.firstOrNull { it.id == i } }
 
     /** Obrigações do mês (pelo mês de referência). */
-    fun doMes(mes: YearMonth, hoje: LocalDate) = situacoes(hoje).filter { it.obrigacao.mesReferencia == mes }
+    // As parcelas de cartão/crediário (v0.4) não entram aqui: elas aparecem por fatura.
+    fun doMes(mes: YearMonth, hoje: LocalDate) = situacoes(hoje).filter { it.obrigacao.mesReferencia == mes && !it.obrigacao.ehParcela }
 
     /** Pendências de meses anteriores ao [mes], ainda não quitadas (continuam no mês original). */
     fun pendentesAnteriores(mes: YearMonth, hoje: LocalDate) = situacoes(hoje).filter {
         val m = it.obrigacao.mesReferencia
-        m != null && m < mes && it.status != StatusObrigacao.QUITADA
+        m != null && m < mes && it.status != StatusObrigacao.QUITADA && !it.obrigacao.ehParcela
     }
 
     companion object {

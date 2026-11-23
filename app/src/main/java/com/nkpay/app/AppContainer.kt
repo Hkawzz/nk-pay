@@ -75,6 +75,8 @@ class AppContainer(
             .stateIn(escopo, SharingStarted.Eagerly, null)
 
     // --- Cartões e crediários (v0.4) ---
+    val compras = com.nkpay.app.dados.CompraServico(banco, auditor, relogio)
+
     /** Contas, movimentações, parcelas, pagamentos, ajustes, abatimentos gerais e compras, sempre atualizados. */
     val visaoCredito: StateFlow<com.nkpay.app.dominio.VisaoCredito?> =
         combine(

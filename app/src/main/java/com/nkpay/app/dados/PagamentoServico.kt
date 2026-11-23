@@ -59,6 +59,8 @@ class PagamentoServico(
     ): Resultado<String> = banco.withTransaction {
         val obrig = obrigacaoDao.buscar(obrigacaoId)?.takeIf { it.excluidoEm == null && it.canceladaEm == null }
             ?: return@withTransaction Resultado.Falha("Conta a pagar não encontrada.")
+        // v0.4: parcelas de cartão/crediário são pagas por transferência, na tela do cartão (ADR 0015).
+        if (obrig.contaCreditoId != null) return@withTransaction Resultado.Falha("Esta é uma parcela de cartão ou crediário. Pague pela tela do cartão.")
         val conta = contaDao.buscar(contaId)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
 
