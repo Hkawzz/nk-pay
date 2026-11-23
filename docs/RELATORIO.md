@@ -33,6 +33,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#26](https://github.com/Hkawzz/nk-pay/pull/26) | C2 | Tela da categoria (nome, ícone, cor, cor personalizada com ajuste de contraste, arquivar); ícone e cor nas listas de movimentações, nas escolhas de categoria e nas contas (que também ganham escolha de ícone) | ✅ |
 | [#27](https://github.com/Hkawzz/nk-pay/pull/27) | F3 | Mais → Cartões e crediários: cadastro (limite, fechamento, vencimento), cartão visual com devido e limite, tela do cartão com as faturas e o aviso de invariante. As listas "Conta", "De/Para", o filtro e o "Pagar com" deixam de mostrar contas de crédito | ✅ |
 | [#28](https://github.com/Hkawzz/nk-pay/pull/28) | F4 | Compra parcelada (despesa do total + parcelas) e compra anterior ao app (despesa no mês original, parcelas quitadas antes, ajuste no crédito, aviso de possível duplicidade); excluir compra; parcelas fora de A pagar | ✅ |
+| [#29](https://github.com/Hkawzz/nk-pay/pull/29) | F5 | Pagamento em modo crédito num serviço separado: transferência (nunca despesa), desconto como ajuste no crédito, excedente como encargo classificado, distribuição entre faturas da mais antiga para a mais nova, compras específicas, desfazer. Tela da parcela do crediário. O Pagar das contas fixas não mudou | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
