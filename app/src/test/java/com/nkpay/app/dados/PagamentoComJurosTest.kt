@@ -27,7 +27,7 @@ import java.time.YearMonth
 
 /**
  * v0.6 (regra 6B.8, D-A1 c): pagamento de parcelas de compra com juros. Exemplo da regra:
- * R$ 273,00 em 12 × R$ 43,58 (parte R$ 22,75, juros R$ 20,83 por parcela). Valores fictícios.
+ * R$ 300,00 em 12 × R$ 45,50 (parte R$ 25,00, juros R$ 20,50 por parcela). Valores fictícios.
  */
 @RunWith(AndroidJUnit4::class)
 class PagamentoComJurosTest {
@@ -67,7 +67,7 @@ class PagamentoComJurosTest {
     private fun <T> Resultado<T>.ok(): T = (this as? Resultado.Sucesso)?.valor ?: error((this as Resultado.Falha).mensagem)
 
     private suspend fun compra(conta: String, venc: LocalDate) =
-        compras.registrar(NovaCompra(conta, "Celular", null, LocalDate.of(2026, 12, 3), 27_300, 12, venc, valorParcela = 4_358)).ok()
+        compras.registrar(NovaCompra(conta, "Celular", null, LocalDate.of(2026, 12, 3), 30_000, 12, venc, valorParcela = 4_550)).ok()
 
     private suspend fun visao(): VisaoCredito {
         val o = obrigs.observar().first()
@@ -85,23 +85,23 @@ class PagamentoComJurosTest {
     private suspend fun saldoPix() = Saldos.saldosPorConta(contas.observar().first(), movs.observar().first())[pix]
 
     @Test
-    fun `pagar a fatura com a 1a parcela transfere 43_58 e lanca 20_83 de juros`() = runTest {
+    fun `pagar a fatura com a 1a parcela transfere 45_50 e lanca 20_50 de juros`() = runTest {
         compra(cartao, LocalDate.of(2026, 12, 12))
-        val t = servico.pagarFatura(cartao, dez, pix, dia, 4_358, null).ok()
+        val t = servico.pagarFatura(cartao, dez, pix, dia, 4_550, null).ok()
         val v = visao()
-        assertEquals(300_000L - 4_358, saldoPix())
-        assertEquals(2_083L, despesasDeJuros())
-        assertEquals(25_025L, v.devido(cartao))
-        assertEquals(22_913L, v.jurosAPagar(cartao, relogio.hoje()))
+        assertEquals(300_000L - 4_550, saldoPix())
+        assertEquals(2_050L, despesasDeJuros())
+        assertEquals(27_500L, v.devido(cartao))
+        assertEquals(22_550L, v.jurosAPagar(cartao, relogio.hoje()))
         assertEquals(StatusObrigacao.QUITADA, v.fatura(cartao, dez, relogio.hoje())!!.status)
         // Despesas do mês: a compra (original) + os juros pagos, na data do pagamento.
-        assertEquals(27_300L + 2_083, Saldos.totaisDoMes(movs.observar().first(), dez).despesas)
+        assertEquals(30_000L + 2_050, Saldos.totaisDoMes(movs.observar().first(), dez).despesas)
         fecha(cartao)
         // Desfazer remove a despesa de juros junto.
         servico.desfazer(t).ok()
         assertEquals(0L, despesasDeJuros())
-        assertEquals(27_300L, visao().devido(cartao))
-        assertEquals(24_996L, visao().jurosAPagar(cartao, relogio.hoje()))
+        assertEquals(30_000L, visao().devido(cartao))
+        assertEquals(24_600L, visao().jurosAPagar(cartao, relogio.hoje()))
         assertTrue(banco.ajusteObrigacaoDao().observarValidos().first().isEmpty())
         fecha(cartao)
     }
@@ -110,17 +110,17 @@ class PagamentoComJurosTest {
     fun `abatimento geral divide entre compra e juros na proporcao e o que quita fecha os centavos`() = runTest {
         compra(cartao, LocalDate.of(2026, 12, 12))
         val t1 = servico.pagarFatura(cartao, dez, pix, dia, 3_000, null).ok()
-        val juros1 = 3_000L * 2_083 / 4_358
+        val juros1 = 3_000L * 2_050 / 4_550
         assertEquals(juros1, despesasDeJuros())
-        assertEquals(27_300L - (3_000 - juros1), visao().devido(cartao))
+        assertEquals(30_000L - (3_000 - juros1), visao().devido(cartao))
         fecha(cartao)
-        servico.pagarFatura(cartao, dez, pix, dia, 1_358, null).ok()
-        assertEquals(2_083L, despesasDeJuros())
-        assertEquals(25_025L, visao().devido(cartao))
+        servico.pagarFatura(cartao, dez, pix, dia, 1_550, null).ok()
+        assertEquals(2_050L, despesasDeJuros())
+        assertEquals(27_500L, visao().devido(cartao))
         fecha(cartao)
         // Desfazer o abatimento geral remove os juros dele (ligados pela transferência).
         servico.desfazer(t1).ok()
-        assertEquals(2_083L - juros1, despesasDeJuros())
+        assertEquals(2_050L - juros1, despesasDeJuros())
         assertTrue(banco.ajusteObrigacaoDao().observarValidos().first().none { it.observacao == "geral:$t1" })
         fecha(cartao)
     }
@@ -128,9 +128,9 @@ class PagamentoComJurosTest {
     @Test
     fun `um pagamento que cobre duas faturas lanca os juros de cada parcela`() = runTest {
         compra(cartao, LocalDate.of(2026, 12, 12))
-        servico.pagarFatura(cartao, dez.plusMonths(1), pix, dia, 2 * 4_358, null).ok()
-        assertEquals(2 * 2_083L, despesasDeJuros())
-        assertEquals(27_300L - 2 * 2_275, visao().devido(cartao))
+        servico.pagarFatura(cartao, dez.plusMonths(1), pix, dia, 2 * 4_550, null).ok()
+        assertEquals(2 * 2_050L, despesasDeJuros())
+        assertEquals(30_000L - 2 * 2_500, visao().devido(cartao))
         fecha(cartao)
     }
 
@@ -139,8 +139,8 @@ class PagamentoComJurosTest {
         val id = compra(cartao, LocalDate.of(2026, 12, 12))
         val p1 = visao().parcelasDaCompra(id).first()
         servico.pagarCompras(cartao, dez, listOf(p1.id), pix, dia).ok()
-        assertEquals(2_083L, despesasDeJuros())
-        assertEquals(25_025L, visao().devido(cartao))
+        assertEquals(2_050L, despesasDeJuros())
+        assertEquals(27_500L, visao().devido(cartao))
         fecha(cartao)
     }
 
@@ -148,24 +148,24 @@ class PagamentoComJurosTest {
     fun `crediario com desconto consome primeiro os juros e parcial e proporcional`() = runTest {
         val id = compra(loja, LocalDate.of(2027, 1, 20))
         val (p1, p2) = visao().parcelasDaCompra(id)
-        // Paga R$ 40,00 com desconto de R$ 3,58: o desconto sai dos juros (20,83 → 17,25 de despesa).
+        // Paga R$ 40,00 com desconto de R$ 5,50: o desconto sai dos juros (20,50 → 15,00 de despesa).
         servico.pagarParcela(p1.id, pix, dia, 4_000, ClassificacaoDiferenca.DESCONTO).ok()
-        assertEquals(2_083L - 358, despesasDeJuros())
-        assertEquals(25_025L, visao().devido(loja))
+        assertEquals(2_050L - 550, despesasDeJuros())
+        assertEquals(27_500L, visao().devido(loja))
         fecha(loja)
         val ajustes = banco.ajusteObrigacaoDao().observarValidos().first().map { it.paraDominio() }
         val pagamentos = banco.pagamentoDao().observarValidos().first().map { it.paraDominio() }
-        assertEquals(358L, Analises.descontosObtidos(ajustes, pagamentos, movs.observar().first(), Periodo(dez, dez)))
+        assertEquals(550L, Analises.descontosObtidos(ajustes, pagamentos, movs.observar().first(), Periodo(dez, dez)))
         // Nenhum ajuste na conta da loja: o desconto ficou todo nos juros.
         assertTrue(movs.observar().first().none { it.tipo == TipoMovimentacao.AJUSTE })
         // Parcial na 2ª: R$ 20,00 → juros proporcionais; depois o resto fecha os juros.
         servico.pagarParcela(p2.id, pix, dia, 2_000, ClassificacaoDiferenca.PARCIAL).ok()
-        val j = 2_000L * 2_083 / 4_358
-        assertEquals(2_083L - 358 + j, despesasDeJuros())
+        val j = 2_000L * 2_050 / 4_550
+        assertEquals(2_050L - 550 + j, despesasDeJuros())
         fecha(loja)
-        servico.pagarParcela(p2.id, pix, dia, 2_358, null).ok()
-        assertEquals(2_083L - 358 + 2_083, despesasDeJuros())
-        assertEquals(27_300L - 2 * 2_275, visao().devido(loja))
+        servico.pagarParcela(p2.id, pix, dia, 2_550, null).ok()
+        assertEquals(2_050L - 550 + 2_050, despesasDeJuros())
+        assertEquals(30_000L - 2 * 2_500, visao().devido(loja))
         fecha(loja)
     }
 
@@ -175,10 +175,10 @@ class PagamentoComJurosTest {
         val p1 = visao().parcelasDaCompra(id).first()
         servico.pagarParcela(p1.id, pix, dia, 2_000, ClassificacaoDiferenca.DESCONTO).ok()
         assertEquals(0L, despesasDeJuros())
-        assertEquals(25_025L, visao().devido(loja))
+        assertEquals(27_500L, visao().devido(loja))
         val ajuste = movs.observar().first().single { it.tipo == TipoMovimentacao.AJUSTE }
-        assertEquals(2_358L - 2_083, ajuste.valor)
+        assertEquals(2_550L - 2_050, ajuste.valor)
         fecha(loja)
-        assertTrue(banco.ajusteObrigacaoDao().observarValidos().first().any { it.natureza == NaturezaAjuste.DESCONTO.name && it.valorCentavos == 2_358L })
+        assertTrue(banco.ajusteObrigacaoDao().observarValidos().first().any { it.natureza == NaturezaAjuste.DESCONTO.name && it.valorCentavos == 2_550L })
     }
 }

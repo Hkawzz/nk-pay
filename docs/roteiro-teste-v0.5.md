@@ -5,7 +5,7 @@
 > ⚠️ O backup tem os seus dados financeiros. Ele **não sai do celular** e **nunca** vai para o repositório nem para o computador.
 
 ## O que você precisa
-Na pasta `Documents\nk-pay-apks` do computador (fora do repositório), estão:
+Na pasta local de APKs do computador (fora do repositório), estão:
 - `nk-pay-v0.4.0-debug.apk`: a v0.4 do app de debug.
 - `nk-pay-v0.5.0-debug.apk`: a v0.5 do app de debug.
 

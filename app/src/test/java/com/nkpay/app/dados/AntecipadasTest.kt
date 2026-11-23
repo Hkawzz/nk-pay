@@ -62,7 +62,7 @@ class AntecipadasTest {
     }
 
     private fun nova(parcela: Long?, anterior: Boolean = false, pagas: Int = 0, parcial: Long = 0, data: LocalDate = LocalDate.of(2026, 12, 3)) =
-        NovaCompra(cartao, "Celular", categoria, data, 27_300, 12, LocalDate.of(2026, 12, 12), anteriorAoApp = anterior, parcelasJaPagas = pagas, pagoEmParteDaSeguinte = parcial, valorParcela = parcela)
+        NovaCompra(cartao, "Celular", categoria, data, 30_000, 12, LocalDate.of(2026, 12, 12), anteriorAoApp = anterior, parcelasJaPagas = pagas, pagoEmParteDaSeguinte = parcial, valorParcela = parcela)
 
     private suspend fun descontos(mes: YearMonth) = com.nkpay.app.dominio.Analises.descontosObtidos(
         banco.ajusteObrigacaoDao().observarValidos().first().map { it.paraDominio() },
@@ -73,19 +73,19 @@ class AntecipadasTest {
     @Test
     fun `antecipada com desconto quita a parcela e o desconto entra no mes da compra`() = runTest {
         val ago = YearMonth.of(2026, 8)
-        val id = (compras.registrar(nova(4_358, anterior = true, pagas = 4, data = LocalDate.of(2026, 8, 10)).copy(antecipadas = listOf(Antecipada(12, 3_800)))) as Resultado.Sucesso).valor
+        val id = (compras.registrar(nova(4_550, anterior = true, pagas = 4, data = LocalDate.of(2026, 8, 10)).copy(antecipadas = listOf(Antecipada(12, 4_000)))) as Resultado.Sucesso).valor
         val v = visao()
-        assertEquals(27_300L - 5 * 2_275, v.devido(cartao))
-        assertEquals(7 * 2_083L, v.jurosAPagar(cartao, relogio.hoje()))
+        assertEquals(30_000L - 5 * 2_500, v.devido(cartao))
+        assertEquals(7 * 2_050L, v.jurosAPagar(cartao, relogio.hoje()))
         assertTrue(v.invarianteFecha(cartao, relogio.hoje()))
         val p12 = v.situacaoDaParcela(v.parcelasDaCompra(id).last().id, relogio.hoje())!!
         assertEquals(com.nkpay.app.dominio.StatusObrigacao.QUITADA, p12.status)
-        // Desconto R$ 5,58 em Descontos obtidos, datado na compra (D-A2 b); juros não viram despesa (D-A3 b).
-        assertEquals(558L, descontos(ago))
+        // Desconto R$ 5,50 em Descontos obtidos, datado na compra (D-A2 b); juros não viram despesa (D-A3 b).
+        assertEquals(550L, descontos(ago))
         assertEquals(0L, descontos(YearMonth.of(2026, 12)))
-        assertEquals(27_300L, Saldos.totaisDoMes(movs.observar().first(), ago).despesas)
+        assertEquals(30_000L, Saldos.totaisDoMes(movs.observar().first(), ago).despesas)
         assertEquals(1, movs.observar().first().count { it.tipo == com.nkpay.app.dominio.TipoMovimentacao.DESPESA })
-        assertTrue(banco.ajusteObrigacaoDao().observarValidos().first().any { it.natureza == NaturezaAjuste.DESCONTO_ANTES_DO_APP.name && it.valorCentavos == 558L })
+        assertTrue(banco.ajusteObrigacaoDao().observarValidos().first().any { it.natureza == NaturezaAjuste.DESCONTO_ANTES_DO_APP.name && it.valorCentavos == 550L })
     }
 
     @Test
@@ -100,12 +100,12 @@ class AntecipadasTest {
 
     @Test
     fun `antecipadas invalidas sao recusadas`() = runTest {
-        val base = nova(4_358, anterior = true, pagas = 4, parcial = 1_000, data = LocalDate.of(2026, 8, 10))
-        for (a in listOf(listOf(Antecipada(3, 4_358)), listOf(Antecipada(5, 4_358)), listOf(Antecipada(13, 100)),
-            listOf(Antecipada(12, 4_359)), listOf(Antecipada(12, 100), Antecipada(12, 200)))) {
+        val base = nova(4_550, anterior = true, pagas = 4, parcial = 1_000, data = LocalDate.of(2026, 8, 10))
+        for (a in listOf(listOf(Antecipada(3, 4_550)), listOf(Antecipada(5, 4_550)), listOf(Antecipada(13, 100)),
+            listOf(Antecipada(12, 4_551)), listOf(Antecipada(12, 100), Antecipada(12, 200)))) {
             assertTrue("$a", compras.registrar(base.copy(antecipadas = a)) is Resultado.Falha)
         }
-        assertTrue(compras.registrar(nova(4_358).copy(antecipadas = listOf(Antecipada(12, 100)))) is Resultado.Falha)
+        assertTrue(compras.registrar(nova(4_550).copy(antecipadas = listOf(Antecipada(12, 100)))) is Resultado.Falha)
         assertTrue(visao().compras.isEmpty())
     }
 }

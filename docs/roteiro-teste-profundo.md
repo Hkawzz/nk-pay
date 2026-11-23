@@ -60,11 +60,11 @@ Crie "Cartão teste": fecha dia 5, vence dia 12, limite R$ 2.000,00.
 - [ ] Excluir uma compra **sem** pagamento → a despesa, as parcelas e o devido somem. Com pagamento → recusado até desfazer.
 
 ## 5. Compra parcelada com juros
-- [ ] Nova compra: Valor total **R$ 273,00**, 12 parcelas, Valor da parcela **R$ 43,58** → o app mostra **12x de R$ 43,58 = R$ 522,96; juros do parcelamento R$ 249,96**.
-- [ ] Depois de registrar: despesa da compra **R$ 273,00**; Devido **R$ 273,00**; card **Juros a pagar R$ 249,96** (com "?").
-- [ ] Parcela: "Parte da compra **R$ 22,75** · juros do parcelamento **R$ 20,83**".
-- [ ] Pagar a fatura com a 1ª parcela (R$ 43,58) → despesa de **R$ 20,83** em Encargos financeiros na data do pagamento; Devido **R$ 250,25**; Juros a pagar **R$ 229,13**.
-- [ ] Desfazer → a despesa de juros some junto; Devido volta a R$ 273,00.
+- [ ] Nova compra: Valor total **R$ 300,00**, 12 parcelas, Valor da parcela **R$ 45,50** → o app mostra **12x de R$ 45,50 = R$ 546,00; juros do parcelamento R$ 246,00**.
+- [ ] Depois de registrar: despesa da compra **R$ 300,00**; Devido **R$ 300,00**; card **Juros a pagar R$ 246,00** (com "?").
+- [ ] Parcela: "Parte da compra **R$ 25,00** · juros do parcelamento **R$ 20,50**".
+- [ ] Pagar a fatura com a 1ª parcela (R$ 45,50) → despesa de **R$ 20,50** em Encargos financeiros na data do pagamento; Devido **R$ 275,00**; Juros a pagar **R$ 225,50**.
+- [ ] Desfazer → a despesa de juros some junto; Devido volta a R$ 300,00.
 - [ ] Valor da parcela que dá total **menor** que o valor da compra → recusado.
 
 ## 6. Crediário
@@ -75,7 +75,7 @@ Crie "Loja teste" (crediário, vence dia 20).
 
 ## 7. Compras anteriores ao app e antecipadas
 - [ ] Compra anterior: R$ 1.200,00 em 12x, de uma data de 4 meses atrás, **4 já pagas** → Devido **R$ 800,00**; despesa de R$ 1.200,00 **no mês original**; o Pix **não** muda; "quitada antes do app" **não** entra em Descontos obtidos.
-- [ ] Com **parcela antecipada**: R$ 273,00, 12 × R$ 43,58, 4 pagas, antecipada a 12 com valor pago R$ 38,00 (o Desconto mostra R$ 5,58) → Devido **R$ 159,25**; nenhuma despesa de juros; Descontos obtidos **+R$ 5,58 no mês da compra**.
+- [ ] Com **parcela antecipada**: R$ 300,00, 12 × R$ 45,50, 4 pagas, antecipada a 12 com valor pago R$ 40,00 (o Desconto mostra R$ 5,50) → Devido **R$ 175,00**; nenhuma despesa de juros; Descontos obtidos **+R$ 5,50 no mês da compra**.
 - [ ] Antecipar uma parcela que já está entre as pagas → recusado.
 - [ ] Se já existir algo parecido no app → aparece o aviso "Isto pode já estar no app".
 

@@ -5,7 +5,7 @@
 > ⚠️ O backup tem os seus dados financeiros. Ele **não sai do celular** e **nunca** vai para o repositório nem para o computador.
 
 ## O que você precisa
-Na pasta `Documents\nk-pay-apks` do computador (fora do repositório), estão:
+Na pasta local de APKs do computador (fora do repositório), estão:
 - `nk-pay-v0.5.0-debug.apk`: a v0.5 do app de debug.
 - `nk-pay-v0.6.0-debug.apk`: a v0.6 do app de debug.
 
@@ -22,17 +22,17 @@ Os dois foram compilados no mesmo computador, com a mesma chave de debug: um atu
    - [ ] Cartões, crediários, faturas, empréstimos e A pagar iguais. As compras antigas continuam **sem juros** (a tela do cartão não mostra "Juros a pagar").
 
 ## Parte 2: compra parcelada com juros (use valores pequenos)
-No cartão: **+** (Nova compra) → Valor total **R$ 273,00**, 12 parcelas, **Valor da parcela (se tiver juros) R$ 43,58**.
-- [ ] O app mostra: 12x de R$ 43,58 = R$ 522,96; juros do parcelamento R$ 249,96.
-- [ ] Depois de registrar: **Devido R$ 273,00** e o card **"Juros a pagar R$ 249,96"**, com "?" explicando a diferença para o empréstimo.
-- [ ] A despesa da compra é **R$ 273,00** (não R$ 522,96).
-- [ ] Abra a parcela: "Parte da compra R$ 22,75 · juros do parcelamento R$ 20,83".
-- [ ] Pague a fatura dessa parcela (R$ 43,58): o resumo avisa a despesa de juros; depois, **Devido R$ 250,25**, juros a pagar R$ 229,13, e aparece uma despesa de **R$ 20,83** em Encargos financeiros, na data do pagamento.
+No cartão: **+** (Nova compra) → Valor total **R$ 300,00**, 12 parcelas, **Valor da parcela (se tiver juros) R$ 45,50**.
+- [ ] O app mostra: 12x de R$ 45,50 = R$ 546,00; juros do parcelamento R$ 246,00.
+- [ ] Depois de registrar: **Devido R$ 300,00** e o card **"Juros a pagar R$ 246,00"**, com "?" explicando a diferença para o empréstimo.
+- [ ] A despesa da compra é **R$ 300,00** (não R$ 546,00).
+- [ ] Abra a parcela: "Parte da compra R$ 25,00 · juros do parcelamento R$ 20,50".
+- [ ] Pague a fatura dessa parcela (R$ 45,50): o resumo avisa a despesa de juros; depois, **Devido R$ 275,00**, juros a pagar R$ 225,50, e aparece uma despesa de **R$ 20,50** em Encargos financeiros, na data do pagamento.
 - [ ] **Desfazer** o pagamento remove a despesa de juros junto.
 - [ ] Num crediário: pague uma parcela com juros com desconto. O desconto sai primeiro dos juros (a despesa de juros fica menor) e aparece em "Descontos obtidos".
 
 ### Como corrigir uma compra antiga lançada pelo total com juros
-Se você lançou na v0.4/v0.5 uma compra pelo total já com juros (ex.: R$ 522,96 em vez de R$ 273,00), a despesa ficou maior que a compra.
+Se você lançou na v0.4/v0.5 uma compra pelo total já com juros (ex.: R$ 546,00 em vez de R$ 300,00), a despesa ficou maior que a compra.
 1. **Se nenhuma parcela foi paga:** abra a compra → **Excluir compra** → cadastre de novo com o **valor original** e o **valor da parcela**.
 2. **Se já houver parcela paga:** primeiro **desfaça os pagamentos** (fatura ou parcela → Desfazer), depois exclua e cadastre de novo, e por fim **registre de novo os pagamentos** (agora com os juros separados).
 3. Se ela foi paga antes de usar o app, cadastre como **compra anterior ao app** (Parte 3), com as parcelas já pagas.
@@ -40,10 +40,10 @@ Se você lançou na v0.4/v0.5 uma compra pelo total já com juros (ex.: R$ 522,9
 Faça primeiro no app de debug e confira o devido do cartão antes de repetir no principal.
 
 ## Parte 3: compra anterior com juros e parcelas antecipadas
-Nova compra → ligue **"Compra feita antes de usar o app"** → R$ 273,00, 12 parcelas, parcela R$ 43,58, 4 já pagas, **Parcelas antecipadas: 12**, Valor pago R$ 38,00 (o Desconto mostra R$ 5,58).
-- [ ] Devido = R$ 273,00 − 5 × R$ 22,75 = **R$ 159,25**. O Pix não muda.
+Nova compra → ligue **"Compra feita antes de usar o app"** → R$ 300,00, 12 parcelas, parcela R$ 45,50, 4 já pagas, **Parcelas antecipadas: 12**, Valor pago R$ 40,00 (o Desconto mostra R$ 5,50).
+- [ ] Devido = R$ 300,00 − 5 × R$ 25,00 = **R$ 175,00**. O Pix não muda.
 - [ ] Nenhuma despesa de juros (os juros das parcelas pagas antes do app ficam só no histórico).
-- [ ] Nas **Análises**, no mês **da compra**, "Descontos obtidos" mostra R$ 5,58.
+- [ ] Nas **Análises**, no mês **da compra**, "Descontos obtidos" mostra R$ 5,50.
 - [ ] Informar a parcela 3 como antecipada (ela já está entre as pagas) é recusado.
 
 ## Parte 4: excluir e arquivar

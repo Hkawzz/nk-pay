@@ -7,7 +7,7 @@
 Este roteiro cobre **o que mudou na v0.7** (objetivos). O teste de **todo o app**, área por área, está em [`roteiro-teste-profundo.md`](roteiro-teste-profundo.md); os problemas vão para [`registro-de-problemas-v0.8.md`](registro-de-problemas-v0.8.md).
 
 ## O que você precisa
-Na pasta `Documents\nk-pay-apks` do computador (fora do repositório), estão:
+Na pasta local de APKs do computador (fora do repositório), estão:
 - `nk-pay-v0.6.0-debug.apk`: a v0.6 do app de debug.
 - `nk-pay-v0.7.0-debug.apk`: a v0.7 do app de debug.
 

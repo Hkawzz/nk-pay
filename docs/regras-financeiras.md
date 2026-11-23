@@ -279,9 +279,9 @@ Invariante                 = Devido = Σ restante das faturas em aberto − Juro
 
 > **Diferente dos empréstimos (J1):** num empréstimo pego, os juros entram como despesa **na contratação**. Na compra parcelada, eles entram **parcela a parcela, quando cada uma é paga**.
 
-> **Exemplo.** Compra de R$ 273,00 em 12 × R$ 43,58 (total R$ 522,96; juros R$ 249,96).
-> - Compra: despesa de **R$ 273,00** na categoria da compra. Devido R$ 273,00; juros a pagar R$ 249,96.
-> - Paga a 1ª parcela (R$ 43,58): transferência Pix → Cartão de R$ 43,58 + despesa de **R$ 20,83** em Encargos financeiros (43,58 − 22,75). Devido R$ 250,25 (273,00 − 22,75); juros a pagar R$ 229,13.
+> **Exemplo.** Compra de R$ 300,00 em 12 × R$ 45,50 (total R$ 546,00; juros R$ 246,00).
+> - Compra: despesa de **R$ 300,00** na categoria da compra. Devido R$ 300,00; juros a pagar R$ 246,00.
+> - Paga a 1ª parcela (R$ 45,50): transferência Pix → Cartão de R$ 45,50 + despesa de **R$ 20,50** em Encargos financeiros (45,50 − 25,00). Devido R$ 275,00 (300,00 − 25,00); juros a pagar R$ 225,50.
 
 ### 6B.9 Compra anterior ao app com juros e parcelas antecipadas ✅ v0.6
 - A despesa é o **valor original**, no mês original. As parcelas pagas antes do app (as primeiras k, a parcial e as **antecipadas**) têm o abatimento "quitada antes do app", e o ajuste na conta de crédito soma **só a parte da compra** delas.
@@ -289,7 +289,7 @@ Invariante                 = Devido = Σ restante das faturas em aberto − Juro
 - **Parcelas antecipadas:** você informa quais e, para cada uma, o **valor pago** ou o **desconto** (o app calcula o outro). Uma parcela não pode estar nas pagas e nas antecipadas ao mesmo tempo, e o valor pago não passa do previsto. O desconto reduz **primeiro os juros previstos** da parcela.
 - **O desconto de antes do app aparece em "Descontos obtidos", datado na data da compra** (D-A2 b).
 
-> **Exemplo.** Parcela 12 de R$ 43,58 (parte R$ 22,75, juros R$ 20,83) antecipada por R$ 38,00: "quitada antes do app" R$ 38,00 + "desconto antes do app" R$ 5,58 (que sai dos juros). O ajuste no cartão soma R$ 22,75 (a parte da compra). Descontos obtidos no mês da compra: +R$ 5,58.
+> **Exemplo.** Parcela 12 de R$ 45,50 (parte R$ 25,00, juros R$ 20,50) antecipada por R$ 40,00: "quitada antes do app" R$ 40,00 + "desconto antes do app" R$ 5,50 (que sai dos juros). O ajuste no cartão soma R$ 25,00 (a parte da compra). Descontos obtidos no mês da compra: +R$ 5,50.
 
 ### 6B.10 Excluir e arquivar cartões, crediários e pessoas ✅ v0.6
 - **Excluir** só sem nenhuma compra, pagamento, abatimento, empréstimo ou movimentação. Se houver, o app explica e oferece **Arquivar**.

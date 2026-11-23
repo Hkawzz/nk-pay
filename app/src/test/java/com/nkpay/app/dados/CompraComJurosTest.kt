@@ -62,36 +62,36 @@ class CompraComJurosTest {
     }
 
     private fun nova(parcela: Long?, anterior: Boolean = false, pagas: Int = 0, parcial: Long = 0, data: LocalDate = LocalDate.of(2026, 12, 3)) =
-        NovaCompra(cartao, "Celular", categoria, data, 27_300, 12, LocalDate.of(2026, 12, 12), anteriorAoApp = anterior, parcelasJaPagas = pagas, pagoEmParteDaSeguinte = parcial, valorParcela = parcela)
+        NovaCompra(cartao, "Celular", categoria, data, 30_000, 12, LocalDate.of(2026, 12, 12), anteriorAoApp = anterior, parcelasJaPagas = pagas, pagoEmParteDaSeguinte = parcial, valorParcela = parcela)
 
     @Test
-    fun `compra de 273 em 12 de 43_58 tem despesa do original e juros a pagar fora do devido`() = runTest {
-        val id = (compras.registrar(nova(4_358)) as Resultado.Sucesso).valor
+    fun `compra de 300 em 12 de 45_50 tem despesa do original e juros a pagar fora do devido`() = runTest {
+        val id = (compras.registrar(nova(4_550)) as Resultado.Sucesso).valor
         val v = visao()
         val c = v.compra(id)!!
-        assertEquals(52_296L, c.valorTotal)
-        assertEquals(27_300L, c.valorOriginal)
-        assertEquals(24_996L, c.juros)
-        assertTrue(v.parcelasDaCompra(id).all { it.valorPrevisto == 4_358L })
+        assertEquals(54_600L, c.valorTotal)
+        assertEquals(30_000L, c.valorOriginal)
+        assertEquals(24_600L, c.juros)
+        assertTrue(v.parcelasDaCompra(id).all { it.valorPrevisto == 4_550L })
         // A despesa é o valor original, no mês da compra.
-        assertEquals(27_300L, Saldos.totaisDoMes(movs.observar().first(), YearMonth.of(2026, 12)).despesas)
-        assertEquals(27_300L, v.devido(cartao))
-        assertEquals(24_996L, v.jurosAPagar(cartao, relogio.hoje()))
-        assertEquals(24_996L, v.jurosAPagarDaCompra(id, relogio.hoje()))
-        assertEquals(472_700L, v.limiteDisponivel(cartao))
+        assertEquals(30_000L, Saldos.totaisDoMes(movs.observar().first(), YearMonth.of(2026, 12)).despesas)
+        assertEquals(30_000L, v.devido(cartao))
+        assertEquals(24_600L, v.jurosAPagar(cartao, relogio.hoje()))
+        assertEquals(24_600L, v.jurosAPagarDaCompra(id, relogio.hoje()))
+        assertEquals(470_000L, v.limiteDisponivel(cartao))
         assertTrue(v.invarianteFecha(cartao, relogio.hoje()))
-        // Parcela: parte da compra R$ 22,75 e juros R$ 20,83 (a última parte absorve os centavos).
+        // Parcela: parte da compra R$ 25,00 e juros R$ 20,50 (a última parte absorve os centavos).
         val p1 = v.situacaoDaParcela(v.parcelasDaCompra(id).first().id, relogio.hoje())!!
-        assertEquals(2_275L, p1.parteDaCompra)
-        assertEquals(2_083L, p1.jurosPrevistos)
-        assertEquals(27_300L - 2_275L * 11, v.situacaoDaParcela(v.parcelasDaCompra(id).last().id, relogio.hoje())!!.parteDaCompra)
+        assertEquals(2_500L, p1.parteDaCompra)
+        assertEquals(2_050L, p1.jurosPrevistos)
+        assertEquals(30_000L - 2_500L * 11, v.situacaoDaParcela(v.parcelasDaCompra(id).last().id, relogio.hoje())!!.parteDaCompra)
     }
 
     @Test
     fun `parcela igual ao original dividido e compra sem juros como na v0_5`() = runTest {
-        val id = (compras.registrar(nova(2_275)) as Resultado.Sucesso).valor
+        val id = (compras.registrar(nova(2_500)) as Resultado.Sucesso).valor
         val v = visao()
-        assertEquals(27_300L, v.compra(id)!!.valorTotal)
+        assertEquals(30_000L, v.compra(id)!!.valorTotal)
         assertEquals(0L, v.compra(id)!!.juros)
         assertNull(banco.compraDao().buscar(id)!!.valorOriginalCentavos)
         assertEquals(0L, v.jurosAPagar(cartao, relogio.hoje()))
@@ -108,17 +108,17 @@ class CompraComJurosTest {
 
     @Test
     fun `compra anterior com juros soma so a parte da compra e os juros pagos nao viram despesa`() = runTest {
-        val id = (compras.registrar(nova(4_358, anterior = true, pagas = 4, parcial = 2_179, data = LocalDate.of(2026, 8, 10))) as Resultado.Sucesso).valor
+        val id = (compras.registrar(nova(4_550, anterior = true, pagas = 4, parcial = 2_275, data = LocalDate.of(2026, 8, 10))) as Resultado.Sucesso).valor
         val v = visao()
-        // 4 parcelas inteiras (4 × 22,75) + metade da 5ª (2.179 de 4.358: parte 1.138, juros 1.041).
-        val jurosDaParcial = 2_179L * 2_083 / 4_358
-        val parteDaParcial = 2_179L - jurosDaParcial
-        assertEquals(27_300L - 4 * 2_275 - parteDaParcial, v.devido(cartao))
-        assertEquals(7 * 2_083L + (2_083L - jurosDaParcial), v.jurosAPagar(cartao, relogio.hoje()))
+        // 4 parcelas inteiras (4 × 25,00) + metade da 5ª (2.275 de 4.550: parte 1.250, juros 1.025).
+        val jurosDaParcial = 2_275L * 2_050 / 4_550
+        val parteDaParcial = 2_275L - jurosDaParcial
+        assertEquals(30_000L - 4 * 2_500 - parteDaParcial, v.devido(cartao))
+        assertEquals(7 * 2_050L + (2_050L - jurosDaParcial), v.jurosAPagar(cartao, relogio.hoje()))
         assertTrue(v.invarianteFecha(cartao, relogio.hoje()))
         // Despesa só do original, em agosto; nenhuma despesa de juros.
         val todas = movs.observar().first()
-        assertEquals(27_300L, Saldos.totaisDoMes(todas, YearMonth.of(2026, 8)).despesas)
+        assertEquals(30_000L, Saldos.totaisDoMes(todas, YearMonth.of(2026, 8)).despesas)
         assertEquals(1, todas.count { it.tipo == com.nkpay.app.dominio.TipoMovimentacao.DESPESA })
         val ajustes = banco.ajusteObrigacaoDao().observarValidos().first()
         assertEquals(1, ajustes.count { it.natureza == NaturezaAjuste.JUROS_DO_PARCELAMENTO.name && it.movimentacaoId == null })

@@ -60,7 +60,7 @@ No total, **244 testes** (231 da v0.6 + 13 novos), todos passando.
 **Proteção dos dados reais**
 - A migração 5→6 só cria as tabelas `objetivo` e `movimento_reserva`; nenhuma tabela existente muda. A cópia do banco antes de migrar continua valendo.
 - Backups da v0.6 restauram na v0.7 (sem objetivos); a v0.6 recusa backups da v0.7.
-- Nenhum dado real no repositório. APKs de debug (v0.6.0 e v0.7.0, mesma chave de debug) em `Documents\nk-pay-apks`, para o roteiro.
+- Nenhum dado real no repositório. APKs de debug (v0.6.0 e v0.7.0, mesma chave de debug) numa pasta local do computador, fora do repositório, para o roteiro.
 
 **Pendências:** nenhuma. O teste profundo é seu: o roteiro está em `docs/roteiro-teste-profundo.md`, e o que encontrar vai para `docs/registro-de-problemas-v0.8.md`.
 
@@ -129,7 +129,7 @@ No total, **231 testes** (201 da v0.5 + 30 novos), todos passando.
 **Proteção dos dados reais**
 - A migração 4→5 só acrescenta `compra.valorOriginalCentavos` vazia (as compras antigas continuam sem juros) e cria a tabela `pendencia_levada`. A cópia do banco antes de migrar continua valendo.
 - Backups da v0.5 restauram na v0.6; a v0.5 recusa backups da v0.6.
-- Nenhum dado real no repositório. APKs de debug (v0.5.0 e v0.6.0, mesma chave de debug) em `Documents\nk-pay-apks`, para o roteiro.
+- Nenhum dado real no repositório. APKs de debug (v0.5.0 e v0.6.0, mesma chave de debug) numa pasta local do computador, fora do repositório, para o roteiro.
 
 **Limitação conhecida** (nota para o futuro, [0025](decisoes/0025-juros-do-parcelamento.md)): pela D-A3 (b), os juros das parcelas pagas antes do app não entram nas Análises. Se o app for usado por outras pessoas, os juros e os descontos de antes do app precisarão entrar nelas de forma completa.
 
@@ -193,7 +193,7 @@ No total, **231 testes** (201 da v0.5 + 30 novos), todos passando.
 - A migração 3→4 só cria a tabela `emprestimo` e acrescenta `obrigacao.emprestimoId` vazia. Foi testada com um banco igual ao da v0.4 (inclusive cartões, compras e abatimentos de fatura), com todas as linhas idênticas campo a campo.
 - A cópia do arquivo do banco antes de migrar continua valendo.
 - Backups da v0.4 restauram na v0.5 (e a categoria "Juros recebidos" é recriada com auditoria). A v0.4 recusa backups da v0.5.
-- Nenhum dado real no repositório. APKs de debug (v0.4.0 e v0.5.0, mesma chave de debug) em `Documents\nk-pay-apks`, para o roteiro.
+- Nenhum dado real no repositório. APKs de debug (v0.4.0 e v0.5.0, mesma chave de debug) numa pasta local do computador, fora do repositório, para o roteiro.
 
 **Pendências**
 - **Teste no seu celular**, pelo roteiro `docs/roteiro-teste-v0.5.md` (migração de verdade sobre uma cópia, empréstimos e a passagem de "cartões fictícios" para empréstimos).
@@ -277,7 +277,7 @@ Com os portões passando, publiquei a tag `v0.4.0`. **A instalação no app prin
 - Backups da v0.3 restauram na v0.4, e a v0.3 recusa backups da v0.4.
 - A aparência das categorias é um passo auditado, que nunca toca em tabelas financeiras.
 - Nenhum dado real entrou no repositório. As imagens de referência da Início não foram copiadas.
-- **APKs de debug** (v0.3.0 e v0.4.0, mesma chave de debug, `com.nkpay.app.debug`) ficam em `Documents\nk-pay-apks`, fora do repositório, para o roteiro `docs/roteiro-teste-v0.4.md`. O CI também guarda o APK de debug da `main` (artefato `apk-debug`), mas ele é assinado com outra chave de debug e não atualiza por cima do de `Documents\nk-pay-apks`.
+- **APKs de debug** (v0.3.0 e v0.4.0, mesma chave de debug, `com.nkpay.app.debug`) ficam numa pasta local do computador, fora do repositório, para o roteiro `docs/roteiro-teste-v0.4.md`. O CI também guarda o APK de debug da `main` (artefato `apk-debug`), mas ele é assinado com outra chave de debug e não atualiza por cima do APK de debug local.
 
 **Pendências**
 - **Teste no seu celular** (roteiro `docs/roteiro-teste-v0.4.md`): a migração de verdade, sobre uma cópia, no app de debug. Não dá para fazer daqui.
@@ -431,9 +431,9 @@ Também marquei a estrutura do banco (ADR [0008](decisoes/0008-banco-de-dados.md
 - Documentação: README com o passo a passo de instalação, regras financeiras e registros de decisão.
 
 **Preparação do ambiente**
-- Instalados Git, GitHub CLI, JDK 21, Gradle e Android SDK. Como o app do Claude é da Microsoft Store, o Windows redirecionava as gravações em `AppData`; por isso, as ferramentas ficam em `C:\Users\kawan\nk-pay-tools`.
+- Instalados Git, GitHub CLI, JDK 21, Gradle e Android SDK. Como o app do Claude é da Microsoft Store, o Windows redirecionava as gravações em `AppData`; por isso, as ferramentas ficam numa pasta local própria, fora do `AppData`.
 - Repositório privado `Hkawzz/nk-pay` criado.
-- **Keystore de release** criada por você (você digitou a senha) em `Documents\nk-pay-chave\`, com os 4 GitHub Secrets cadastrados. Impressão digital: `E4:08:56:3D:…:FC:64`.
+- **Keystore de release** criada por você (você digitou a senha) e guardada numa pasta local fora do repositório, com os 4 GitHub Secrets cadastrados. Impressão digital: `E4:08:56:3D:…:FC:64`.
 
 **Decisões tomadas** ([0001](decisoes/0001-stack.md) a [0007](decisoes/0007-app-de-debug-separado.md))
 - Stack Kotlin + Compose + Room, um módulo, sem Hilt.
