@@ -43,6 +43,8 @@ import com.nkpay.app.dominio.VisaoCredito
 import com.nkpay.app.dominio.VisaoFinanceira
 import com.nkpay.app.ui.Formatos
 import com.nkpay.app.ui.LocalContainer
+import com.nkpay.app.ui.ajuda.ChaveAjuda
+import com.nkpay.app.ui.ajuda.NkAjuda
 import com.nkpay.app.ui.componentes.IconeDaCategoria
 import com.nkpay.app.ui.componentes.IconeDaConta
 import com.nkpay.app.ui.componentes.NkCard
@@ -132,9 +134,12 @@ fun AnalisesTela(aoVoltar: () -> Unit) {
 }
 
 @Composable
-private fun Titulo(texto: String, ajuda: String? = null) {
+private fun Titulo(texto: String, ajuda: String? = null, chave: ChaveAjuda? = null) {
     Column(Modifier.padding(start = Espaco.l, end = Espaco.m, top = Espaco.l, bottom = Espaco.xs)) {
-        Text(texto, style = MaterialTheme.typography.titleMedium, color = Lilas)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(texto, style = MaterialTheme.typography.titleMedium, color = Lilas)
+            chave?.let { NkAjuda(it) }
+        }
         ajuda?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
@@ -151,7 +156,10 @@ private fun SecaoResumo(v: VisaoFinanceira, periodo: Periodo, descontos: Long) {
     val t = Analises.totais(v.movimentacoes, periodo)
     NkCardDestaque {
         Column(Modifier.padding(Espaco.l), verticalArrangement = Arrangement.spacedBy(Espaco.s)) {
-            Text("Resultado do período", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Resultado do período", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                NkAjuda(ChaveAjuda.RESULTADO, cor = MaterialTheme.colorScheme.onPrimaryContainer)
+            }
             NkValorAjustavel(t.resultado, estilo = EstiloValor.destaque, cor = if (t.resultado < 0) RosaDespesa else MaterialTheme.colorScheme.onBackground, prefixo = if (t.resultado > 0) "+ " else "")
             Row {
                 Column(Modifier.weight(1f)) {
@@ -159,11 +167,17 @@ private fun SecaoResumo(v: VisaoFinanceira, periodo: Periodo, descontos: Long) {
                     NkValorAjustavel(t.entradas, estilo = EstiloValor.lista, cor = VerdeEntrada)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("Despesas", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Despesas registradas", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        NkAjuda(ChaveAjuda.DESPESAS_REGISTRADAS, cor = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
                     NkValorAjustavel(t.despesas, estilo = EstiloValor.lista, cor = RosaDespesa)
                 }
             }
-            if (descontos > 0) Text("Descontos obtidos: ${Dinheiro.formatar(descontos)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            if (descontos > 0) Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Descontos obtidos: ${Dinheiro.formatar(descontos)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                NkAjuda(ChaveAjuda.DESCONTOS_OBTIDOS, cor = MaterialTheme.colorScheme.onPrimaryContainer)
+            }
             Text("Compras no cartão contam no mês da compra. Transferências, ajustes e pagamentos de fatura não entram.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
@@ -212,6 +226,8 @@ private fun Barra(fracao: Float, cor: Color, descricao: String) {
 private fun SecaoEvolucao(v: VisaoFinanceira, periodo: Periodo) {
     Titulo("Evolução mensal", "Entradas (verde) e despesas (rosa) de cada mês.")
     val ev = Analises.evolucaoMensal(v.movimentacoes, periodo)
+    val mesAtual = java.time.YearMonth.from(LocalContainer.current.relogio.hoje())
+    val destaqueMes = Lilas.copy(alpha = 0.12f)
     NkCard {
         if (ev.all { it.semDados }) { SemDados("Os dados começam no seu primeiro lançamento."); return@NkCard }
         val maior = ev.maxOf { maxOf(it.entradas, it.despesas) }.coerceAtLeast(1).toFloat()
@@ -222,6 +238,8 @@ private fun SecaoEvolucao(v: VisaoFinanceira, periodo: Periodo) {
                 val barra = (largura * 0.3f).coerceAtMost(28.dp.toPx())
                 ev.forEachIndexed { i, m ->
                     val x = largura * i + largura / 2
+                    // O mês atual tem um fundo lilás discreto.
+                    if (m.mes == mesAtual && n > 1) drawRoundRect(destaqueMes, Offset(largura * i + 2.dp.toPx(), 0f), Size(largura - 4.dp.toPx(), size.height), CornerRadius(8.dp.toPx()))
                     fun coluna(valor: Long, dx: Float, cor: Color) {
                         val h = size.height * (valor / maior)
                         drawRoundRect(cor, Offset(x + dx, size.height - h), Size(barra, h), CornerRadius(4.dp.toPx()))
@@ -233,14 +251,23 @@ private fun SecaoEvolucao(v: VisaoFinanceira, periodo: Periodo) {
                 }
             }
             for (m in ev.reversed()) {
-                Row {
-                    Text(Formatos.mes(m.mes), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                    if (m.semDados) Text("sem dados", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    else Text(
-                        "+${Dinheiro.formatar(m.entradas)}  -${Dinheiro.formatar(m.despesas)}",
-                        style = EstiloValor.pequeno,
-                        color = if (m.resultado < 0) RosaDespesa else MaterialTheme.colorScheme.onSurface,
+                val atual = m.mes == mesAtual
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        Formatos.mes(m.mes) + if (atual) " (atual)" else "",
+                        style = if (atual) MaterialTheme.typography.labelLarge else MaterialTheme.typography.bodySmall,
+                        color = if (atual) Lilas else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
                     )
+                    if (m.semDados) Text("sem dados", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else Column(horizontalAlignment = Alignment.End) {
+                        Text("+${Dinheiro.formatar(m.entradas)}  -${Dinheiro.formatar(m.despesas)}", style = EstiloValor.pequeno)
+                        Text(
+                            "Resultado " + (if (m.resultado > 0) "+" else "") + Dinheiro.formatar(m.resultado),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (m.resultado < 0) RosaDespesa else VerdeEntrada,
+                        )
+                    }
                 }
             }
         }
@@ -256,7 +283,12 @@ private fun SecaoFluxo(v: VisaoFinanceira, periodo: Periodo) {
     NkCard {
         Column(Modifier.padding(Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
             LinhaValor("Entrou", f.entrou, VerdeEntrada)
-            LinhaValor("Saiu", f.saiu, RosaDespesa)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Saídas do dinheiro próprio", style = MaterialTheme.typography.bodyMedium)
+                NkAjuda(ChaveAjuda.SAIDAS_PROPRIO)
+                Spacer(Modifier.weight(1f))
+                Text(Dinheiro.formatar(f.saiu), style = EstiloValor.lista, color = RosaDespesa)
+            }
             if (f.pagamentosDeCredito > 0) LinhaValor("… dos quais pagamentos de cartão e crediário", f.pagamentosDeCredito, MaterialTheme.colorScheme.onSurfaceVariant)
             NkDivisor()
             LinhaValor("Saldo do período", f.saldo, if (f.saldo < 0) RosaDespesa else MaterialTheme.colorScheme.onSurface)
@@ -318,7 +350,7 @@ private fun Linha(valores: List<Long>, cor: Color, descricao: String) {
 private fun SecaoCredito(vc: VisaoCredito, hoje: LocalDate) {
     val lista = Analises.credito(vc, hoje)
     if (lista.isEmpty()) return
-    Titulo("Cartões e crediários", "O devido nunca entra no Disponível.")
+    Titulo("Cartões e crediários", "O devido nunca entra no Saldo disponível.", ChaveAjuda.CARTOES_CREDIARIOS)
     NkCard {
         lista.forEachIndexed { i, r ->
             if (i > 0) NkDivisor()
