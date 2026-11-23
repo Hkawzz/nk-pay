@@ -27,6 +27,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 |---|---|---|---|
 | [#36](https://github.com/Hkawzz/nk-pay/pull/36) | 1 | Regras 6E (empréstimos, fluxo generalizado, Início) e decisões 0020 a 0023. Sem código | ✅ |
 | [#37](https://github.com/Hkawzz/nk-pay/pull/37) | 2 | Fluxo com as quantidades; Resumo da Início pelo fluxo (Entradas, Saídas, Saldo das movimentações); card "Saldo disponível" (Saldo total e Guardado só com Guardado > 0) | ✅ |
+| [#38](https://github.com/Hkawzz/nk-pay/pull/38) | 3 | Ajuda "?" (`NkAjuda`) com todos os textos num arquivo só, conferidos contra o domínio; aplicada à Início | ✅ |
 
 **Decisões tomadas sozinho** (a opção mais simples, mais segura para os dados e mais fácil de reverter; detalhes na [0021](decisoes/0021-emprestimos.md))
 - **Juros K2 ligados ao recebimento** por um ajuste neutro (`JUROS_RECEBIDOS`), em vez de duas linhas de `pagamento`. O desfazer da v0.4 já remove esse ajuste e a entrada de juros junto, sem código novo de exclusão.
@@ -36,6 +37,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **A conta própria do empréstimo** só pode ser de dinheiro próprio.
 - **Desconto concedido** separado do obtido nas Análises, pela natureza da conta.
 - **A pagar:** cada parcela de empréstimo recebido aparece como uma linha.
+- **A "folha" da ajuda é um diálogo simples com texto** (componente padrão, igual em todas as versões do Android).
+- **O título dos benefícios na Início continua "Benefícios · fora do Disponível"** (o roteiro de aceite da v0.1 confere esse texto); o "?" ao lado explica.
 
 **Pendências:** nenhuma até aqui.
 
