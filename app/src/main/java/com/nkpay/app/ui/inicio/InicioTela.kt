@@ -113,7 +113,7 @@ fun InicioTela(
             // --- 1. Disponível (destaque 1 de 1) ---
             NkCardDestaque {
                 Column(Modifier.fillMaxWidth().padding(Espaco.l), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Disponível", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("Saldo disponível", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     Spacer(Modifier.height(Espaco.xxs))
                     NkValorAjustavel(
                         r.disponivel,
@@ -122,10 +122,13 @@ fun InicioTela(
                         alinhamento = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(Modifier.height(Espaco.m))
-                    Row(Modifier.fillMaxWidth()) {
-                        ValorCentral("Dinheiro próprio", r.dinheiroProprio, Modifier.weight(1f))
-                        ValorCentral("Reservado", r.reservado, Modifier.weight(1f))
+                    // v0.5 (regra 6E.3): Saldo total e Guardado só aparecem quando há algo guardado (objetivos, v0.7).
+                    if (r.reservado > 0) {
+                        Spacer(Modifier.height(Espaco.m))
+                        Row(Modifier.fillMaxWidth()) {
+                            ValorCentral("Saldo total", r.dinheiroProprio, Modifier.weight(1f))
+                            ValorCentral("Guardado", r.reservado, Modifier.weight(1f))
+                        }
                     }
                 }
             }
@@ -253,15 +256,16 @@ private fun GradeDeContas(
     }
 }
 
-/** Resumo do mês escolhido: entradas e despesas (com a quantidade) e o resultado. */
+/**
+ * Resumo do mês escolhido (v0.5, D1): o FLUXO do dinheiro próprio (regra 6E.2), com o
+ * mesmo cálculo das Análises. Despesas pagas com VA/VR e compras no cartão não são saídas.
+ */
 @Composable
 private fun ResumoDoMes(v: VisaoFinanceira, mes: YearMonth, aoMudarMes: (YearMonth) -> Unit) {
-    val doMes = v.movimentacoes.filter { YearMonth.from(it.data) == mes }
-    val entradas = doMes.filter { it.tipo == TipoMovimentacao.ENTRADA }
-    val despesas = doMes.filter { it.tipo == TipoMovimentacao.DESPESA }
-    val totalEntradas = entradas.sumOf { it.valor }
-    val totalDespesas = despesas.sumOf { it.valor }
-    val resultado = totalEntradas - totalDespesas
+    val fluxo = com.nkpay.app.dominio.Analises.fluxo(v.contas, v.movimentacoes, com.nkpay.app.dominio.Periodo(mes, mes))
+    val totalEntradas = fluxo.entrou
+    val totalDespesas = fluxo.saiu
+    val resultado = fluxo.saldo
     CabecalhoInicio("Resumo do mês") {
         IconButton(onClick = { aoMudarMes(mes.minusMonths(1)) }) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = "Mês anterior do resumo") }
         Text(Formatos.mes(mes), style = MaterialTheme.typography.labelLarge)
@@ -269,20 +273,20 @@ private fun ResumoDoMes(v: VisaoFinanceira, mes: YearMonth, aoMudarMes: (YearMon
     }
     Column(Modifier.padding(horizontal = Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
         Row(horizontalArrangement = Arrangement.spacedBy(Espaco.xs)) {
-            QuadroTotal("Entradas", totalEntradas, entradas.size, VerdeEntrada, Modifier.weight(1f))
-            QuadroTotal("Despesas", totalDespesas, despesas.size, RosaDespesa, Modifier.weight(1f))
+            QuadroTotal("Entradas", totalEntradas, fluxo.quantidadeEntradas, VerdeEntrada, Modifier.weight(1f))
+            QuadroTotal("Saídas", totalDespesas, fluxo.quantidadeSaidas, RosaDespesa, Modifier.weight(1f))
         }
         Column(
             Modifier.fillMaxWidth().clip(RaioV2.formaCard).background(MaterialTheme.colorScheme.surfaceContainer).padding(Espaco.m),
         ) {
-            Text("Resultado do mês", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Saldo das movimentações", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             NkValorAjustavel(
                 resultado,
                 estilo = EstiloValor.medio,
                 cor = if (resultado < 0) RosaDespesa else VerdeEntrada,
                 prefixo = if (resultado > 0) "+ " else "",
             )
-            Text("Entradas menos despesas. Transferências e ajustes não entram.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("O que entrou menos o que saiu do seu dinheiro próprio. Compras no cartão saem quando a fatura é paga.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

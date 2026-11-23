@@ -26,6 +26,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | # | Etapa | O que entrou | Estado |
 |---|---|---|---|
 | [#36](https://github.com/Hkawzz/nk-pay/pull/36) | 1 | Regras 6E (empréstimos, fluxo generalizado, Início) e decisões 0020 a 0023. Sem código | ✅ |
+| [#37](https://github.com/Hkawzz/nk-pay/pull/37) | 2 | Fluxo com as quantidades; Resumo da Início pelo fluxo (Entradas, Saídas, Saldo das movimentações); card "Saldo disponível" (Saldo total e Guardado só com Guardado > 0) | ✅ |
 
 **Decisões tomadas sozinho** (a opção mais simples, mais segura para os dados e mais fácil de reverter; detalhes na [0021](decisoes/0021-emprestimos.md))
 - **Juros K2 ligados ao recebimento** por um ajuste neutro (`JUROS_RECEBIDOS`), em vez de duas linhas de `pagamento`. O desfazer da v0.4 já remove esse ajuste e a entrada de juros junto, sem código novo de exclusão.
@@ -38,7 +39,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 **Pendências:** nenhuma até aqui.
 
-**Problemas encontrados:** nenhum até aqui.
+**Problemas encontrados**
+- **Uma linha de um teste antigo mudou** (`AceiteTest`, da v0.1): ele esperava ver na Início o valor de uma despesa paga com o VA como total do mês. Pela D1, ela não é saída do dinheiro próprio; a linha agora procura a despesa nas últimas movimentações. **Contradição anotada:** a regra aprovada (D1) vence o teste antigo, como manda o briefing.
 
 ---
 
