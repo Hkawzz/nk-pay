@@ -33,6 +33,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#51](https://github.com/Hkawzz/nk-pay/pull/51) | Parcelas antecipadas (A2) | Compra anterior com parcelas antecipadas: valor pago ou desconto (o app calcula o outro), sem repetir as pagas, até o previsto; desconto em Descontos obtidos na data da compra; juros não viram despesa | ✅ |
 | [#52](https://github.com/Hkawzz/nk-pay/pull/52) | Excluir e arquivar (A3, A5) | Cartões, crediários e pessoas: excluir só sem vínculos (senão oferece Arquivar), arquivar recusado com algo em aberto, "Mostrar arquivados" e Desarquivar; tela Pessoas com edição do nome | ✅ |
 | [#53](https://github.com/Hkawzz/nk-pay/pull/53) | Empréstimo anterior (A4) | Campos "Total de parcelas do contrato" e "Parcelas já pagas": só as pendentes são criadas, numeradas no contrato (ex.: 5/12). Nenhuma regra financeira mudou | ✅ |
+| [#54](https://github.com/Hkawzz/nk-pay/pull/54) | Preparar mês: domínio e serviço | Sugestões (fixas com o valor do mês anterior, parcelas para conferência, pendências), confirmação numa transação com um grupo de auditoria, pendência levada aparece também no mês novo sem mudar nada dela; repetir não duplica | ✅ |
 
 **Decisões tomadas sozinho**
 - **A seção 8 da análise não existe no arquivo** (ele termina na seção 7). Segui a regra D-A1 (c) como o próprio briefing a descreve em detalhe; as fórmulas da regra 6B.8 vêm dessa descrição.
@@ -51,7 +52,10 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Pessoas ganharam uma tela própria** (Empréstimos → Pessoas), com o nome, Arquivar/Desarquivar e Excluir; antes não havia onde gerenciar a pessoa. O Excluir do cartão fica no formulário de edição; o Arquivar continua no topo da tela do cartão, agora com o motivo quando é recusado.
 - **"Em aberto" para arquivar** = saldo da conta diferente de zero ou alguma parcela com restante (o que for maior aparece na mensagem). Contas próprias seguem a regra antiga (só a exclusão é bloqueada por movimentações).
 - **Empréstimo anterior:** com o total informado, pagas + pendentes precisam fechar o total (senão a numeração ficaria errada); sem o total, ele é pagas + pendentes. Sem nada informado, fica como na v0.5 (1/N).
-- **A sugestão de preparar o mês** é um card em A pagar quando o mês escolhido tem contas fixas a lançar ou pendências.
+- **A sugestão de preparar o mês** é um card em A pagar quando o mês escolhido ainda tem contas fixas a lançar (só pendências antigas não bastam: elas existiriam sempre e o card nunca sairia).
+- **Pendências do Preparar mês** são as contas a pagar fixas e avulsas. Parcelas de cartão, crediário e empréstimo ficam fora: elas já aparecem nas suas seções (faturas atrasadas no mês original pela 6B.4; parcelas de empréstimo atrasadas já são listadas em A pagar).
+- **No mês novo, a pendência levada aparece em "Deste mês"** (com "ref." do mês original e o status Atrasada) e sai de "Pendentes de meses anteriores" daquele mês, para não aparecer duas vezes. Nos meses seguintes ela volta a ser uma pendência anterior comum.
+- **O serviço do Preparar mês confere tudo antes de gravar**: uma falha no meio não deixa meio preparo.
 
 **Pendências:** nenhuma até aqui.
 
