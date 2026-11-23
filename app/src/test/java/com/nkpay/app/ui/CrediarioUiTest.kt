@@ -83,8 +83,10 @@ class CrediarioUiTest {
         foto("f5-pagar-parcela")
         regra.onNodeWithText("Confirmar pagamento").performScrollTo().performClick()
 
-        regra.waitUntil(10_000) { container.visaoCredito.value?.devido(loja) == 15_000L }
-        val s = container.visaoCredito.value!!.situacaoDaParcela(container.visaoCredito.value!!.parcelasDa(loja).first { it.numeroParcela == 1 }.id, LocalDate.of(2026, 12, 1))!!
+        // Espera o devido E o status: as listas do banco chegam uma de cada vez.
+        fun situacao() = container.visaoCredito.value!!.let { vc -> vc.situacaoDaParcela(vc.parcelasDa(loja).first { it.numeroParcela == 1 }.id, LocalDate.of(2026, 12, 1))!! }
+        regra.waitUntil(10_000) { container.visaoCredito.value?.devido(loja) == 15_000L && situacao().status == StatusObrigacao.QUITADA }
+        val s = situacao()
         assertEquals(StatusObrigacao.QUITADA, s.status)
         esperar("Desfazer")
         foto("f5-parcela-paga")
