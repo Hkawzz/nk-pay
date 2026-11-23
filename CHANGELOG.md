@@ -4,6 +4,26 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.6.0] - 2026-11-23
+
+> ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
+> Esta versão atualiza o banco de dados (acrescenta uma coluna vazia às compras e cria a tabela das pendências levadas; nenhum dado existente é reescrito). O app guarda sozinho uma cópia do banco antes de atualizar. Sugestão: teste antes no app de debug, com uma cópia dos dados (`docs/roteiro-teste-v0.6.md`).
+
+Ajustes dos testes da v0.5 (compra com juros, parcelas antecipadas, excluir e arquivar) e o assistente **Preparar próximo mês**.
+
+### Adicionado
+- **Compra parcelada com juros:** informe o valor da compra e o valor da parcela. A despesa da compra é o valor original; os **juros do parcelamento** viram despesa (Encargos financeiros) **parcela a parcela, quando cada uma é paga**. A tela do cartão mostra o **Devido** e os **Juros a pagar**, com "?".
+- **Compra anterior ao app:** **parcelas antecipadas**, com o valor pago ou o desconto (o desconto aparece em "Descontos obtidos", no mês da compra). Compras anteriores com juros contam só a parte da compra no devido.
+- **Preparar [mês]** em A pagar (e sugerido na virada do mês): contas fixas marcadas com o valor do mês anterior (editável), parcelas do mês para conferência, pendências atrasadas para levar ao mês novo, revisão e confirmação de uma vez. Nada é gravado antes de confirmar, e repetir não duplica.
+- **Empréstimos → Pessoas:** editar o nome, arquivar, desarquivar e excluir.
+- **Empréstimo anterior:** "Total de parcelas do contrato" e "Parcelas já pagas"; as pendentes ficam numeradas (ex.: 5/12).
+- **Cartões e crediários:** "Mostrar arquivados", Desarquivar e Excluir.
+
+### Alterado
+- **Excluir** cartão, crediário ou pessoa só sem nada ligado; com histórico, o app explica e oferece **Arquivar**.
+- **Arquivar** é recusado enquanto houver valor devido, a pagar ou a receber.
+- Pagamentos de fatura, de parcela e de compras escolhidas separam a parte da compra e os juros; **Desfazer** remove os juros junto.
+
 ## [0.5.0] - 2026-11-23
 
 > ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
