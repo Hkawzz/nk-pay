@@ -74,7 +74,7 @@ class ContaRepositorio(
             val antes = dao.buscar(conta.id)?.takeIf { it.excluidoEm == null }
                 ?: return@withTransaction Resultado.Falha("Conta não encontrada.")
             // Uma conta com lançamentos não vira de crédito (nem deixa de ser): o devido deixaria de bater.
-            if (Natureza.valueOf(antes.natureza).ehCredito != normalizada.natureza.ehCredito && dao.contarMovimentacoes(antes.id) > 0) {
+            if (Natureza.valueOf(antes.natureza).ehContaDeTerceiros != normalizada.natureza.ehContaDeTerceiros && dao.contarMovimentacoes(antes.id) > 0) {
                 return@withTransaction Resultado.Falha("Esta conta já tem lançamentos: ela não pode virar cartão ou crediário (nem o contrário).")
             }
             val depois = antes.copy(
@@ -310,7 +310,8 @@ class MovimentacaoRepositorio(
         pagamentoDao.daMovimentacao(id).isNotEmpty() || pagamentoFaturaDao.daMovimentacao(id).isNotEmpty() ||
             ajusteDao.daMovimentacao(id).isNotEmpty()
 
-    private suspend fun ehDeCompra(id: String) = compraDao.contarDaMovimentacao(id) > 0
+    // v0.5: a contratação e os juros J1 de um empréstimo também só mudam pelo próprio empréstimo.
+    private suspend fun ehDeCompra(id: String) = compraDao.contarDaMovimentacao(id) > 0 || banco.emprestimoDao().contarDaMovimentacao(id) > 0
 
     private suspend fun mensagemSeProtegida(id: String): String? = when {
         ehDeCompra(id) -> MENSAGEM_COMPRA
@@ -386,8 +387,8 @@ class MovimentacaoRepositorio(
             mensagemSeProtegida(m.id)?.let { return@withTransaction Resultado.Falha(it) }
             validar(limpa)?.let { return@withTransaction Resultado.Falha(it) }
             // Uma movimentação de conta de crédito (feita por compra/pagamento) também não muda por aqui.
-            if (contaDao.buscar(antes.contaId)?.let { Natureza.valueOf(it.natureza).ehCredito } == true ||
-                antes.contaDestinoId?.let { contaDao.buscar(it) }?.let { Natureza.valueOf(it.natureza).ehCredito } == true
+            if (contaDao.buscar(antes.contaId)?.let { Natureza.valueOf(it.natureza).ehContaDeTerceiros } == true ||
+                antes.contaDestinoId?.let { contaDao.buscar(it) }?.let { Natureza.valueOf(it.natureza).ehContaDeTerceiros } == true
             ) return@withTransaction Resultado.Falha(Validacao.MENSAGEM_CONTA_DE_CREDITO)
             val depois = antes.copy(
                 tipo = limpa.tipo.name,
@@ -431,7 +432,7 @@ const val MENSAGEM_PAGAMENTO =
 
 /** Mensagem para quem tenta mexer na despesa de uma compra no cartão ou crediário (v0.4). */
 const val MENSAGEM_COMPRA =
-    "Este lançamento é uma compra no cartão ou crediário. Para mudar, abra a compra na tela do cartão ou do crediário."
+    "Este lançamento é uma compra no cartão ou crediário, ou faz parte de um empréstimo. Para mudar, abra a compra (tela do cartão) ou o empréstimo (Mais → Empréstimos)."
 
 class AuditoriaRepositorio(banco: NkPayBanco) {
     private val dao = banco.auditoriaDao()

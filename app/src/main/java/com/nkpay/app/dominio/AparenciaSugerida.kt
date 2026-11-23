@@ -73,5 +73,7 @@ object AparenciaSugerida {
         }
         Natureza.CARTAO -> Aparencia("cartao", 0xFFC084FC)
         Natureza.CREDIARIO -> Aparencia("recibo", 0xFF60A5FA)
+        Natureza.EMPRESTIMO_RECEBIDO -> Aparencia("banco", 0xFFFB923C)
+        Natureza.EMPRESTIMO_CONCEDIDO -> Aparencia("pessoa", 0xFF2DD4BF)
     }
 }

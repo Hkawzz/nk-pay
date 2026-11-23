@@ -196,7 +196,7 @@ class CompraServico(
             if (o.excluidoEm != null || o.contaCreditoId != null) continue
             if (parecido(o.descricao, o.valorPrevistoCentavos)) achados += "Conta a pagar “${o.descricao}” (${Dinheiro.formatar(o.valorPrevistoCentavos)})"
         }
-        val contasDeCredito = banco.backupDao().contas().filter { Natureza.valueOf(it.natureza).ehCredito }.map { it.id }.toSet()
+        val contasDeCredito = banco.backupDao().contas().filter { Natureza.valueOf(it.natureza).ehContaDeTerceiros }.map { it.id }.toSet()
         for (m in banco.backupDao().movimentacoes()) {
             if (m.excluidoEm != null || m.tipo != TipoMovimentacao.DESPESA.name || m.contaId in contasDeCredito) continue
             if (parecido(m.descricao, m.valorCentavos)) achados += "Despesa “${m.descricao}” de ${Dinheiro.formatar(m.valorCentavos)} em ${m.data}"

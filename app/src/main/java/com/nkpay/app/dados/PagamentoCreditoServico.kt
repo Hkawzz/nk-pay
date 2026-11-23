@@ -62,7 +62,7 @@ class PagamentoCreditoServico(
     private class Contexto(val grupo: String, val agora: Long, val data: LocalDate)
 
     private suspend fun contaOrigemValida(id: String): ContaEntidade? =
-        contaDao.buscar(id)?.takeIf { it.excluidoEm == null && !Natureza.valueOf(it.natureza).ehCredito }
+        contaDao.buscar(id)?.takeIf { it.excluidoEm == null && !Natureza.valueOf(it.natureza).ehContaDeTerceiros }
 
     private suspend fun Contexto.mov(tipo: TipoMovimentacao, valor: Long, contaId: String, destino: String?, categoriaId: String?, descricao: String, resumo: String): MovimentacaoEntidade {
         val m = MovimentacaoEntidade(relogio.novoId(), tipo.name, data.toString(), valor, contaId, destino, categoriaId, descricao, agora, agora, null)

@@ -14,7 +14,13 @@ enum class OrigemObrigacao(val rotulo: String) {
 }
 
 /** Natureza de um ajuste. Acréscimos aumentam o restante; abatimentos diminuem. */
-enum class NaturezaAjuste(val rotulo: String, val ehAcrescimo: Boolean, val ehEncargo: Boolean) {
+enum class NaturezaAjuste(
+    val rotulo: String,
+    val ehAcrescimo: Boolean,
+    val ehEncargo: Boolean,
+    /** v0.5: false só em JUROS_RECEBIDOS, que liga a entrada de juros ao recebimento sem mudar o restante. */
+    val afetaRestante: Boolean = true,
+) {
     JUROS("Juros", ehAcrescimo = true, ehEncargo = true),
     MULTA("Multa", ehAcrescimo = true, ehEncargo = true),
     TARIFA("Tarifa", ehAcrescimo = true, ehEncargo = true),
@@ -25,6 +31,12 @@ enum class NaturezaAjuste(val rotulo: String, val ehAcrescimo: Boolean, val ehEn
     CREDITO("Crédito/pagamento adiantado", ehAcrescimo = false, ehEncargo = false),
     /** Parcela paga antes de usar o app (ADR 0016). Abatimento, mas NÃO é desconto. */
     QUITADA_ANTES_DO_APP("Quitada antes do app", ehAcrescimo = false, ehEncargo = false),
+    /**
+     * v0.5 (K2, ADR 0021): os juros reconhecidos num recebimento de empréstimo concedido.
+     * Aponta para a entrada em "Juros recebidos" e para o pagamento; NÃO muda o restante.
+     * Desfazer o pagamento exclui este ajuste e a entrada juntos.
+     */
+    JUROS_RECEBIDOS("Juros recebidos", ehAcrescimo = false, ehEncargo = false, afetaRestante = false),
     ;
 
     /** Entra em "descontos obtidos" nas Análises (exclui "quitada antes do app"). */
@@ -132,7 +144,7 @@ object Obrigacoes {
      */
     fun situacao(o: Obrigacao, pagamentos: List<Pagamento>, ajustes: List<AjusteObrigacao>, hoje: LocalDate): SituacaoObrigacao {
         val pago = pagamentos.filter { it.obrigacaoId == o.id }.sumOf { it.valor }
-        val meus = ajustes.filter { it.obrigacaoId == o.id }
+        val meus = ajustes.filter { it.obrigacaoId == o.id && it.natureza.afetaRestante }
         val acrescimos = meus.filter { it.natureza.ehAcrescimo }.sumOf { it.valor }
         val abatimentos = meus.filter { !it.natureza.ehAcrescimo }.sumOf { it.valor }
         val restante = o.valorPrevisto + acrescimos - abatimentos - pago

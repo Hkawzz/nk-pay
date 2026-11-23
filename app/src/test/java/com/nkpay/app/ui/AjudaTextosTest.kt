@@ -58,6 +58,11 @@ class AjudaTextosTest {
             emptyList(),
         ).totalBeneficios
         contem(ChaveAjuda.BENEFICIOS, beneficios)
+        // Empréstimos: R$ 1.000,00 em 10 × R$ 110,00.
+        contem(ChaveAjuda.EMPRESTIMO_JUROS_PREVISTOS, com.nkpay.app.dominio.Emprestimos.jurosPrevistos(110_000, 100_000))
+        val juros = com.nkpay.app.dominio.Emprestimos.jurosDoRecebimento(11_000, 110_000, 10_000)
+        contem(ChaveAjuda.EMPRESTIMO_JUROS_RECEBIDOS, 11_000 - juros, juros)
+        contem(ChaveAjuda.EMPRESTIMO_RESTANTE, 110_000L - 11_000L)
     }
 
 }
