@@ -122,10 +122,16 @@ fun LinhaObrigacao(s: SituacaoObrigacao, aoClicar: () -> Unit, mostrarMes: Boole
  * meses anteriores (continuam no mês original, ADR 0013) e o lançamento das contas fixas.
  */
 @Composable
-fun APagarTela(aoNova: (YearMonth) -> Unit, aoAbrir: (String) -> Unit, aoContasFixas: () -> Unit) {
+fun APagarTela(
+    aoNova: (YearMonth) -> Unit,
+    aoAbrir: (String) -> Unit,
+    aoContasFixas: () -> Unit,
+    aoAbrirFatura: (String, YearMonth) -> Unit = { _, _ -> },
+) {
     val container = LocalContainer.current
     val vm = nkViewModel { APagarViewModel(it) }
     val visao by container.visaoAPagar.collectAsState()
+    val credito by container.visaoCredito.collectAsState()
     val hoje = container.relogio.hoje()
     var lancando by rememberSaveable { mutableStateOf(false) }
     var aviso by remember { mutableStateOf<String?>(null) }
@@ -139,6 +145,12 @@ fun APagarTela(aoNova: (YearMonth) -> Unit, aoAbrir: (String) -> Unit, aoContasF
         val doMes = v.doMes(vm.mes, hoje).sortedWith(compareBy({ it.status == StatusObrigacao.QUITADA }, { it.obrigacao.vencimento }))
         val anteriores = v.pendentesAnteriores(vm.mes, hoje)
         val disponiveis = Obrigacoes.fixasDisponiveisParaLancar(v.contasFixas, v.obrigacoes, vm.mes)
+        // v0.4: faturas de cartão e meses de crediário (uma linha por fatura), deste mês e atrasadas.
+        val faturas = credito?.let { vc ->
+            vc.contasDeCredito.flatMap { c -> vc.faturas(c.id, hoje).map { c to it } }
+                .filter { (_, f) -> f.mes == vm.mes || (f.mes < vm.mes && f.emAberto) }
+                .sortedWith(compareBy({ it.second.mes }, { it.first.nome }))
+        }.orEmpty()
 
         LazyColumn(Modifier.padding(espaco).fillMaxSize()) {
             item { NkTituloTela("A pagar") }
@@ -154,7 +166,8 @@ fun APagarTela(aoNova: (YearMonth) -> Unit, aoAbrir: (String) -> Unit, aoContasF
                 }
             }
             item {
-                val falta = (doMes + anteriores).filter { it.status != StatusObrigacao.QUITADA }.sumOf { it.restante }
+                val falta = (doMes + anteriores).filter { it.status != StatusObrigacao.QUITADA }.sumOf { it.restante } +
+                    faturas.sumOf { it.second.restante }
                 val pago = doMes.sumOf { it.pago }
                 NkCard {
                     Row(Modifier.padding(Espaco.l)) {
@@ -185,6 +198,30 @@ fun APagarTela(aoNova: (YearMonth) -> Unit, aoAbrir: (String) -> Unit, aoContasF
                         anteriores.forEachIndexed { i, s ->
                             if (i > 0) NkDivisor()
                             LinhaObrigacao(s, { aoAbrir(s.obrigacao.id) }, mostrarMes = true)
+                        }
+                    }
+                }
+            }
+
+            if (faturas.isNotEmpty()) {
+                item { NkCabecalhoSecao("Cartões e crediários") }
+                item {
+                    NkCard {
+                        faturas.forEachIndexed { i, (c, f) ->
+                            if (i > 0) NkDivisor()
+                            NkListItem(
+                                titulo = (if (c.natureza == com.nkpay.app.dominio.Natureza.CARTAO) "Fatura " else "Parcelas ") + c.nome,
+                                subtitulo = (f.vencimento?.let { "Vence ${Formatos.data(it)}" } ?: "") +
+                                    (if (f.mes != vm.mes) " · ref. %02d/%d".format(f.mes.monthValue, f.mes.year) else ""),
+                                inicio = { NkIconeRedondo(iconeDoStatus(f.status), corDoStatus(f.status)) },
+                                fim = {
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        if (f.restante > 0) NkValor(f.restante) else NkValor(f.total, cor = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(f.status.rotulo, style = MaterialTheme.typography.labelMedium, color = corDoStatus(f.status))
+                                    }
+                                },
+                                aoClicar = { aoAbrirFatura(c.id, f.mes) },
+                            )
                         }
                     }
                 }

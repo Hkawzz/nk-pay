@@ -40,6 +40,10 @@ object Rotas {
     const val CONTA_FIXA_FORM = "mais/conta-fixa-form?id={id}"
     fun contaFixaForm(id: String? = null) = if (id == null) "mais/conta-fixa-form" else "mais/conta-fixa-form?id=$id"
 
+    /** Fatura (cartão) ou parcelas do mês (crediário). Fora de Mais: abre também a partir de A pagar. */
+    const val FATURA = "fatura/{conta}/{mes}"
+    fun fatura(contaId: String, mes: java.time.YearMonth) = "fatura/$contaId/$mes"
+
     const val PAGAR = "pagar/{id}"
     fun pagar(obrigacaoId: String) = "pagar/$obrigacaoId"
 

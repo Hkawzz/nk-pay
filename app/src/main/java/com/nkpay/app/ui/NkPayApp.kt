@@ -164,6 +164,7 @@ fun NkPayApp() {
                     aoNova = { mes -> navController.navigate(Rotas.obrigacaoForm(mes = mes)) },
                     aoAbrir = { navController.navigate(Rotas.obrigacaoForm(id = it)) },
                     aoContasFixas = { navController.navigate(Rotas.CONTAS_FIXAS) },
+                    aoAbrirFatura = { conta, mes -> navController.navigate(Rotas.fatura(conta, mes)) },
                 )
             }
             composable(
@@ -184,6 +185,17 @@ fun NkPayApp() {
             }
             composable(Rotas.PAGAR, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
                 PagarTela(obrigacaoId = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
+            }
+            composable(
+                Rotas.FATURA,
+                arguments = listOf(navArgument("conta") { type = NavType.StringType }, navArgument("mes") { type = NavType.StringType }),
+            ) { entrada ->
+                com.nkpay.app.ui.credito.FaturaTela(
+                    contaId = entrada.arguments?.getString("conta").orEmpty(),
+                    mes = java.time.YearMonth.parse(entrada.arguments?.getString("mes")),
+                    aoVoltar = { navController.popBackStack() },
+                    aoAbrirParcela = { navController.navigate(Rotas.parcela(it)) },
+                )
             }
             composable(Rotas.OBJETIVOS) { ObjetivosTela() }
 
@@ -232,6 +244,7 @@ fun NkPayApp() {
                         id = id,
                         aoVoltar = { navController.popBackStack() },
                         aoEditar = { navController.navigate(Rotas.cartaoForm(id)) },
+                        aoAbrirFatura = { navController.navigate(Rotas.fatura(id, it)) },
                         conteudoExtra = { vc, conta -> com.nkpay.app.ui.credito.SecaoCompras(vc, conta) { navController.navigate(Rotas.compra(it)) } },
                         botaoFlutuante = { com.nkpay.app.ui.componentes.BotaoAdicionar("Nova compra") { navController.navigate(Rotas.compraForm(id)) } },
                     )
