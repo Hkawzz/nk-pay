@@ -4,6 +4,26 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.7.0] - 2026-11-23
+
+> ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
+> Esta versão atualiza o banco de dados (cria as tabelas de objetivos; nenhuma tabela existente muda e nenhum dado é reescrito). O app guarda sozinho uma cópia do banco antes de atualizar. Sugestão: teste antes no app de debug, com uma cópia dos dados (`docs/roteiro-teste-v0.7.md`).
+
+**Objetivos e reservas**, e a preparação do teste profundo.
+
+### Adicionado
+- **Aba Objetivos:** reservas sobre o seu dinheiro próprio. O dinheiro continua na conta; o objetivo só separa uma parte dele.
+  - Meta e prazo opcionais (sem meta, é uma "caixinha"), ícone e cor; guardado, falta, % e "guardar R$ X/mês até [data]".
+  - **Guardar** (bloqueado sem Saldo disponível suficiente), **retirar** (não é despesa), **mover** entre objetivos e **ajustar** o valor guardado (a diferença fica no histórico). Todo movimento pode ser **desfeito**, sem deixar objetivo negativo.
+  - **Concluir** e **arquivar** mantêm o guardado; **excluir** só sem nada guardado.
+  - Para gastar o dinheiro guardado: retire do objetivo e depois lance a despesa (o "?" explica).
+- **Saldo disponível = Saldo total − Guardado** de verdade: com algo guardado, a Início mostra Saldo total e Guardado. Se o guardado passar do saldo, o disponível fica negativo, com aviso; nada é reduzido sozinho.
+- **Análises:** seção Objetivos (guardado agora, guardado e retirado no período, progresso).
+- **Teste profundo:** `docs/roteiro-teste-profundo.md` (todo o app, com números) e `docs/registro-de-problemas-v0.8.md`.
+
+### Observação
+- Guardar, retirar, mover e ajustar **não** são entradas, saídas nem despesas, e não mudam o saldo de nenhuma conta.
+
 ## [0.6.0] - 2026-11-23
 
 > ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**

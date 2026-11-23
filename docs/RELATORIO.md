@@ -6,6 +6,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 | Versão | Data | Em uma frase | Release |
 |---|---|---|---|
+| v0.7.0 | 23/11/2026 | Objetivos e reservas, Guardado real no Saldo disponível e roteiro do teste profundo (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.7.0) |
 | v0.6.0 | 23/11/2026 | Compras com juros, parcelas antecipadas, excluir e arquivar, e o assistente Preparar próximo mês (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.6.0) |
 | v0.5.0 | 23/11/2026 | Empréstimos (J1 e K2), Resumo da Início pelo fluxo, Saldo disponível e ajuda "?" (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.5.0) |
 | v0.4.0 | 23/11/2026 | Cartões e crediários, categorias com ícone, nova Início e Análises (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.4.0) |
@@ -17,7 +18,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
-## v0.7.0 (em andamento) - Objetivos e reservas
+## v0.7.0 (em validação) - Objetivos e reservas
 
 **Objetivo:** a aba Objetivos (reservas virtuais sobre o dinheiro próprio), o Guardado de verdade no Saldo disponível, a seção Objetivos nas Análises, e a preparação do teste profundo (roteiro e registro de problemas). Fontes: `planejamento/briefing-v0.7-autonomo.md` (prevalece) e `planejamento/proposta-execucao-v0.7.md`.
 
@@ -32,6 +33,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#59](https://github.com/Hkawzz/nk-pay/pull/59) | Domínio | Guardado calculado pelos movimentos, Saldo disponível com o Guardado real, guardar (bloqueado sem disponível), retirar, mover, ajustar, desfazer sem negativo, O2 (aviso na Início) e O3; testes da Início com Guardado > 0 | ✅ |
 | [#60](https://github.com/Hkawzz/nk-pay/pull/60) | Aba Objetivos | Lista (ativos × concluídos/arquivados) com guardado, meta, falta, %, prazo e "guardar R$ X/mês"; cadastro com ícone e cor; detalhe com histórico e desfazer; guardar, retirar, mover e ajustar em tela cheia; concluir, arquivar e excluir (O3); "?" com o passo a passo do O1 | ✅ |
 | [#61](https://github.com/Hkawzz/nk-pay/pull/61) | Análises | Seção Objetivos: guardado agora, guardado e retirado no período, progresso de cada objetivo, com "?" dizendo que objetivos não são entrada, saída nem despesa | ✅ |
+| [#62](https://github.com/Hkawzz/nk-pay/pull/62) | Teste profundo e release | `docs/roteiro-teste-profundo.md` (todo o app, ação → resultado com números), `docs/registro-de-problemas-v0.8.md`, `docs/roteiro-teste-v0.7.md`, CHANGELOG, README e tag `v0.7.0` | ✅ |
 
 **Decisões tomadas sozinho**
 - **Desfazer uma retirada** (que aumenta o guardado) segue o mesmo bloqueio do Guardar: não pode passar do disponível. É a opção mais segura e coerente com a regra "nova reserva bloqueada sem disponível".
@@ -43,9 +45,27 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Progresso arredonda para baixo** (nunca mostra 100% antes de atingir a meta).
 - **Guardar por mês:** meses do mês atual ao do prazo, contando os dois, arredondado para cima; prazo vencido não sugere valor.
 
-**Pendências:** nenhuma até aqui.
+**Portões do briefing para publicar**
+
+| Portão | Resultado |
+|---|---|
+| CI verde | ✅ em todos os PRs (#57 a #62) |
+| Os 231 testes da v0.6 passando; mudanças inevitáveis justificadas | ✅ os **231** passam. **3 linhas** mudaram em 2 arquivos (`MigracaoV5Test` e `BackupV06Test`), só pela versão 6 do banco (ver Problemas). Conferido com `git diff v0.6.0` |
+| Migração v5 fiel → v6 | ✅ `MigracaoV6Test` (banco v5 com dados em todas as tabelas, inclusive compra com juros e pendência levada; linhas idênticas; SQL das tabelas novas igual ao do esquema 6) |
+| Matriz de backup (v0.6 → v0.7 restaura; v0.7 ida e volta com objetivos; v0.6 recusa v0.7) | ✅ `MigracaoV6Test`. O backup da v0.7 tem versão 6, e a v0.6 recusa versões maiores que a 5 |
+| Regressão de saldos, crédito, empréstimos e Preparar mês | ✅ `SaldosTest`, `PagamentoCreditoTest`, `PagamentoComJurosTest`, `CompraServicoTest`, `PagamentoEmprestimoTest`, `EmprestimoServicoTest`, `PrepararMesTest` e `PrepararMesUiTest` sem alteração; `ObjetivoServicoTest` confere que objetivos não mexem em movimentações, saldos de conta, despesas nem fluxo |
+
+No total, **244 testes** (231 da v0.6 + 13 novos), todos passando.
+
+**Proteção dos dados reais**
+- A migração 5→6 só cria as tabelas `objetivo` e `movimento_reserva`; nenhuma tabela existente muda. A cópia do banco antes de migrar continua valendo.
+- Backups da v0.6 restauram na v0.7 (sem objetivos); a v0.6 recusa backups da v0.7.
+- Nenhum dado real no repositório. APKs de debug (v0.6.0 e v0.7.0, mesma chave de debug) em `Documents\nk-pay-apks`, para o roteiro.
+
+**Pendências:** nenhuma. O teste profundo é seu: o roteiro está em `docs/roteiro-teste-profundo.md`, e o que encontrar vai para `docs/registro-de-problemas-v0.8.md`.
 
 **Problemas encontrados:**
+- Progresso (#60): o teste de interface esperava "67%" para R$ 200,00 de R$ 300,00; o app mostra 66% porque arredonda para baixo (de propósito, para não mostrar 100% antes da hora). Corrigi o teste.
 - Banco v6 (#58): 3 linhas de testes da v0.6 mudaram, sem como evitar, porque fixavam a versão 5 do banco: `MigracaoV5Test` (versão atual e nome da cópia "banco-v4-antes-da-v6") e `BackupV06Test` (versão do manifesto). Agora usam `NkPayBanco.VERSAO`. Nenhuma regra testada mudou.
 
 ---
