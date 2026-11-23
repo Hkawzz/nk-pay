@@ -92,7 +92,11 @@ class BackupViewModel(private val container: AppContainer) : ViewModel() {
         val backup = paraRestaurar ?: return
         paraRestaurar = null
         executar {
-            withContext(Dispatchers.IO) { servico.restaurar(backup) }
+            withContext(Dispatchers.IO) {
+                servico.restaurar(backup)
+                // Um backup da v0.3 volta sem ícones: as categorias recebem a sugestão de novo (ADR 0018).
+                container.categorias.aplicarAparenciaSugerida()
+            }
             copias = servico.copiasAutomaticas()
             mensagem = "Backup restaurado. O estado anterior foi guardado em “Cópias antes de restaurar”."
         }

@@ -1,6 +1,7 @@
 package com.nkpay.app.dados
 
 import androidx.room.withTransaction
+import com.nkpay.app.dominio.AparenciaSugerida
 import com.nkpay.app.dominio.Categoria
 import com.nkpay.app.dominio.CategoriasDoSistema
 import com.nkpay.app.dominio.Conta
@@ -168,9 +169,12 @@ class CategoriaRepositorio(
 
     private suspend fun inserirComAuditoria(grupo: String, nome: String, codigo: String?, resumo: String): String {
         val agora = relogio.agora()
+        // v0.4: toda categoria nova já nasce com aparência (sugerida pelo nome, ou neutra).
+        val aparencia = AparenciaSugerida.ouNeutra(nome)
         val nova = CategoriaEntidade(
             id = relogio.novoId(), nome = nome, codigoSistema = codigo,
             arquivadaEm = null, criadoEm = agora, atualizadoEm = agora, excluidoEm = null,
+            icone = aparencia.icone, cor = aparencia.cor,
         )
         dao.inserir(nova)
         auditor.registrar(grupo, Operacao.CRIACAO, Auditor.CATEGORIA, nova.id, resumo, CategoriaEntidade.serializer(), null, nova)
@@ -217,6 +221,45 @@ class CategoriaRepositorio(
             relogio.novoId(), Operacao.EDICAO, Auditor.CATEGORIA, id,
             if (arquivar) "Categoria “${antes.nome}” arquivada" else "Categoria “${antes.nome}” desarquivada",
             CategoriaEntidade.serializer(), antes, depois,
+        )
+        Resultado.Sucesso(Unit)
+    }
+
+    /**
+     * Passo auditado da v0.4 (ADR 0018): dá a aparência sugerida às categorias SEM ícone
+     * (as que vieram da v0.3, por migração ou por backup). As de nome conhecido recebem a
+     * sugestão; as demais, a neutra. Nunca mexe numa categoria que já tem ícone, e nunca
+     * em tabelas financeiras. Pode rodar sempre: sem categorias pendentes, não faz nada.
+     * @return quantas categorias receberam aparência.
+     */
+    suspend fun aplicarAparenciaSugerida(): Int = banco.withTransaction {
+        val pendentes = dao.semAparencia()
+        if (pendentes.isEmpty()) return@withTransaction 0
+        val grupo = relogio.novoId()
+        val agora = relogio.agora()
+        for (antes in pendentes) {
+            val a = AparenciaSugerida.ouNeutra(antes.nome)
+            val depois = antes.copy(icone = a.icone, cor = a.cor, atualizadoEm = agora)
+            dao.atualizar(depois)
+            auditor.registrar(
+                grupo, Operacao.EDICAO, Auditor.CATEGORIA, antes.id,
+                "Aparência sugerida aplicada à categoria “${antes.nome}”", CategoriaEntidade.serializer(), antes, depois,
+            )
+        }
+        pendentes.size
+    }
+
+    /** Muda o ícone e a cor (também da categoria de sistema). Não toca em nada financeiro. */
+    suspend fun mudarAparencia(id: String, icone: String, cor: Long): Resultado<Unit> = banco.withTransaction {
+        if (icone.isBlank()) return@withTransaction Resultado.Falha("Escolha um ícone.")
+        val antes = dao.buscar(id)?.takeIf { it.excluidoEm == null }
+            ?: return@withTransaction Resultado.Falha("Categoria não encontrada.")
+        if (antes.icone == icone && antes.cor == cor) return@withTransaction Resultado.Sucesso(Unit)
+        val depois = antes.copy(icone = icone, cor = cor, atualizadoEm = relogio.agora())
+        dao.atualizar(depois)
+        auditor.registrar(
+            relogio.novoId(), Operacao.EDICAO, Auditor.CATEGORIA, id,
+            "Aparência da categoria “${antes.nome}” alterada", CategoriaEntidade.serializer(), antes, depois,
         )
         Resultado.Sucesso(Unit)
     }

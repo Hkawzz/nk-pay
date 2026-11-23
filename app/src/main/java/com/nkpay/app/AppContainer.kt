@@ -99,6 +99,10 @@ class NkPayAplicacao : Application() {
             registroBackup = RegistroDeBackupNasPreferencias(this),
         )
         // Primeira abertura: cria as categorias sugeridas (só age se faltarem).
-        escopo.launch { container.categorias.garantirCategoriasIniciais() }
+        // v0.4: categorias que vieram da v0.3 sem ícone recebem a aparência sugerida (auditada).
+        escopo.launch {
+            container.categorias.garantirCategoriasIniciais()
+            container.categorias.aplicarAparenciaSugerida()
+        }
     }
 }
