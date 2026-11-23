@@ -23,6 +23,12 @@ enum class NaturezaAjuste(val rotulo: String, val ehAcrescimo: Boolean, val ehEn
     DESCONTO("Desconto", ehAcrescimo = false, ehEncargo = false),
     OUTRO_ABATIMENTO("Outro abatimento", ehAcrescimo = false, ehEncargo = false),
     CREDITO("Crédito/pagamento adiantado", ehAcrescimo = false, ehEncargo = false),
+    /** Parcela paga antes de usar o app (ADR 0016). Abatimento, mas NÃO é desconto. */
+    QUITADA_ANTES_DO_APP("Quitada antes do app", ehAcrescimo = false, ehEncargo = false),
+    ;
+
+    /** Entra em "descontos obtidos" nas Análises (exclui "quitada antes do app"). */
+    val ehDesconto: Boolean get() = this == DESCONTO || this == OUTRO_ABATIMENTO
 }
 
 enum class StatusObrigacao(val rotulo: String) {
@@ -54,7 +60,14 @@ data class Obrigacao(
     val mesReferencia: YearMonth? = null,
     val contaFixaId: String? = null,
     val categoriaId: String? = null,
-)
+    // Parcelas de cartão/crediário (v0.4)
+    val contaCreditoId: String? = null,
+    val compraId: String? = null,
+    val numeroParcela: Int? = null,
+    val totalParcelas: Int? = null,
+) {
+    val ehParcela: Boolean get() = contaCreditoId != null
+}
 
 data class Pagamento(val id: String, val obrigacaoId: String, val movimentacaoId: String, val valor: Long)
 

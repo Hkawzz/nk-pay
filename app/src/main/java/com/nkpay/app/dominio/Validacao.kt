@@ -1,5 +1,7 @@
 package com.nkpay.app.dominio
 
+import java.time.LocalDate
+
 /**
  * Regras de validação. Devolvem a mensagem do primeiro problema encontrado
  * (para mostrar na tela) ou `null` se está tudo certo.
@@ -16,6 +18,30 @@ object Validacao {
             "Escolha o tipo de benefício (VA, VR ou outro)."
         conta.natureza != Natureza.BENEFICIO && conta.tipoBeneficio != null ->
             "Só contas de benefício têm tipo de benefício."
+        // Contas de crédito (v0.4, regra 6B.1)
+        conta.ehCredito && conta.saldoInicial != 0L ->
+            "Cartões e crediários começam com saldo zero. O que já deve entra como compra anterior ao app."
+        conta.natureza == Natureza.CARTAO && (conta.diaFechamento == null || conta.diaVencimento == null) ->
+            "Informe o dia de fechamento e o dia de vencimento do cartão."
+        conta.diaFechamento != null && conta.diaFechamento !in 1..31 -> "O dia de fechamento vai de 1 a 31."
+        conta.diaVencimento != null && conta.diaVencimento !in 1..31 -> "O dia de vencimento vai de 1 a 31."
+        conta.limite != null && conta.limite <= 0 -> "O limite precisa ser maior que zero (ou deixe em branco)."
+        else -> null
+    }
+
+    /** Regra 6B.7 / ADR 0017: contas de crédito não aceitam lançamentos avulsos. */
+    fun aceitaLancamentoAvulso(natureza: Natureza): Boolean = !natureza.ehCredito
+
+    const val MENSAGEM_CONTA_DE_CREDITO =
+        "Cartões e crediários só mudam por compras e pagamentos. Use a tela do cartão ou do crediário."
+
+    fun compra(descricao: String, valorTotal: Long, parcelas: Int, primeiroVencimento: LocalDate?): String? = when {
+        descricao.isBlank() -> "Dê uma descrição para a compra."
+        descricao.length > 80 -> "A descrição pode ter no máximo 80 caracteres."
+        valorTotal <= 0 -> "O valor precisa ser maior que zero."
+        parcelas !in 1..120 -> "O número de parcelas vai de 1 a 120."
+        valorTotal < parcelas -> "O valor é pequeno demais para tantas parcelas."
+        primeiroVencimento == null -> "Informe o vencimento da 1ª parcela."
         else -> null
     }
 
