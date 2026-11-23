@@ -84,6 +84,8 @@ class EmprestimosUiTest {
 
         esperar("Empréstimo pessoal")
         foto("v05-emprestimos")
+        // As listas do banco chegam uma de cada vez: espera o empréstimo aparecer na visão.
+        regra.waitUntil(10_000) { container.visaoEmprestimos.value?.situacoes(TipoEmprestimo.RECEBIDO, LocalDate.of(2026, 12, 1))?.singleOrNull()?.restante == 110_000L }
         val v = container.visaoEmprestimos.value!!
         val s = v.situacoes(TipoEmprestimo.RECEBIDO, LocalDate.of(2026, 12, 1)).single()
         assertEquals(110_000L, s.restante)
