@@ -69,8 +69,44 @@ val MIGRACAO_1_2 = object : Migration(1, 2) {
     }
 }
 
+/**
+ * 2 → 3 (v0.4, ADR 0014): cria `compra` e `pagamento_fatura` e acrescenta `icone` e `cor`
+ * (vazias) à tabela `categoria`. É a primeira alteração numa tabela existente: o
+ * `ADD COLUMN` do SQLite não reescreve as linhas, então os dados atuais ficam idênticos.
+ * A aparência sugerida NÃO é aplicada aqui (é um passo auditado do app, ADR 0018).
+ */
+val MIGRACAO_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `categoria` ADD COLUMN `icone` TEXT")
+        db.execSQL("ALTER TABLE `categoria` ADD COLUMN `cor` INTEGER")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `compra` (`id` TEXT NOT NULL, `contaCreditoId` TEXT NOT NULL, `descricao` TEXT NOT NULL, " +
+                "`categoriaId` TEXT, `dataCompra` TEXT NOT NULL, `valorTotalCentavos` INTEGER NOT NULL, `totalParcelas` INTEGER NOT NULL, " +
+                "`movimentacaoId` TEXT NOT NULL, `anteriorAoApp` INTEGER NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, " +
+                "`excluidoEm` INTEGER, PRIMARY KEY(`id`), " +
+                "FOREIGN KEY(`contaCreditoId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , " +
+                "FOREIGN KEY(`categoriaId`) REFERENCES `categoria`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , " +
+                "FOREIGN KEY(`movimentacaoId`) REFERENCES `movimentacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_compra_contaCreditoId` ON `compra` (`contaCreditoId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_compra_categoriaId` ON `compra` (`categoriaId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_compra_movimentacaoId` ON `compra` (`movimentacaoId`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `pagamento_fatura` (`id` TEXT NOT NULL, `contaCreditoId` TEXT NOT NULL, `mesReferencia` TEXT NOT NULL, " +
+                "`movimentacaoId` TEXT NOT NULL, `valorCentavos` INTEGER NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, " +
+                "`excluidoEm` INTEGER, PRIMARY KEY(`id`), " +
+                "FOREIGN KEY(`contaCreditoId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , " +
+                "FOREIGN KEY(`movimentacaoId`) REFERENCES `movimentacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_pagamento_fatura_contaCreditoId_mesReferencia` ON `pagamento_fatura` (`contaCreditoId`, `mesReferencia`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_pagamento_fatura_movimentacaoId` ON `pagamento_fatura` (`movimentacaoId`)")
+    }
+}
+
 /** Todas as migrações, em ordem. */
-val MIGRACOES = arrayOf(MIGRACAO_1_2)
+val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3)
 
 /**
  * Rede de segurança: ANTES de o Room migrar, copia o arquivo do banco (e os arquivos

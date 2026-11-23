@@ -19,6 +19,8 @@ import androidx.room.RoomDatabase
         ContaEntidade::class, CategoriaEntidade::class, MovimentacaoEntidade::class, AuditoriaEntidade::class,
         // Versão 2 (v0.3): só tabelas novas; as da versão 1 não mudam.
         ContaFixaEntidade::class, ObrigacaoEntidade::class, PagamentoEntidade::class, ObrigacaoAjusteEntidade::class,
+        // Versão 3 (v0.4): compras e abatimentos de fatura; categoria ganha icone e cor (ADR 0014).
+        CompraEntidade::class, PagamentoFaturaEntidade::class,
     ],
     version = NkPayBanco.VERSAO,
     exportSchema = true,
@@ -33,10 +35,12 @@ abstract class NkPayBanco : RoomDatabase() {
     abstract fun obrigacaoDao(): ObrigacaoDao
     abstract fun pagamentoDao(): PagamentoDao
     abstract fun ajusteObrigacaoDao(): AjusteObrigacaoDao
+    abstract fun compraDao(): CompraDao
+    abstract fun pagamentoFaturaDao(): PagamentoFaturaDao
 
     companion object {
         /** Versão do esquema. Também vai no manifesto de cada backup. */
-        const val VERSAO = 2
+        const val VERSAO = 3
         const val NOME_ARQUIVO = "nk-pay.db"
 
         fun criar(context: Context): NkPayBanco {
