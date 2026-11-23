@@ -156,6 +156,7 @@ fun ObrigacaoEntidade.paraDominio() = Obrigacao(
     compraId = compraId,
     numeroParcela = numeroParcela,
     totalParcelas = totalParcelas,
+    emprestimoId = emprestimoId,
 )
 
 fun PagamentoEntidade.paraDominio() = Pagamento(id, obrigacaoId, movimentacaoId, valorAplicadoCentavos)

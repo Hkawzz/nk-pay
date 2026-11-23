@@ -121,6 +121,7 @@ class NkPayAplicacao : Application() {
         escopo.launch {
             container.categorias.garantirCategoriasIniciais()
             container.categorias.aplicarAparenciaSugerida()
+            container.categorias.garantirJurosRecebidos() // v0.5
         }
     }
 }

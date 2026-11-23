@@ -168,7 +168,8 @@ class MigracaoTest {
             for ((t, sql) in esperado) {
                 db.query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(t)).use { c ->
                     assertTrue("tabela $t não foi criada", c.moveToFirst())
-                    assertEquals("SQL de $t", sql, c.getString(0))
+                    // v0.5 (ADR 0020): a obrigação ganhou a coluna emprestimoId depois do esquema 2.
+                    assertEquals("SQL de $t", sql, c.getString(0).replace(", `emprestimoId` TEXT", ""))
                 }
             }
         } finally {

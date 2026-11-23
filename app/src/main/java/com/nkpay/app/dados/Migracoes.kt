@@ -105,8 +105,37 @@ val MIGRACAO_2_3 = object : Migration(2, 3) {
     }
 }
 
+/**
+ * 3 → 4 (v0.5, ADR 0020): cria emprestimo e acrescenta emprestimoId (vazia, com
+ * índice) à tabela obrigacao. Nenhuma linha existente é reescrita. A categoria
+ * "Juros recebidos" NÃO é criada aqui (é um passo auditado do app).
+ */
+val MIGRACAO_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `obrigacao` ADD COLUMN `emprestimoId` TEXT")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_obrigacao_emprestimoId` ON `obrigacao` (`emprestimoId`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `emprestimo` (`id` TEXT NOT NULL, `contaId` TEXT NOT NULL, `descricao` TEXT NOT NULL, `categoriaId` TEXT, " +
+                "`valorOriginalCentavos` INTEGER NOT NULL, `dataContratacao` TEXT NOT NULL, `contaPropriaId` TEXT, `anteriorAoApp` INTEGER NOT NULL, " +
+                "`jurosInformadosCentavos` INTEGER, `movimentacaoContratacaoId` TEXT, `movimentacaoJurosId` TEXT, `criadoEm` INTEGER NOT NULL, " +
+                "`atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`id`), " +
+                "FOREIGN KEY(`contaId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , " +
+                "FOREIGN KEY(`categoriaId`) REFERENCES `categoria`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , " +
+                "FOREIGN KEY(`contaPropriaId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , " +
+                "FOREIGN KEY(`movimentacaoContratacaoId`) REFERENCES `movimentacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , " +
+                "FOREIGN KEY(`movimentacaoJurosId`) REFERENCES `movimentacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_emprestimo_contaId` ON `emprestimo` (`contaId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_emprestimo_categoriaId` ON `emprestimo` (`categoriaId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_emprestimo_contaPropriaId` ON `emprestimo` (`contaPropriaId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_emprestimo_movimentacaoContratacaoId` ON `emprestimo` (`movimentacaoContratacaoId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_emprestimo_movimentacaoJurosId` ON `emprestimo` (`movimentacaoJurosId`)")
+    }
+}
+
 /** Todas as migrações, em ordem. */
-val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3)
+val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4)
 
 /**
  * Rede de segurança: ANTES de o Room migrar, copia o arquivo do banco (e os arquivos

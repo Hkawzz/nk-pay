@@ -55,7 +55,7 @@ data class ContaFixaEntidade(
         ForeignKey(entity = CategoriaEntidade::class, parentColumns = ["id"], childColumns = ["categoriaId"], onDelete = ForeignKey.RESTRICT),
         ForeignKey(entity = ContaEntidade::class, parentColumns = ["id"], childColumns = ["contaCreditoId"], onDelete = ForeignKey.RESTRICT),
     ],
-    indices = [Index("contaFixaId", "mesReferencia"), Index("categoriaId"), Index("contaCreditoId"), Index("vencimento"), Index("mesReferencia")],
+    indices = [Index("contaFixaId", "mesReferencia"), Index("categoriaId"), Index("contaCreditoId"), Index("vencimento"), Index("mesReferencia"), Index("emprestimoId")],
 )
 data class ObrigacaoEntidade(
     @PrimaryKey val id: String,
@@ -81,6 +81,8 @@ data class ObrigacaoEntidade(
     val criadoEm: Long,
     val atualizadoEm: Long,
     val excluidoEm: Long?,
+    /** Versão 4 (v0.5): o empréstimo da parcela. Sem chave estrangeira (ADD COLUMN, ADR 0020). */
+    val emprestimoId: String? = null,
 )
 
 /**

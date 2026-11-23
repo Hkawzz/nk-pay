@@ -65,6 +65,8 @@ data class Obrigacao(
     val compraId: String? = null,
     val numeroParcela: Int? = null,
     val totalParcelas: Int? = null,
+    /** v0.5: o empréstimo da parcela. */
+    val emprestimoId: String? = null,
 ) {
     val ehParcela: Boolean get() = contaCreditoId != null
 }

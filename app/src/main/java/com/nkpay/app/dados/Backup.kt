@@ -46,6 +46,8 @@ data class ManifestoBackup(
     val obrigacoes: Int = 0,
     // Versão 3 (v0.4).
     val compras: Int = 0,
+    // Versão 4 (v0.5).
+    val emprestimos: Int = 0,
 )
 
 @Serializable
@@ -63,6 +65,8 @@ data class DadosBackup(
     // Versão 3 do banco (v0.4). Mesma regra: lista vazia para backups antigos.
     val compras: List<CompraEntidade> = emptyList(),
     val pagamentosDeFatura: List<PagamentoFaturaEntidade> = emptyList(),
+    // Versão 4 do banco (v0.5). Lista vazia para backups antigos.
+    val emprestimos: List<EmprestimoEntidade> = emptyList(),
 )
 
 /** Um backup lido e validado, pronto para ser restaurado. */
@@ -102,7 +106,7 @@ class BackupServico(
             DadosBackup(
                 dao.contas(), dao.categorias(), dao.movimentacoes(), dao.auditoria(),
                 dao.contasFixas(), dao.obrigacoes(), dao.pagamentos(), dao.ajustesDeObrigacao(),
-                dao.compras(), dao.pagamentosDeFatura(),
+                dao.compras(), dao.pagamentosDeFatura(), dao.emprestimos(),
             )
         }
         val bytesDados = json.encodeToString(DadosBackup.serializer(), dados).toByteArray(Charsets.UTF_8)
@@ -119,6 +123,7 @@ class BackupServico(
             contasFixas = dados.contasFixas.size,
             obrigacoes = dados.obrigacoes.size,
             compras = dados.compras.size,
+            emprestimos = dados.emprestimos.size,
         )
         ZipOutputStream(saida).use { zip ->
             zip.putNextEntry(ZipEntry(MANIFESTO))
@@ -196,6 +201,12 @@ class BackupServico(
         val okV3 = d.compras.all { it.contaCreditoId in contas && it.movimentacaoId in movs && (it.categoriaId == null || it.categoriaId in categorias) } &&
             d.pagamentosDeFatura.all { it.contaCreditoId in contas && it.movimentacaoId in movs }
         if (!okV3) throw BackupInvalido("O backup está inconsistente: há compras ou pagamentos de fatura que apontam para registros que não existem nele.")
+
+        val okV4 = d.emprestimos.all {
+            it.contaId in contas && (it.contaPropriaId == null || it.contaPropriaId in contas) && (it.categoriaId == null || it.categoriaId in categorias) &&
+                (it.movimentacaoContratacaoId == null || it.movimentacaoContratacaoId in movs) && (it.movimentacaoJurosId == null || it.movimentacaoJurosId in movs)
+        }
+        if (!okV4) throw BackupInvalido("O backup está inconsistente: há empréstimos que apontam para registros que não existem nele.")
     }
 
     private fun lerComLimite(entrada: InputStream): ByteArray {
@@ -227,6 +238,7 @@ class BackupServico(
         val d = backup.dados
         banco.withTransaction {
             // Apaga de "fora para dentro" (quem aponta antes de quem é apontado)...
+            dao.apagarEmprestimos()
             dao.apagarPagamentosDeFatura()
             dao.apagarCompras()
             dao.apagarAjustesDeObrigacao()
@@ -247,6 +259,7 @@ class BackupServico(
             dao.inserirAjustesDeObrigacao(d.ajustesDeObrigacao)
             dao.inserirCompras(d.compras)
             dao.inserirPagamentosDeFatura(d.pagamentosDeFatura)
+            dao.inserirEmprestimos(d.emprestimos)
             dao.inserirAuditoria(d.auditoria)
             val m = backup.manifesto
             dao.inserirAuditoria(

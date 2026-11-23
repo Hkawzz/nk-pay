@@ -129,8 +129,9 @@ class MigracaoV3Test {
         val banco = abrirComoOApp()
         try {
             val db = banco.openHelper.writableDatabase // migra e valida o esquema contra as entidades v3
-            assertEquals(3, db.version)
-            for (t in tabelasV2) assertEquals("tabela $t mudou", antes.getValue(t), foto({ db.query(it) }, consultaDe(t)))
+            assertEquals(NkPayBanco.VERSAO, db.version) // v0.5: o caminho 2 → 3 → 4 termina na versão atual (ADR 0020)
+            // v0.5: a obrigação ganhou emprestimoId no fim, que precisa nascer vazia.
+            for (t in tabelasV2) assertEquals("tabela $t mudou", antes.getValue(t), foto({ db.query(it) }, consultaDe(t)).map { it.removeSuffix("|emprestimoId=NULL") })
             // As colunas novas da categoria nascem vazias: a aparência vem depois, auditada.
             db.query("SELECT COUNT(*) FROM categoria WHERE icone IS NOT NULL OR cor IS NOT NULL").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
             for (t in listOf("compra", "pagamento_fatura")) {
@@ -191,7 +192,7 @@ class MigracaoV3Test {
         criarBancoV2()
         val copias = pasta.newFolder("copias")
         val copia = copiarAntesDeMigrar(arquivo, copias, NkPayBanco.VERSAO, 1000)
-        assertTrue(copia!!.name.startsWith("banco-v2-antes-da-v3"))
+        assertTrue(copia!!.name.startsWith("banco-v2-antes-da-v${NkPayBanco.VERSAO}")) // v0.5: a versão atual é a 4
         assertTrue(File(copia, arquivo.name).readBytes().contentEquals(arquivo.readBytes()))
     }
 
@@ -235,7 +236,7 @@ class MigracaoV3Test {
             assertEquals(4, runBlocking { banco.backupDao().categorias() }.size)
 
             // 2) O backup da v0.4 diz versão 3: a v0.3 (versão 2) o recusa pela regra que ela já tem.
-            assertEquals(3, servico.ler(ByteArrayInputStream(bytes)).manifesto.versaoBanco)
+            assertEquals(NkPayBanco.VERSAO, servico.ler(ByteArrayInputStream(bytes)).manifesto.versaoBanco) // v0.5: versão atual
             assertTrue(servico.ler(ByteArrayInputStream(bytes)).manifesto.versaoBanco > 2)
 
             // 3) Compras e abatimentos de fatura vão e voltam (linhas inseridas direto, fictícias).
