@@ -232,7 +232,15 @@ fun NkPayApp() {
                         id = id,
                         aoVoltar = { navController.popBackStack() },
                         aoEditar = { navController.navigate(Rotas.cartaoForm(id)) },
+                        conteudoExtra = { vc, conta -> com.nkpay.app.ui.credito.SecaoCompras(vc, conta) { navController.navigate(Rotas.compra(it)) } },
+                        botaoFlutuante = { com.nkpay.app.ui.componentes.BotaoAdicionar("Nova compra") { navController.navigate(Rotas.compraForm(id)) } },
                     )
+                }
+                composable(Rotas.COMPRA_FORM, arguments = listOf(navArgument("conta") { type = NavType.StringType; defaultValue = "" })) { entrada ->
+                    com.nkpay.app.ui.credito.CompraFormTela(contaId = entrada.arguments?.getString("conta").orEmpty(), aoVoltar = { navController.popBackStack() })
+                }
+                composable(Rotas.COMPRA, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                    com.nkpay.app.ui.credito.CompraTela(id = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
                 }
                 composable(Rotas.CATEGORIAS) {
                     CategoriasTela(aoVoltar = { navController.popBackStack() }, aoAbrir = { navController.navigate(Rotas.categoriaForm(it)) })

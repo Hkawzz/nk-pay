@@ -32,6 +32,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#25](https://github.com/Hkawzz/nk-pay/pull/25) | C1 | Aparência sugerida às categorias pelo nome (auditada, só nas sem ícone, idempotente), também depois de restaurar um backup da v0.3; categorias novas já nascem com ícone e cor | ✅ |
 | [#26](https://github.com/Hkawzz/nk-pay/pull/26) | C2 | Tela da categoria (nome, ícone, cor, cor personalizada com ajuste de contraste, arquivar); ícone e cor nas listas de movimentações, nas escolhas de categoria e nas contas (que também ganham escolha de ícone) | ✅ |
 | [#27](https://github.com/Hkawzz/nk-pay/pull/27) | F3 | Mais → Cartões e crediários: cadastro (limite, fechamento, vencimento), cartão visual com devido e limite, tela do cartão com as faturas e o aviso de invariante. As listas "Conta", "De/Para", o filtro e o "Pagar com" deixam de mostrar contas de crédito | ✅ |
+| [#28](https://github.com/Hkawzz/nk-pay/pull/28) | F4 | Compra parcelada (despesa do total + parcelas) e compra anterior ao app (despesa no mês original, parcelas quitadas antes, ajuste no crédito, aviso de possível duplicidade); excluir compra; parcelas fora de A pagar | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
@@ -45,6 +46,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Uma conta com lançamentos não vira cartão ou crediário** (nem o contrário): a mudança de natureza é recusada, porque o devido deixaria de bater.
 - **Editar a categoria virou uma tela própria** (era um diálogo): a grade de ícones não cabe bem num diálogo, e o diálogo travava o layout nos testes.
 - **Nas listas de movimentações**, entradas e despesas mostram o ícone da categoria; transferências e ajustes, o ícone da conta.
+- **Editar valor ou parcelas de uma compra é excluir e cadastrar de novo**, só enquanto nada foi pago. Descrição e categoria também seguem essa regra (opção mais simples, com tudo auditado).
+- **O aviso de duplicidade** procura contas a pagar (fora do crédito) e despesas com nome parecido **ou** com o valor igual ao total ou a uma parcela. Ele só avisa.
 - **Movimentações de conta de crédito** (compra, encargo, desconto, pagamento) ficam bloqueadas em Movimentações, com uma mensagem que aponta para a tela do cartão.
 
 **Pendências**

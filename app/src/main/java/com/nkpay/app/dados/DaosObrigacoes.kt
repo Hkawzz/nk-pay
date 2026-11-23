@@ -41,6 +41,10 @@ interface ObrigacaoDao {
     @Query("SELECT COUNT(*) FROM obrigacao WHERE contaFixaId = :contaFixaId AND mesReferencia = :mes AND excluidoEm IS NULL")
     suspend fun contarDaFixaNoMes(contaFixaId: String, mes: String): Int
 
+    /** Parcelas (não excluídas) de uma compra, em ordem. */
+    @Query("SELECT * FROM obrigacao WHERE compraId = :compraId AND excluidoEm IS NULL ORDER BY numeroParcela")
+    suspend fun daCompra(compraId: String): List<ObrigacaoEntidade>
+
     @Query("SELECT COUNT(*) FROM pagamento WHERE obrigacaoId = :obrigacaoId AND excluidoEm IS NULL")
     suspend fun contarPagamentos(obrigacaoId: String): Int
 
