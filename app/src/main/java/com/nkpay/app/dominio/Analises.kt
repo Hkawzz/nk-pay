@@ -51,6 +51,17 @@ data class EvolucaoDoMes(val mes: YearMonth, val entradas: Long, val despesas: L
     val resultado: Long get() = entradas - despesas
 }
 
+data class ResumoDeEmprestimos(
+    val totalAPagar: Long,
+    val totalAReceber: Long,
+    /** Juros J1 e encargos de empréstimos recebidos, lançados no período. */
+    val jurosPagos: Long,
+    /** Juros K2 (e excedentes) recebidos no período. */
+    val jurosRecebidos: Long,
+    val parcelasAtrasadas: Int,
+    val quantidade: Int,
+)
+
 data class ResumoDeCredito(
     val conta: Conta,
     val devido: Long,
@@ -157,12 +168,45 @@ object Analises {
      * Descontos obtidos no período: descontos e outros abatimentos dados em pagamentos
      * (data do pagamento). "Quitada antes do app" NUNCA entra (ADR 0016).
      */
-    fun descontosObtidos(ajustes: List<AjusteObrigacao>, pagamentos: List<Pagamento>, movs: List<Movimentacao>, periodo: Periodo): Long {
+    fun descontosObtidos(
+        ajustes: List<AjusteObrigacao>,
+        pagamentos: List<Pagamento>,
+        movs: List<Movimentacao>,
+        periodo: Periodo,
+        /** v0.5: parcelas de empréstimo CONCEDIDO (os descontos delas são concedidos, não obtidos). */
+        excluirObrigacoes: Set<String> = emptySet(),
+    ): Long = somaDescontos(ajustes.filter { it.obrigacaoId !in excluirObrigacoes }, pagamentos, movs, periodo)
+
+    /** v0.5 (6E.6): descontos que VOCÊ deu ao receber parcelas de empréstimos concedidos. */
+    fun descontosConcedidos(ajustes: List<AjusteObrigacao>, pagamentos: List<Pagamento>, movs: List<Movimentacao>, periodo: Periodo, obrigacoesConcedidas: Set<String>): Long =
+        somaDescontos(ajustes.filter { it.obrigacaoId in obrigacoesConcedidas }, pagamentos, movs, periodo)
+
+    /** Datado pelo pagamento que criou o desconto ou, numa edição de parcela, pela movimentação do próprio ajuste. */
+    private fun somaDescontos(ajustes: List<AjusteObrigacao>, pagamentos: List<Pagamento>, movs: List<Movimentacao>, periodo: Periodo): Long {
         val pagPorId = pagamentos.associateBy { it.id }
         val movPorId = movs.associateBy { it.id }
         return ajustes.filter { it.natureza.ehDesconto }.sumOf { a ->
             val data = a.pagamentoId?.let { pagPorId[it] }?.let { movPorId[it.movimentacaoId] }?.data
+                ?: a.movimentacaoId?.let { movPorId[it] }?.data
             if (data != null && data in periodo) a.valor else 0L
         }
+    }
+
+    /**
+     * v0.5: o resumo dos empréstimos no período. O valor emprestado nunca é receita nem
+     * despesa; só os juros entram (J1 como despesa, K2 como receita).
+     */
+    fun emprestimos(ve: VisaoEmprestimos, periodo: Periodo, hoje: java.time.LocalDate): ResumoDeEmprestimos {
+        val recebidos = ve.situacoes(TipoEmprestimo.RECEBIDO, hoje)
+        val concedidos = ve.situacoes(TipoEmprestimo.CONCEDIDO, hoje)
+        fun movsDe(l: List<SituacaoEmprestimo>) = l.flatMap { ve.movimentacoesDe(it.emprestimo) }.distinctBy { it.id }.filter { it.data in periodo }
+        return ResumoDeEmprestimos(
+            totalAPagar = recebidos.sumOf { it.restante },
+            totalAReceber = concedidos.sumOf { it.restante },
+            jurosPagos = movsDe(recebidos).filter { it.tipo == TipoMovimentacao.DESPESA }.sumOf { it.valor },
+            jurosRecebidos = movsDe(concedidos).filter { it.tipo == TipoMovimentacao.ENTRADA }.sumOf { it.valor },
+            parcelasAtrasadas = (recebidos + concedidos).sumOf { it.atrasadas.size },
+            quantidade = recebidos.size + concedidos.size,
+        )
     }
 }
