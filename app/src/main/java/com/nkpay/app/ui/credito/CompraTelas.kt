@@ -229,7 +229,7 @@ private fun LinhaCompra(c: Compra, vc: VisaoCredito, aoClicar: () -> Unit) {
 
 /** Uma compra: as parcelas com o status de cada uma, e excluir (enquanto nada foi pago). */
 @Composable
-fun CompraTela(id: String, aoVoltar: () -> Unit) {
+fun CompraTela(id: String, aoVoltar: () -> Unit, aoAbrirParcela: (String) -> Unit = {}) {
     val container = LocalContainer.current
     val credito by container.visaoCredito.collectAsState()
     val hoje = container.relogio.hoje()
@@ -263,6 +263,7 @@ fun CompraTela(id: String, aoVoltar: () -> Unit) {
                                 (if (s?.status == com.nkpay.app.dominio.StatusObrigacao.QUITADA && quitadaAntes) "Paga antes do app" else s?.status?.rotulo.orEmpty()),
                             corSubtitulo = s?.let { corDoStatus(it.status) } ?: MaterialTheme.colorScheme.onSurfaceVariant,
                             fim = { NkValor(o.valorPrevisto) },
+                            aoClicar = { aoAbrirParcela(o.id) },
                         )
                     }
                 }

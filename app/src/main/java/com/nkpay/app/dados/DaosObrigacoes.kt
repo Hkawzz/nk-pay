@@ -41,6 +41,10 @@ interface ObrigacaoDao {
     @Query("SELECT COUNT(*) FROM obrigacao WHERE contaFixaId = :contaFixaId AND mesReferencia = :mes AND excluidoEm IS NULL")
     suspend fun contarDaFixaNoMes(contaFixaId: String, mes: String): Int
 
+    /** Parcelas (não excluídas) de uma conta de crédito. */
+    @Query("SELECT * FROM obrigacao WHERE contaCreditoId = :contaId AND excluidoEm IS NULL AND canceladaEm IS NULL")
+    suspend fun parcelasDaConta(contaId: String): List<ObrigacaoEntidade>
+
     /** Parcelas (não excluídas) de uma compra, em ordem. */
     @Query("SELECT * FROM obrigacao WHERE compraId = :compraId AND excluidoEm IS NULL ORDER BY numeroParcela")
     suspend fun daCompra(compraId: String): List<ObrigacaoEntidade>
@@ -66,6 +70,12 @@ interface PagamentoDao {
            WHERE p.obrigacaoId = :obrigacaoId AND p.excluidoEm IS NULL AND m.excluidoEm IS NULL""",
     )
     suspend fun validosDa(obrigacaoId: String): List<PagamentoEntidade>
+
+    @Query(
+        """SELECT p.* FROM pagamento p JOIN movimentacao m ON m.id = p.movimentacaoId
+           WHERE p.excluidoEm IS NULL AND m.excluidoEm IS NULL""",
+    )
+    suspend fun validosTodos(): List<PagamentoEntidade>
 
     @Query("SELECT * FROM pagamento WHERE id = :id") suspend fun buscar(id: String): PagamentoEntidade?
     @Query("SELECT * FROM pagamento WHERE movimentacaoId = :movimentacaoId AND excluidoEm IS NULL")
@@ -103,6 +113,17 @@ interface AjusteObrigacaoDao {
              AND (a.pagamentoId IS NULL OR (p.excluidoEm IS NULL AND pm.excluidoEm IS NULL))""",
     )
     suspend fun validosDa(obrigacaoId: String): List<ObrigacaoAjusteEntidade>
+
+    @Query(
+        """SELECT a.* FROM obrigacao_ajuste a
+           LEFT JOIN movimentacao m ON m.id = a.movimentacaoId
+           LEFT JOIN pagamento p ON p.id = a.pagamentoId
+           LEFT JOIN movimentacao pm ON pm.id = p.movimentacaoId
+           WHERE a.excluidoEm IS NULL
+             AND (a.movimentacaoId IS NULL OR m.excluidoEm IS NULL)
+             AND (a.pagamentoId IS NULL OR (p.excluidoEm IS NULL AND pm.excluidoEm IS NULL))""",
+    )
+    suspend fun validosTodos(): List<ObrigacaoAjusteEntidade>
 
     @Query("SELECT * FROM obrigacao_ajuste WHERE pagamentoId = :pagamentoId AND excluidoEm IS NULL")
     suspend fun doPagamento(pagamentoId: String): List<ObrigacaoAjusteEntidade>

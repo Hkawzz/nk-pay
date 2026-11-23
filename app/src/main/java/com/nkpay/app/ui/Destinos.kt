@@ -31,6 +31,8 @@ object Rotas {
     fun compraForm(contaId: String) = "mais/compra-form?conta=$contaId"
     const val COMPRA = "mais/compra/{id}"
     fun compra(id: String) = "mais/compra/$id"
+    const val PARCELA = "mais/parcela/{id}"
+    fun parcela(id: String) = "mais/parcela/$id"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
     const val BACKUP = "mais/backup"
