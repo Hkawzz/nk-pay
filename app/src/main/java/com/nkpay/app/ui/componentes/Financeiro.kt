@@ -74,7 +74,7 @@ fun LinhaConta(conta: Conta, saldo: Long, aoClicar: () -> Unit) {
             conta.natureza == Natureza.BENEFICIO -> conta.tipoBeneficio?.rotulo ?: "Benefício"
             else -> null
         },
-        inicio = { AvatarConta(conta) },
+        inicio = { IconeDaConta(conta) },
         fim = { NkValor(saldo) },
         aoClicar = aoClicar,
     )
@@ -112,7 +112,15 @@ fun LinhaMovimentacao(
     NkListItem(
         titulo = tituloDaMovimentacao(m, visao),
         subtitulo = detalheDaMovimentacao(m, visao),
-        inicio = { AvatarConta(visao.conta(m.contaId)) },
+        // v0.4: entradas e despesas mostram o ícone da categoria; transferências e ajustes, o da conta.
+        inicio = {
+            val conta = visao.conta(m.contaId)
+            when {
+                m.tipo.temCategoria -> IconeDaCategoria(visao.categoria(m.categoriaId))
+                conta != null -> IconeDaConta(conta)
+                else -> AvatarConta(null)
+            }
+        },
         fim = {
             when (m.tipo) {
                 TipoMovimentacao.ENTRADA -> NkValor(m.valor, tipo = TipoValor.ENTRADA)

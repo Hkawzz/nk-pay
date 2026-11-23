@@ -213,7 +213,15 @@ fun NkPayApp() {
                 ) { entrada ->
                     ContaFormTela(contaId = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
                 }
-                composable(Rotas.CATEGORIAS) { CategoriasTela(aoVoltar = { navController.popBackStack() }) }
+                composable(Rotas.CATEGORIAS) {
+                    CategoriasTela(aoVoltar = { navController.popBackStack() }, aoAbrir = { navController.navigate(Rotas.categoriaForm(it)) })
+                }
+                composable(
+                    Rotas.CATEGORIA_FORM,
+                    arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                ) { entrada ->
+                    com.nkpay.app.ui.categorias.CategoriaFormTela(id = entrada.arguments?.getString("id"), aoVoltar = { navController.popBackStack() })
+                }
                 composable(Rotas.REGISTRO) {
                     RegistroTela(
                         aoVoltar = { navController.popBackStack() },

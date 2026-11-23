@@ -156,7 +156,14 @@ fun CampoData(rotulo: String, data: LocalDate, aoMudar: (LocalDate) -> Unit, mod
 }
 
 /** Uma opção de uma lista de escolha. */
-data class Opcao<T>(val valor: T, val rotulo: String, val detalhe: String? = null)
+data class Opcao<T>(
+    val valor: T,
+    val rotulo: String,
+    val detalhe: String? = null,
+    /** Ícone com fundo na cor (v0.4: categorias e contas nas listas de escolha). */
+    val icone: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    val cor: Long? = null,
+)
 
 /** Campo que abre uma lista de opções (contas, categorias...). */
 @Composable
@@ -196,6 +203,10 @@ fun <T> CampoEscolha(
                                     .padding(vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                opcao.icone?.let {
+                                    NkIconeComFundo(it, corOuLilas(opcao.cor), tamanho = 32.dp)
+                                    Spacer(Modifier.width(12.dp))
+                                }
                                 Column(Modifier.weight(1f)) {
                                     Text(opcao.rotulo, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     opcao.detalhe?.let {
