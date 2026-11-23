@@ -243,9 +243,13 @@ fun ContaCreditoTela(
         val vc = credito ?: return@Subtela
         if (conta == null) { LaunchedEffect(Unit) { aoVoltar() }; return@Subtela }
         val faturas = vc.faturas(id, hoje)
+        // As listas do banco chegam uma de cada vez: só avisa se a diferença continuar por um tempo.
+        val fecha = vc.invarianteFecha(id, hoje)
+        var mostrarAviso by androidx.compose.runtime.remember { mutableStateOf(false) }
+        LaunchedEffect(fecha) { if (fecha) mostrarAviso = false else { kotlinx.coroutines.delay(1_500); mostrarAviso = true } }
         LazyColumn(modifier.fillMaxSize()) {
             item { NkCartaoCredito(conta.nome, descricaoDaContaDeCredito(conta), vc.devido(id), conta.limite) }
-            if (!vc.invarianteFecha(id, hoje)) {
+            if (mostrarAviso && !fecha) {
                 item {
                     NkCard(estilo = EstiloCard.ELEVADO) {
                         NkListItem(
