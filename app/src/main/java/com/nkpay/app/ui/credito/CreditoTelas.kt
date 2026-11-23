@@ -237,7 +237,14 @@ fun ContaCreditoTela(
     Subtela(
         titulo = conta?.nome ?: "Cartão",
         aoVoltar = aoVoltar,
-        acoes = { IconButton(onClick = aoEditar) { Icon(Icons.Rounded.Edit, contentDescription = "Editar") } },
+        acoes = {
+            IconButton(onClick = aoEditar) { Icon(Icons.Rounded.Edit, contentDescription = "Editar") }
+            // v0.5: arquivar tira o cartão das listas (ex.: um cartão "de mentira" usado para um empréstimo).
+            val escopo = androidx.compose.runtime.rememberCoroutineScope()
+            if (conta != null) androidx.compose.material3.TextButton(onClick = {
+                escopo.launch { container.contas.arquivar(id, arquivar = !conta.arquivada); kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { aoVoltar() } }
+            }) { Text(if (conta.arquivada) "Desarquivar" else "Arquivar") }
+        },
         botaoFlutuante = botaoFlutuante,
     ) { modifier ->
         val vc = credito ?: return@Subtela
