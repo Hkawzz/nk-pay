@@ -188,6 +188,9 @@ class EmprestimoFormViewModel(private val container: AppContainer, tipoInicial: 
     var contaPropriaId by mutableStateOf<String?>(null)
     var anterior by mutableStateOf(false)
     var jurosTexto by mutableStateOf("0,00")
+    /** v0.6 (A4): no anterior, o total de parcelas do contrato e as já pagas. */
+    var totalContratoTexto by mutableStateOf("")
+    var jaPagasTexto by mutableStateOf("0")
     var modo by mutableStateOf(ModoParcelas.AUTOMATICAS)
     var quantidadeTexto by mutableStateOf("1")
     var valorParcelaTexto by mutableStateOf("0,00")
@@ -212,6 +215,8 @@ class EmprestimoFormViewModel(private val container: AppContainer, tipoInicial: 
         descricao = descricao, categoriaId = categoriaId, valorOriginal = Dinheiro.ler(valorTexto) ?: 0, data = data,
         contaPropriaId = contaPropriaId.takeIf { !anterior }, parcelas = parcelas(), anteriorAoApp = anterior,
         jurosInformados = if (anterior && tipo == TipoEmprestimo.CONCEDIDO) Dinheiro.ler(jurosTexto) ?: 0 else 0,
+        totalParcelasDoContrato = if (anterior) totalContratoTexto.toIntOrNull() else null,
+        parcelasJaPagas = if (anterior) jaPagasTexto.toIntOrNull() ?: 0 else 0,
     )
 
     fun verificarDuplicadas() {
@@ -292,6 +297,10 @@ fun EmprestimoFormTela(tipoInicial: TipoEmprestimo, aoVoltar: () -> Unit) {
                 CampoDinheiro("Juros contidos nas parcelas pendentes (opcional)", vm.jurosTexto, { vm.jurosTexto = it }, ajuda = "Com R$ 0,00, tudo o que receber conta como devolução, sem receita de juros.")
             }
 
+            if (vm.anterior) {
+                NkCampo("Total de parcelas do contrato", vm.totalContratoTexto, { vm.totalContratoTexto = it.filter(Char::isDigit).take(3) }, ajuda = "Ex.: 12. Opcional.")
+                NkCampo("Parcelas já pagas", vm.jaPagasTexto, { vm.jaPagasTexto = it.filter(Char::isDigit).take(3) }, ajuda = "Só as pendentes são cadastradas, numeradas a partir daqui (ex.: 5/12).")
+            }
             Text(if (vm.anterior) "Parcelas pendentes" else "Parcelas", style = MaterialTheme.typography.titleSmall)
             EscolhaSegmentada(listOf(Opcao(ModoParcelas.AUTOMATICAS, "Automáticas"), Opcao(ModoParcelas.PERSONALIZADAS, "Personalizadas")), vm.modo, { vm.modo = it })
             if (vm.modo == ModoParcelas.AUTOMATICAS) {

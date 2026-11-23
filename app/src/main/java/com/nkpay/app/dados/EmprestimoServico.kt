@@ -28,6 +28,10 @@ data class NovoEmprestimo(
     val anteriorAoApp: Boolean = false,
     /** Só no concedido anterior (D5): juros contidos nas parcelas pendentes. */
     val jurosInformados: Long = 0,
+    /** v0.6 (A4): no anterior, o total de parcelas do contrato (vazio = só as pendentes)... */
+    val totalParcelasDoContrato: Int? = null,
+    /** ...e quantas já foram pagas antes do app. As pendentes são numeradas a partir daí (ex.: 5/12). */
+    val parcelasJaPagas: Int = 0,
 )
 
 /**
@@ -65,6 +69,10 @@ class EmprestimoServico(
             !n.anteriorAoApp && n.contaPropriaId == null -> "Escolha a conta por onde o dinheiro ${if (n.tipo == TipoEmprestimo.RECEBIDO) "entrou" else "saiu"}."
             !n.anteriorAoApp && total < n.valorOriginal -> "O total das parcelas (${Dinheiro.formatar(total)}) não pode ser menor que o valor original."
             n.anteriorAoApp && n.tipo == TipoEmprestimo.CONCEDIDO && n.jurosInformados !in 0 until total -> "Os juros contidos precisam ser menores que o total das parcelas pendentes."
+            !n.anteriorAoApp && (n.totalParcelasDoContrato != null || n.parcelasJaPagas != 0) -> "Parcelas já pagas só existem em empréstimos anteriores ao app."
+            n.parcelasJaPagas < 0 -> "As parcelas já pagas não podem ser negativas."
+            n.totalParcelasDoContrato != null && n.parcelasJaPagas + n.parcelas.size != n.totalParcelasDoContrato ->
+                "As parcelas já pagas (${n.parcelasJaPagas}) e as pendentes (${n.parcelas.size}) precisam somar o total do contrato (${n.totalParcelasDoContrato})."
             else -> null
         }
     }
@@ -137,17 +145,20 @@ class EmprestimoServico(
                 "Empréstimo ${n.tipo.rotulo.lowercase()} “$descricao” registrado (${n.parcelas.size} parcelas, total ${Dinheiro.formatar(total)})", EmprestimoEntidade.serializer(), null, emp)
 
             val ordenadas = n.parcelas.sortedBy { it.first }
-            ordenadas.forEachIndexed { i, (venc, valor) ->
+            // v0.6 (A4): no anterior, as pendentes continuam a numeração do contrato (ex.: 5/12).
+            val noContrato = n.totalParcelasDoContrato ?: (n.parcelasJaPagas + ordenadas.size)
+            ordenadas.forEachIndexed { i0, (venc, valor) ->
+                val i = n.parcelasJaPagas + i0
                 val o = ObrigacaoEntidade(
                     id = relogio.novoId(), origem = OrigemObrigacao.EMPRESTIMO.name,
-                    descricao = if (ordenadas.size == 1) descricao else "$descricao (${i + 1}/${ordenadas.size})",
+                    descricao = if (noContrato == 1) descricao else "$descricao (${i + 1}/$noContrato)",
                     valorPrevistoCentavos = valor, vencimento = venc.toString(), mesReferencia = YearMonth.from(venc).toString(),
                     contaFixaId = null, categoriaId = null, contaCreditoId = pessoa.id, compraId = null,
-                    numeroParcela = i + 1, totalParcelas = ordenadas.size, canceladaEm = null,
+                    numeroParcela = i + 1, totalParcelas = noContrato, canceladaEm = null,
                     criadoEm = agora, atualizadoEm = agora, excluidoEm = null, emprestimoId = emp.id,
                 )
                 obrigacaoDao.inserir(o)
-                auditor.registrar(grupo, Operacao.CRIACAO, Auditor.OBRIGACAO, o.id, "Parcela ${i + 1}/${ordenadas.size} de ${Dinheiro.formatar(valor)} (vence $venc)", ObrigacaoEntidade.serializer(), null, o)
+                auditor.registrar(grupo, Operacao.CRIACAO, Auditor.OBRIGACAO, o.id, "Parcela ${i + 1}/$noContrato de ${Dinheiro.formatar(valor)} (vence $venc)", ObrigacaoEntidade.serializer(), null, o)
             }
             Resultado.Sucesso(emp.id)
         }
