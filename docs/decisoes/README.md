@@ -31,3 +31,5 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0025](0025-juros-do-parcelamento.md) | Juros do parcelamento no cartão e no crediário (D-A1 c), com a limitação conhecida | Aceita |
 | [0026](0026-preparar-mes.md) | Preparar próximo mês | Aceita |
 | [0027](0027-excluir-e-arquivar-terceiros.md) | Excluir e arquivar cartões, crediários e pessoas | Aceita |
+| [0028](0028-banco-v6.md) | Banco versão 6: objetivos e movimentos de reserva | Aceita |
+| [0029](0029-objetivos.md) | Objetivos: reservas virtuais sobre o dinheiro próprio (O1 b, O2 a, O3 a) | Aceita |

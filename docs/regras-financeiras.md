@@ -104,7 +104,7 @@ As **entradas do mês** e as **despesas do mês** consideram só `ENTRADA` e `DE
 
 ```
 Dinheiro próprio = Σ saldos das contas PROPRIO
-Reservado        = Σ reservas dos objetivos        (na v0.1 é sempre R$ 0,00)
+Reservado        = Σ reservas dos objetivos        (Guardado; R$ 0,00 até a v0.6, ver 6F na v0.7)
 Disponível       = Dinheiro próprio − Reservado
 ```
 
@@ -373,7 +373,7 @@ Transferência PROPRIO → PROPRIO: não entra. Ajustes: não entram.
 | **Saldo total** | Σ contas `PROPRIO` (sem VA/VR, cartões e empréstimos) | Só se Guardado > 0 |
 | **Guardado** | Σ reservas dos objetivos | Só se Guardado > 0 |
 
-Até a v0.7 (objetivos), o Guardado é R$ 0,00, então só o Saldo disponível aparece. É a mesma fórmula do antigo "Disponível", com nome novo.
+Até a v0.6, o Guardado era sempre R$ 0,00, então só o Saldo disponível aparecia. Na v0.7 ele vem dos objetivos (6F), e Saldo total e Guardado aparecem enquanto houver algo guardado. É a mesma fórmula do antigo "Disponível", com nome novo.
 
 ### 6E.4 Empréstimo recebido (eu devo): juros J1 (D2)
 Os **juros** (total das parcelas − valor original) viram **uma despesa** em "Encargos financeiros", na conta do empréstimo, **na data da contratação**. Pagar uma parcela é **só transferência**.
@@ -441,6 +441,70 @@ Uma parcela com vencimento antes de hoje e restante > 0 fica **Atrasada**: "venc
 
 ---
 
+## 6F. Objetivos e reservas ✅ v0.7
+
+Aprovadas no briefing da v0.7 (decisões O1 = b, O2 = a, O3 = a). Ver [0028](decisoes/0028-banco-v6.md) e [0029](decisoes/0029-objetivos.md).
+
+### 6F.1 O que é um objetivo
+- Um objetivo é uma **reserva virtual** sobre o **dinheiro próprio**: o dinheiro continua na conta, e o objetivo só "carimba" uma parte dele.
+- Tem nome, ícone e cor; **meta** e **prazo** são opcionais (sem meta, é uma "caixinha" livre, sem %).
+- **VA/VR, cartões, crediários e empréstimos não podem ser reservados.** O Guardado é só sobre o dinheiro próprio.
+
+```
+Guardado do objetivo = Σ movimentos de reserva dele            (calculado, nunca gravado)
+Guardado (total)     = Σ guardado dos objetivos não excluídos  (ativos, concluídos e arquivados)
+Saldo disponível     = Saldo total − Guardado
+Falta                = meta − guardado (mínimo R$ 0,00)          · só com meta
+Progresso            = guardado ÷ meta                            · só com meta
+Guardar por mês      = falta ÷ meses até o prazo (arredondado para cima) · só com meta e prazo, informativo
+```
+
+Meses até o prazo: do mês atual ao mês do prazo, **contando os dois** (mínimo 1). Prazo já passado: o app mostra "prazo vencido" e não sugere valor.
+
+### 6F.2 Operações
+| Operação | Guardado do objetivo | Disponível | Regra |
+|---|---|---|---|
+| **Guardar** R$ X | +X | −X | Bloqueada se X > disponível |
+| **Retirar** R$ X | −X | +X | Até o guardado do objetivo. **Não é despesa** |
+| **Mover** R$ X de A para B | A −X, B +X | igual | Até o guardado de A |
+| **Ajustar** para R$ Y | grava a diferença (Y − guardado) como "ajuste" | −diferença | Um aumento segue o bloqueio do Guardar; nunca sobrescreve sem rastro |
+| **Desfazer** um movimento | volta ao que era | volta ao que era | Recusado se deixar algum objetivo negativo; desfazer algo que **aumenta** o guardado segue o bloqueio do Guardar |
+
+**Guardar, retirar, mover e ajustar NÃO são movimentações de dinheiro.** Eles não mudam entradas, saídas, despesas, o Resumo da Início, o fluxo do dinheiro próprio nem o saldo de nenhuma conta. Só mudam o Guardado e o Saldo disponível. **Um objetivo nunca fica com guardado negativo.**
+
+> **Exemplo.** Saldo total R$ 1.000,00, nada guardado.
+> - Guardar R$ 300,00 no "Fone": Guardado R$ 300,00 · **Saldo disponível R$ 700,00** · Saldo total R$ 1.000,00 (igual).
+> - Guardar R$ 800,00 em outro objetivo: **recusado** (o disponível é R$ 700,00).
+> - Retirar R$ 100,00 do "Fone": Guardado R$ 200,00 · disponível R$ 800,00.
+> - Mover R$ 50,00 do "Fone" para a "Viagem": Fone R$ 150,00 · Viagem R$ 50,00 · Guardado R$ 200,00 · disponível R$ 800,00 (igual).
+> - Ajustar a "Viagem" para R$ 80,00: ajuste de +R$ 30,00 no histórico · Guardado R$ 230,00 · disponível R$ 770,00.
+> - Entradas, despesas e o Resumo da Início: **iguais** em todos os passos.
+
+### 6F.3 Gastar o dinheiro de um objetivo (O1 = b)
+**Não existe ligação entre despesa e objetivo.** Para gastar o dinheiro guardado: **1)** retire do objetivo; **2)** lance a despesa normalmente.
+
+> **Exemplo.** Saldo total R$ 1.000,00, R$ 300,00 guardados no "Fone" (disponível R$ 700,00). Você compra o fone por R$ 300,00:
+> - Retirar R$ 300,00 do "Fone": Guardado R$ 0,00 · disponível R$ 1.000,00.
+> - Lançar a despesa de R$ 300,00: Saldo total R$ 700,00 · **disponível R$ 700,00** (correto).
+> - Se você só lançar a despesa e esquecer de retirar: Saldo total R$ 700,00, Guardado R$ 300,00, disponível R$ 400,00. Para corrigir, retire do objetivo.
+
+### 6F.4 Guardado maior que o saldo (O2 = a)
+Uma despesa, um ajuste ou a exclusão de uma entrada podem deixar o Guardado maior que o Saldo total. Isso é **permitido**: o Saldo disponível aparece **negativo, em destaque**, com o aviso *"Seu guardado é maior que o seu saldo. Retire de um objetivo ou registre uma entrada."* **Nada é reduzido automaticamente.** Novas reservas continuam bloqueadas enquanto não houver disponível.
+
+> **Exemplo.** Saldo total R$ 1.000,00, Guardado R$ 300,00. Uma despesa de R$ 900,00: Saldo total R$ 100,00 · Guardado R$ 300,00 · **Saldo disponível −R$ 200,00** com o aviso.
+
+### 6F.5 Concluir, arquivar e excluir (O3 = a)
+- **Concluir** e **arquivar** tiram o objetivo da lista ativa e mantêm o histórico. **O valor guardado continua guardado** até você retirar ou mover. Dá para reabrir (desconcluir/desarquivar). Só se guarda em objetivo ativo; retirar e mover continuam possíveis.
+- **Excluir um objetivo com valor guardado é recusado:** "Retire ou mova os R$ X antes." Sem guardado, a exclusão é lógica e auditada.
+
+### 6F.6 Análises
+Seção **Objetivos**: guardado atual, progresso de cada objetivo, **guardado no período** (guardar e ajustes para cima) e **retirado no período** (retirar e ajustes para baixo), pela data do movimento. Mover não conta (é entre objetivos). Objetivos **não** são entrada, saída nem despesa.
+
+### 6F.7 Fora da v0.7
+- Guardar dentro do Preparar mês e cards de objetivos na Início (ficam para a v0.8, se fizerem falta).
+
+---
+
 ## 7. Regras futuras 🔜
 
 > As seções 7.1 a 7.4 foram detalhadas e implementadas na v0.4: ver a seção 6B.
@@ -476,7 +540,7 @@ A obrigação continua pendente até o restante chegar a zero.
 ### 7.4 Diferença entre o valor pago e o restante
 Quando o valor pago é diferente do restante, o app **pergunta** a natureza da diferença: pagamento parcial, juros, multa, tarifa, IOF, desconto ou outro. **Ele nunca classifica sozinho.**
 
-### 7.5 Objetivos
+### 7.5 Objetivos ✅ v0.7 (detalhada na seção 6F)
 São **reservas virtuais** sobre o dinheiro próprio: o dinheiro continua na conta, e o objetivo só "carimba" uma parte. Uma nova reserva fica bloqueada se não houver disponível suficiente.
 
 > Exemplo: com o dinheiro próprio em R$ 1.500,00, uma reserva de R$ 400,00 deixa o disponível em R$ 1.100,00. Uma nova reserva de R$ 1.200,00 é bloqueada.

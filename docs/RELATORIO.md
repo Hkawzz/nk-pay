@@ -17,6 +17,29 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
+## v0.7.0 (em andamento) - Objetivos e reservas
+
+**Objetivo:** a aba Objetivos (reservas virtuais sobre o dinheiro próprio), o Guardado de verdade no Saldo disponível, a seção Objetivos nas Análises, e a preparação do teste profundo (roteiro e registro de problemas). Fontes: `planejamento/briefing-v0.7-autonomo.md` (prevalece) e `planejamento/proposta-execucao-v0.7.md`.
+
+**Como foi feito:** de forma autônoma, na ordem de PRs do briefing. Pela decisão O1 = (b), o PR "despesa usando dinheiro do objetivo" da proposta **não existe**. Cada PR termina com o CI verde e esta seção atualizada.
+
+**PRs**
+
+| # | Etapa | O que entrou | Estado |
+|---|---|---|---|
+| [#57](https://github.com/Hkawzz/nk-pay/pull/57) | Docs | Regra 6F (objetivos, com exemplos e O1 a O3), 7.5, 4 e 6E.3 atualizadas; decisões 0028 e 0029. Sem código | ✅ |
+
+**Decisões tomadas sozinho**
+- **Desfazer uma retirada** (que aumenta o guardado) segue o mesmo bloqueio do Guardar: não pode passar do disponível. É a opção mais segura e coerente com a regra "nova reserva bloqueada sem disponível".
+- **Só se guarda em objetivo ativo**; retirar e mover continuam valendo para concluídos e arquivados (o dinheiro deles continua guardado, O3).
+- **Análises:** "guardado no período" = guardar + ajustes para cima; "retirado no período" = retirar + ajustes para baixo; mover não conta.
+- **Guardar por mês:** meses do mês atual ao do prazo, contando os dois, arredondado para cima; prazo vencido não sugere valor.
+
+**Pendências:** nenhuma até aqui.
+
+**Problemas encontrados:** nenhum até aqui.
+---
+
 ## v0.6.0 (em validação) - Ajustes dos testes e Preparar próximo mês
 
 **Objetivo:** os ajustes encontrados nos testes da v0.5 (compra com juros, parcelas antecipadas antes do app, excluir e arquivar cartões e pessoas, numeração do empréstimo anterior) e o assistente **Preparar próximo mês**. Fontes: `planejamento/briefing-v0.6-autonomo.md` e `planejamento/analise-ajustes-pos-testes-v0.6.md`.
