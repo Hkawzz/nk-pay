@@ -104,6 +104,8 @@ class PagamentoCreditoServico(
             ?: return@withTransaction Resultado.Falha("Parcela não encontrada.")
         val credito = contaDao.buscar(o.contaCreditoId!!)!!
         if (Natureza.valueOf(credito.natureza) == Natureza.CARTAO) return@withTransaction Resultado.Falha("Parcelas de cartão são pagas pela fatura.")
+        // v0.5: empréstimo concedido não se "paga": recebe-se (receberParcela, com os juros K2).
+        if (Natureza.valueOf(credito.natureza) == Natureza.EMPRESTIMO_CONCEDIDO) return@withTransaction Resultado.Falha("Empréstimo concedido: use Receber.")
         val origem = contaOrigemValida(contaOrigemId) ?: return@withTransaction Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
         val restante = visao(credito.id).situacaoDaParcela(o.id, relogio.hoje())?.restante ?: 0
         val plano = when (val r = Pagamentos.planejar(restante, valorPago, classificacao)) {
@@ -203,14 +205,173 @@ class PagamentoCreditoServico(
         }
     }
 
+    // ------------------------------------------------------------------ empréstimos (v0.5)
+
+    /** A visão de UM empréstimo, lida do banco dentro da transação. */
+    private suspend fun visaoEmprestimo(emprestimoId: String): com.nkpay.app.dominio.VisaoEmprestimos? {
+        val e = banco.emprestimoDao().buscar(emprestimoId)?.takeIf { it.excluidoEm == null } ?: return null
+        val parcelas = obrigacaoDao.doEmprestimo(emprestimoId).map { it.paraDominio() }
+        val ids = parcelas.map { it.id }.toSet()
+        return com.nkpay.app.dominio.VisaoEmprestimos(
+            banco.backupDao().contas().filter { it.excluidoEm == null }.map { it.paraDominio() },
+            banco.backupDao().movimentacoes().filter { it.excluidoEm == null }.map { it.paraDominio() },
+            listOf(e.paraDominio()), parcelas,
+            pagamentoDao.validosTodos().filter { it.obrigacaoId in ids }.map { it.paraDominio() },
+            ajusteDao.validosTodos().filter { it.obrigacaoId in ids }.map { it.paraDominio() },
+        )
+    }
+
+    /** A categoria "Juros recebidos": existe ou é criada aqui, com auditoria (regra 6E.5). */
+    private suspend fun Contexto.categoriaJurosRecebidos(): String =
+        categoriaDao.buscarPorCodigo(CategoriasDoSistema.JUROS_RECEBIDOS)?.id ?: run {
+            val a = com.nkpay.app.dominio.AparenciaSugerida.ouNeutra("Juros recebidos")
+            val c = CategoriaEntidade(relogio.novoId(), "Juros recebidos", CategoriasDoSistema.JUROS_RECEBIDOS, null, agora, agora, null, a.icone, a.cor)
+            categoriaDao.inserir(c)
+            auditor.registrar(grupo, Operacao.CRIACAO, Auditor.CATEGORIA, c.id, "Categoria de sistema “Juros recebidos” criada", CategoriaEntidade.serializer(), null, c)
+            c.id
+        }
+
+    /**
+     * Recebe [valor] numa parcela de empréstimo CONCEDIDO (K2, regras 6E.5 e 6E.6):
+     * - a parte até o restante da parcela é dividida em principal (transferência pessoa →
+     *   conta própria) e juros (entrada em "Juros recebidos"), na proporção dos juros não
+     *   reconhecidos do empréstimo; o recebimento que quita o empréstimo fecha os juros;
+     * - recebeu a mais (juros, multa, outro): o excedente é outra entrada em "Juros recebidos"
+     *   + acréscimo na parcela;
+     * - recebeu a menos com desconto concedido: abatimento sem despesa; consome primeiro os
+     *   juros não reconhecidos, e só o que passar reduz o principal (ajuste na conta da pessoa).
+     * Uma ligação (`pagamento`) com o valor aplicado inteiro; os juros ficam num ajuste
+     * JUROS_RECEBIDOS (não muda o restante), para o desfazer remover tudo junto (ADR 0021).
+     * @return o id da movimentação principal (é por ela que se desfaz).
+     */
+    suspend fun receberParcela(
+        obrigacaoId: String, contaDestinoId: String, data: LocalDate, valor: Long, classificacao: ClassificacaoDiferenca?,
+    ): Resultado<String> = banco.withTransaction {
+        val o = obrigacaoDao.buscar(obrigacaoId)?.takeIf { it.excluidoEm == null && it.emprestimoId != null }
+            ?: return@withTransaction Resultado.Falha("Parcela não encontrada.")
+        val pessoa = contaDao.buscar(o.contaCreditoId!!)!!
+        if (pessoa.natureza != Natureza.EMPRESTIMO_CONCEDIDO.name) return@withTransaction Resultado.Falha("Só se recebe parcela de empréstimo concedido.")
+        val destino = contaOrigemValida(contaDestinoId) ?: return@withTransaction Resultado.Falha("Escolha a conta onde o dinheiro entrou.")
+        val v = visaoEmprestimo(o.emprestimoId!!) ?: return@withTransaction Resultado.Falha("Empréstimo não encontrado.")
+        val s = v.situacao(o.emprestimoId, relogio.hoje())!!
+        val restanteParcela = s.parcelas.first { it.obrigacao.id == o.id }.restante
+        val permitidas = setOf(ClassificacaoDiferenca.PARCIAL, ClassificacaoDiferenca.DESCONTO, ClassificacaoDiferenca.JUROS, ClassificacaoDiferenca.MULTA, ClassificacaoDiferenca.OUTRO_ACRESCIMO)
+        if (classificacao != null && classificacao !in permitidas) return@withTransaction Resultado.Falha("Escolha parcial, desconto, juros, multa ou outro.")
+        val plano = when (val r = Pagamentos.planejar(restanteParcela, valor, classificacao)) {
+            is ResultadoPlano.Pronto -> r.plano
+            is ResultadoPlano.PrecisaClassificar -> return@withTransaction Resultado.Falha("Diga o que é a diferença de ${Dinheiro.formatar(r.diferenca)}.")
+            is ResultadoPlano.Invalido -> return@withTransaction Resultado.Falha(r.mensagem)
+        }
+        val recebido = plano.despesaPrincipal // a parte até o restante da parcela
+        val juros = com.nkpay.app.dominio.Emprestimos.jurosDoRecebimento(recebido, s.restante, s.jurosNaoReconhecidos)
+        val principal = recebido - juros
+        val c = Contexto(relogio.novoId(), relogio.agora(), data)
+        with(c) {
+            val catJuros = if (juros > 0 || plano.encargo > 0) categoriaJurosRecebidos() else null
+            // Movimentação principal: a transferência do principal (ou, se tudo for juros, a entrada de juros).
+            val t = if (principal > 0) mov(TipoMovimentacao.TRANSFERENCIA, principal, pessoa.id, destino.id, null, "Recebido: ${o.descricao}",
+                "Transferência de ${Dinheiro.formatar(principal)} ${pessoa.nome} → ${destino.nome} (devolução de “${o.descricao}”)") else null
+            val e = if (juros > 0) mov(TipoMovimentacao.ENTRADA, juros, destino.id, null, catJuros, "Juros: ${o.descricao}",
+                "Entrada de ${Dinheiro.formatar(juros)} em Juros recebidos (“${o.descricao}”)") else null
+            val principalMov = t ?: e ?: return@withTransaction Resultado.Falha("Nada a receber.")
+            val p = ligar(o, principalMov.id, recebido + plano.encargo)
+            if (e != null) ajustar(o, p.id, NaturezaAjuste.JUROS_RECEBIDOS, juros, e.id)
+            if (plano.encargo > 0) {
+                val natureza = plano.classificacao!!.natureza!!
+                val ex = mov(TipoMovimentacao.ENTRADA, plano.encargo, destino.id, null, catJuros, "${natureza.rotulo}: ${o.descricao}",
+                    "Entrada de ${Dinheiro.formatar(plano.encargo)} em Juros recebidos (${natureza.rotulo.lowercase()}, “${o.descricao}”)")
+                ajustar(o, p.id, natureza, plano.encargo, ex.id)
+            }
+            if (plano.abatimento > 0) {
+                val naoReconhecidosDepois = s.jurosNaoReconhecidos - juros
+                val dosJuros = minOf(plano.abatimento, naoReconhecidosDepois.coerceAtLeast(0))
+                val doPrincipal = plano.abatimento - dosJuros
+                if (dosJuros > 0) {
+                    val a = ObrigacaoAjusteEntidade(relogio.novoId(), o.id, p.id, NaturezaAjuste.DESCONTO.name, dosJuros, null, "juros", agora, agora, null)
+                    ajusteDao.inserir(a)
+                    auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, a.id, "Desconto concedido de ${Dinheiro.formatar(dosJuros)} (juros) em “${o.descricao}”", ObrigacaoAjusteEntidade.serializer(), null, a)
+                }
+                if (doPrincipal > 0) {
+                    val aj = mov(TipoMovimentacao.AJUSTE, -doPrincipal, pessoa.id, null, null, "Desconto concedido: ${o.descricao}",
+                        "Ajuste de ${Dinheiro.formatarComSinal(-doPrincipal)} em “${pessoa.nome}” (desconto concedido)")
+                    ajustar(o, p.id, NaturezaAjuste.DESCONTO, doPrincipal, aj.id)
+                }
+            }
+            Resultado.Sucesso(principalMov.id)
+        }
+    }
+
+    /**
+     * Edição de parcelas sem pagamento (regra 6E.8): valor e/ou data desta parcela e, se
+     * [futuras], das seguintes do mesmo empréstimo (as que também não têm pagamento).
+     * O previsto não muda: a diferença vira acréscimo ou abatimento, datado hoje. No
+     * recebido, com a despesa de encargo ou o ajuste de redução; no concedido, sem
+     * movimentação (só muda a proporção K2), e sem deixar o total abaixo do principal.
+     */
+    suspend fun editarParcelas(obrigacaoId: String, novoValor: Long?, novaData: LocalDate?, futuras: Boolean): Resultado<Int> = banco.withTransaction {
+        val o = obrigacaoDao.buscar(obrigacaoId)?.takeIf { it.excluidoEm == null && it.emprestimoId != null }
+            ?: return@withTransaction Resultado.Falha("Parcela não encontrada.")
+        if (novoValor != null && novoValor <= 0) return@withTransaction Resultado.Falha("O valor precisa ser maior que zero.")
+        if (pagamentoDao.validosDa(o.id).isNotEmpty()) return@withTransaction Resultado.Falha("Esta parcela já tem pagamento ou recebimento: ela não pode ser editada.")
+        val pessoa = contaDao.buscar(o.contaCreditoId!!)!!
+        val recebido = pessoa.natureza == Natureza.EMPRESTIMO_RECEBIDO.name
+        val v = visaoEmprestimo(o.emprestimoId!!)!!
+        val s = v.situacao(o.emprestimoId, relogio.hoje())!!
+        val alvo = s.parcelas.filter { p ->
+            p.obrigacao.id == o.id || (futuras && (p.obrigacao.numeroParcela ?: 0) > (o.numeroParcela ?: 0) && p.situacao.pago == 0L)
+        }.sortedBy { it.obrigacao.numeroParcela }
+        if (novoValor != null && !recebido) {
+            val novoRestante = s.restante + alvo.sumOf { novoValor - it.restante }
+            if (novoRestante < s.saldoNaConta) return@withTransaction Resultado.Falha("O total das parcelas não pode ficar abaixo do que ainda falta devolver (${Dinheiro.formatar(s.saldoNaConta)}).")
+        }
+        val encargos = if (recebido && novoValor != null && alvo.any { novoValor > it.restante }) {
+            categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) ?: return@withTransaction Resultado.Falha(SEM_ENCARGOS)
+        } else null
+        val c = Contexto(relogio.novoId(), relogio.agora(), relogio.hoje())
+        with(c) {
+            alvo.forEachIndexed { k, p ->
+                val ob = obrigacaoDao.buscar(p.obrigacao.id)!!
+                if (novoValor != null && novoValor != p.restante) {
+                    val delta = novoValor - p.restante
+                    val natureza = if (delta > 0) NaturezaAjuste.OUTRO_ACRESCIMO else NaturezaAjuste.OUTRO_ABATIMENTO
+                    val movId = if (!recebido) null else if (delta > 0) {
+                        mov(TipoMovimentacao.DESPESA, delta, pessoa.id, null, encargos!!.id, "Juros (edição): ${ob.descricao}",
+                            "Despesa de ${Dinheiro.formatar(delta)} em Encargos financeiros (parcela editada: “${ob.descricao}”)").id
+                    } else {
+                        mov(TipoMovimentacao.AJUSTE, -delta, pessoa.id, null, null, "Redução (edição): ${ob.descricao}",
+                            "Ajuste de ${Dinheiro.formatarComSinal(-delta)} em “${pessoa.nome}” (parcela editada)").id
+                    }
+                    val a = ObrigacaoAjusteEntidade(relogio.novoId(), ob.id, null, natureza.name, kotlin.math.abs(delta), movId, "edição", agora, agora, null)
+                    ajusteDao.inserir(a)
+                    auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, a.id,
+                        "Parcela “${ob.descricao}” editada: ${Dinheiro.formatar(p.restante)} → ${Dinheiro.formatar(novoValor)}", ObrigacaoAjusteEntidade.serializer(), null, a)
+                }
+                if (novaData != null) {
+                    val venc = novaData.plusMonths(k.toLong())
+                    val d = ob.copy(vencimento = venc.toString(), mesReferencia = YearMonth.from(venc).toString(), atualizadoEm = agora)
+                    if (d.vencimento != ob.vencimento) {
+                        obrigacaoDao.atualizar(d)
+                        auditor.registrar(grupo, Operacao.EDICAO, Auditor.OBRIGACAO, ob.id, "Vencimento de “${ob.descricao}” mudou para $venc", ObrigacaoEntidade.serializer(), ob, d)
+                    }
+                }
+            }
+            Resultado.Sucesso(alvo.size)
+        }
+    }
+
     // ------------------------------------------------------------------ desfazer
 
     /** Desfaz um pagamento de crédito inteiro, pela transferência que o fez. */
     suspend fun desfazer(transferenciaId: String): Resultado<Unit> = banco.withTransaction {
-        val t = movDao.buscar(transferenciaId)?.takeIf { it.excluidoEm == null && it.tipo == TipoMovimentacao.TRANSFERENCIA.name }
+        val t = movDao.buscar(transferenciaId)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction Resultado.Falha("Pagamento não encontrado.")
-        val destino = t.contaDestinoId?.let { contaDao.buscar(it) }
-        if (destino == null || !Natureza.valueOf(destino.natureza).ehCredito) return@withTransaction Resultado.Falha("Esta transferência não é um pagamento de cartão ou crediário.")
+        // v0.5: vale para cartão, crediário e empréstimos. A movimentação precisa ser o
+        // pagamento (ou recebimento) de uma conta de terceiros: ligada a parcelas dessas
+        // contas, ou a um abatimento geral de fatura. Nunca o Pagar das contas fixas.
+        val ligacoes = pagamentoDao.daMovimentacao(t.id)
+        val gerais = faturaDao.daMovimentacao(t.id)
+        val deTerceiros = gerais.isNotEmpty() || (ligacoes.isNotEmpty() && ligacoes.all { p -> obrigacaoDao.buscar(p.obrigacaoId)?.contaCreditoId != null })
+        if (!deTerceiros) return@withTransaction Resultado.Falha("Esta movimentação não é um pagamento de cartão, crediário ou empréstimo.")
         val grupo = relogio.novoId()
         val agora = relogio.agora()
         suspend fun excluirMov(m: MovimentacaoEntidade) {

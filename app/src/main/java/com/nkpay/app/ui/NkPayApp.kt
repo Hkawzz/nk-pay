@@ -242,8 +242,11 @@ fun NkPayApp() {
                     com.nkpay.app.ui.emprestimos.EmprestimoTela(
                         id = entrada.arguments?.getString("id").orEmpty(),
                         aoVoltar = { navController.popBackStack() },
-                        aoAbrirParcela = {},
+                        aoAbrirParcela = { navController.navigate(Rotas.emprestimoParcela(it)) },
                     )
+                }
+                composable(Rotas.EMPRESTIMO_PARCELA, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                    com.nkpay.app.ui.emprestimos.ParcelaEmprestimoTela(obrigacaoId = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
                 }
                 composable(Rotas.ANALISES) { com.nkpay.app.ui.analises.AnalisesTela(aoVoltar = { navController.popBackStack() }) }
                 composable(Rotas.CARTOES) {
