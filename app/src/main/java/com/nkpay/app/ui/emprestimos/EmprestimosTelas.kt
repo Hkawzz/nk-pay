@@ -92,12 +92,16 @@ fun rotuloDaParcela(p: ParcelaEmprestimo): String = when {
 
 /** Lista de empréstimos, com as abas Recebidos (eu devo) e Concedidos (me devem). */
 @Composable
-fun EmprestimosTela(aoVoltar: () -> Unit, aoAbrir: (String) -> Unit, aoNovo: (TipoEmprestimo) -> Unit) {
+fun EmprestimosTela(aoVoltar: () -> Unit, aoAbrir: (String) -> Unit, aoNovo: (TipoEmprestimo) -> Unit, aoPessoas: () -> Unit = {}) {
     val container = LocalContainer.current
     val visao by container.visaoEmprestimos.collectAsState()
     val hoje = container.relogio.hoje()
     var tipo by rememberSaveable { mutableStateOf(tipoLembrado) }
-    Subtela(titulo = "Empréstimos", aoVoltar = aoVoltar, botaoFlutuante = { BotaoAdicionar("Novo empréstimo") { aoNovo(tipo) } }) { modifier ->
+    Subtela(
+        titulo = "Empréstimos", aoVoltar = aoVoltar,
+        acoes = { androidx.compose.material3.TextButton(onClick = aoPessoas) { Text("Pessoas") } },
+        botaoFlutuante = { BotaoAdicionar("Novo empréstimo") { aoNovo(tipo) } },
+    ) { modifier ->
         val v = visao ?: return@Subtela
         val lista = v.situacoes(tipo, hoje)
         LazyColumn(modifier.fillMaxSize()) {

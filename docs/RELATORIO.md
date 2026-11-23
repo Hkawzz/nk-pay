@@ -31,6 +31,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#49](https://github.com/Hkawzz/nk-pay/pull/49) | Juros do parcelamento (cadastro) | Compra com valor da parcela: despesa = original, parte da compra e juros calculados por parcela, "Juros a pagar" no cartão com "?", novo invariante, compra anterior com juros (ajuste só da parte da compra) | ✅ |
 | [#50](https://github.com/Hkawzz/nk-pay/pull/50) | Pagamento com juros (sozinho) | Parcela do crediário, fatura inteira, abatimento geral e compras escolhidas lançam os juros pagos como despesa em Encargos financeiros; desconto consome primeiro os juros; desfazer remove tudo junto; telas de parcela e fatura mostram parte da compra e juros | ✅ |
 | [#51](https://github.com/Hkawzz/nk-pay/pull/51) | Parcelas antecipadas (A2) | Compra anterior com parcelas antecipadas: valor pago ou desconto (o app calcula o outro), sem repetir as pagas, até o previsto; desconto em Descontos obtidos na data da compra; juros não viram despesa | ✅ |
+| [#52](https://github.com/Hkawzz/nk-pay/pull/52) | Excluir e arquivar (A3, A5) | Cartões, crediários e pessoas: excluir só sem vínculos (senão oferece Arquivar), arquivar recusado com algo em aberto, "Mostrar arquivados" e Desarquivar; tela Pessoas com edição do nome | ✅ |
 
 **Decisões tomadas sozinho**
 - **A seção 8 da análise não existe no arquivo** (ele termina na seção 7). Segui a regra D-A1 (c) como o próprio briefing a descreve em detalhe; as fórmulas da regra 6B.8 vêm dessa descrição.
@@ -46,6 +47,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Abatimento geral com juros:** os juros proporcionais são distribuídos pelas parcelas da fatura, da primeira para a última, cada uma até os juros pendentes dela; como não há ligação, o ajuste guarda "geral:&lt;transferência&gt;" e o Desfazer o encontra por aí.
 - **Desconto com juros (crediário):** o abatimento na parcela é o desconto inteiro (entra em Descontos obtidos); a parte que cabe nos juros só reduz a despesa de juros, e só o que passar deles vira ajuste na conta (reduz o devido).
 - **Antecipadas no formulário:** um campo com os números ("11, 12") e, para cada uma, "Valor pago" e "Desconto" ligados (mudar um recalcula o outro); começa com o valor previsto (sem desconto). A parcela antecipada fica quitada; o ajuste no cartão soma a parte da compra inteira dela.
+- **Pessoas ganharam uma tela própria** (Empréstimos → Pessoas), com o nome, Arquivar/Desarquivar e Excluir; antes não havia onde gerenciar a pessoa. O Excluir do cartão fica no formulário de edição; o Arquivar continua no topo da tela do cartão, agora com o motivo quando é recusado.
+- **"Em aberto" para arquivar** = saldo da conta diferente de zero ou alguma parcela com restante (o que for maior aparece na mensagem). Contas próprias seguem a regra antiga (só a exclusão é bloqueada por movimentações).
 - **A sugestão de preparar o mês** é um card em A pagar quando o mês escolhido tem contas fixas a lançar ou pendências.
 
 **Pendências:** nenhuma até aqui.

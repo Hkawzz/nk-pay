@@ -42,6 +42,10 @@ object Rotas {
     fun emprestimo(id: String) = "mais/emprestimo/$id"
     const val EMPRESTIMO_PARCELA = "mais/emprestimo-parcela/{id}"
     fun emprestimoParcela(id: String) = "mais/emprestimo-parcela/$id"
+    // v0.6 (A5): pessoas e instituições dos empréstimos.
+    const val PESSOAS = "mais/pessoas"
+    const val PESSOA = "mais/pessoa/{id}"
+    fun pessoa(id: String) = "mais/pessoa/$id"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
     const val BACKUP = "mais/backup"

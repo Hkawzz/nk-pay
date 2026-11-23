@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
@@ -74,7 +75,13 @@ fun descricaoDaContaDeCredito(c: Conta): String = when (c.natureza) {
 @Composable
 fun CartoesTela(aoVoltar: () -> Unit, aoAbrir: (String) -> Unit, aoNovo: () -> Unit) {
     val credito by LocalContainer.current.visaoCredito.collectAsState()
-    Subtela(titulo = "Cartões e crediários", aoVoltar = aoVoltar, botaoFlutuante = { BotaoAdicionar("Novo cartão ou crediário", aoNovo) }) { modifier ->
+    // v0.6 (A3): os arquivados só aparecem a pedido, para desarquivar.
+    var mostrarArquivados by rememberSaveable { mutableStateOf(false) }
+    Subtela(
+        titulo = "Cartões e crediários", aoVoltar = aoVoltar,
+        acoes = { androidx.compose.material3.TextButton(onClick = { mostrarArquivados = !mostrarArquivados }) { Text(if (mostrarArquivados) "Ocultar arquivados" else "Mostrar arquivados") } },
+        botaoFlutuante = { BotaoAdicionar("Novo cartão ou crediário", aoNovo) },
+    ) { modifier ->
         val vc = credito ?: return@Subtela
         val contas = vc.contasDeCredito
         if (contas.isEmpty()) {
@@ -100,6 +107,14 @@ fun CartoesTela(aoVoltar: () -> Unit, aoAbrir: (String) -> Unit, aoNovo: () -> U
                     }
                 }
             }
+            val arquivados = contas.filter { it.arquivada }
+            if (mostrarArquivados && arquivados.isNotEmpty()) {
+                item(key = "t-arquivados") { NkCabecalhoSecao("Arquivados") }
+                for (c in arquivados) item(key = c.id) {
+                    NkCartaoCredito(c.nome, descricaoDaContaDeCredito(c), vc.devido(c.id), c.limite, aoClicar = { aoAbrir(c.id) })
+                }
+            }
+            if (mostrarArquivados && arquivados.isEmpty()) item { NkTextoAjuda("Nenhum cartão ou crediário arquivado.") }
             item { NkTextoAjuda("O devido é o que falta pagar de todas as compras. Ele nunca entra no Disponível.") }
             item { Spacer(Modifier.height(Espaco.fimDeListaComBotao)) }
         }
@@ -131,6 +146,33 @@ class ContaCreditoFormViewModel(private val container: AppContainer, private val
                 icone = c.icone; cor = c.cor
             }
             carregado = true
+        }
+    }
+
+    /** v0.6 (A3): o motivo de não poder excluir (a tela oferece arquivar). */
+    var bloqueio by mutableStateOf<String?>(null)
+    var confirmarExclusao by mutableStateOf(false)
+
+    fun excluir(aoTerminar: () -> Unit) {
+        val alvo = id ?: return
+        confirmarExclusao = false
+        viewModelScope.launch {
+            when (val r = container.contas.excluir(alvo)) {
+                com.nkpay.app.dados.ContaRepositorio.ResultadoExclusao.Excluida, com.nkpay.app.dados.ContaRepositorio.ResultadoExclusao.NaoEncontrada -> aoTerminar()
+                is com.nkpay.app.dados.ContaRepositorio.ResultadoExclusao.TemVinculos -> bloqueio = r.motivo
+                is com.nkpay.app.dados.ContaRepositorio.ResultadoExclusao.TemMovimentacoes -> bloqueio = "Tem ${r.quantidade} movimentação(ões)."
+            }
+        }
+    }
+
+    fun arquivar(aoTerminar: () -> Unit) {
+        val alvo = id ?: return
+        bloqueio = null
+        viewModelScope.launch {
+            when (val r = container.contas.arquivar(alvo)) {
+                is Resultado.Sucesso -> aoTerminar()
+                is Resultado.Falha -> erro = r.mensagem
+            }
         }
     }
 
@@ -194,8 +236,23 @@ fun ContaCreditoFormTela(id: String?, aoVoltar: () -> Unit) {
             SeletorDeAparencia(vm.icone ?: padrao.icone, vm.cor ?: padrao.cor, { vm.icone = it }, { vm.cor = it })
             vm.erro?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             NkBotaoPrimario(if (vm.editando) "Salvar alterações" else "Cadastrar", { vm.salvar(aoVoltar) }, habilitado = !vm.salvando)
+            if (vm.editando) {
+                com.nkpay.app.ui.componentes.NkBotaoSecundario("Excluir", { vm.confirmarExclusao = true })
+                NkTextoAjuda("Excluir só é possível sem nenhuma compra, pagamento ou movimentação. Com histórico, arquive.")
+            }
             Spacer(Modifier.height(Espaco.l))
         }
+    }
+    // Ao excluir, volta duas telas (o cartão deixou de existir): a navegação trata o retorno vazio.
+    if (vm.confirmarExclusao) com.nkpay.app.ui.componentes.DialogoConfirmacao(
+        titulo = "Excluir “${vm.nome}”?", texto = "Fica no Registro de alterações.", textoConfirmar = "Excluir", destrutivo = true,
+        aoConfirmar = { vm.excluir(aoVoltar) }, aoCancelar = { vm.confirmarExclusao = false },
+    )
+    vm.bloqueio?.let { motivo ->
+        com.nkpay.app.ui.componentes.DialogoConfirmacao(
+            titulo = "Não dá para excluir", texto = motivo, textoConfirmar = "Arquivar",
+            aoConfirmar = { vm.arquivar(aoVoltar) }, aoCancelar = { vm.bloqueio = null },
+        )
     }
 }
 
@@ -234,15 +291,28 @@ fun ContaCreditoTela(
     val credito by container.visaoCredito.collectAsState()
     val hoje: LocalDate = container.relogio.hoje()
     val conta = credito?.conta(id)
+    var avisoArquivar by rememberSaveable { mutableStateOf<String?>(null) }
+    avisoArquivar?.let { m ->
+        com.nkpay.app.ui.componentes.DialogoConfirmacao(
+            titulo = "Não dá para arquivar", texto = m, textoConfirmar = "Entendi",
+            aoConfirmar = { avisoArquivar = null }, aoCancelar = { avisoArquivar = null },
+        )
+    }
     Subtela(
         titulo = conta?.nome ?: "Cartão",
         aoVoltar = aoVoltar,
         acoes = {
             IconButton(onClick = aoEditar) { Icon(Icons.Rounded.Edit, contentDescription = "Editar") }
             // v0.5: arquivar tira o cartão das listas (ex.: um cartão "de mentira" usado para um empréstimo).
+            // v0.6 (A3): arquivar é recusado com devido em aberto; o motivo aparece num aviso.
             val escopo = androidx.compose.runtime.rememberCoroutineScope()
             if (conta != null) androidx.compose.material3.TextButton(onClick = {
-                escopo.launch { container.contas.arquivar(id, arquivar = !conta.arquivada); kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { aoVoltar() } }
+                escopo.launch {
+                    when (val r = container.contas.arquivar(id, arquivar = !conta.arquivada)) {
+                        is com.nkpay.app.dados.Resultado.Sucesso -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { aoVoltar() }
+                        is com.nkpay.app.dados.Resultado.Falha -> avisoArquivar = r.mensagem
+                    }
+                }
             }) { Text(if (conta.arquivada) "Desarquivar" else "Arquivar") }
         },
         botaoFlutuante = botaoFlutuante,

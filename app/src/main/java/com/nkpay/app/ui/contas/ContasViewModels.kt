@@ -117,6 +117,7 @@ class ContaDetalheViewModel(private val container: AppContainer, val contaId: St
             when (val r = container.contas.excluir(contaId)) {
                 ContaRepositorio.ResultadoExclusao.Excluida -> aoExcluir()
                 is ContaRepositorio.ResultadoExclusao.TemMovimentacoes -> bloqueioExclusao = r.quantidade
+                is ContaRepositorio.ResultadoExclusao.TemVinculos -> mensagem = r.motivo
                 ContaRepositorio.ResultadoExclusao.NaoEncontrada -> aoExcluir()
             }
         }
