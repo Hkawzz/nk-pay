@@ -6,6 +6,7 @@ import com.nkpay.app.dominio.CategoriasDoSistema
 import com.nkpay.app.dominio.Conta
 import com.nkpay.app.dominio.Dinheiro
 import com.nkpay.app.dominio.Movimentacao
+import com.nkpay.app.dominio.Natureza
 import com.nkpay.app.dominio.TipoMovimentacao
 import com.nkpay.app.dominio.Validacao
 import kotlinx.coroutines.flow.Flow
@@ -48,7 +49,8 @@ class ContaRepositorio(
             dataSaldoInicial = normalizada.dataSaldoInicial.toString(),
             icone = normalizada.icone,
             cor = normalizada.cor,
-            instituicao = null, limiteCentavos = null, diaFechamento = null, diaVencimento = null,
+            instituicao = null, limiteCentavos = normalizada.limite,
+            diaFechamento = normalizada.diaFechamento, diaVencimento = normalizada.diaVencimento,
             arquivadaEm = null,
             criadoEm = agora, atualizadoEm = agora, excluidoEm = null,
         )
@@ -70,6 +72,10 @@ class ContaRepositorio(
         return banco.withTransaction {
             val antes = dao.buscar(conta.id)?.takeIf { it.excluidoEm == null }
                 ?: return@withTransaction Resultado.Falha("Conta não encontrada.")
+            // Uma conta com lançamentos não vira de crédito (nem deixa de ser): o devido deixaria de bater.
+            if (Natureza.valueOf(antes.natureza).ehCredito != normalizada.natureza.ehCredito && dao.contarMovimentacoes(antes.id) > 0) {
+                return@withTransaction Resultado.Falha("Esta conta já tem lançamentos: ela não pode virar cartão ou crediário (nem o contrário).")
+            }
             val depois = antes.copy(
                 nome = normalizada.nome,
                 natureza = normalizada.natureza.name,
@@ -78,6 +84,9 @@ class ContaRepositorio(
                 dataSaldoInicial = normalizada.dataSaldoInicial.toString(),
                 icone = normalizada.icone,
                 cor = normalizada.cor,
+                limiteCentavos = normalizada.limite,
+                diaFechamento = normalizada.diaFechamento,
+                diaVencimento = normalizada.diaVencimento,
                 atualizadoEm = relogio.agora(),
             )
             if (depois.copy(atualizadoEm = antes.atualizadoEm) == antes) return@withTransaction Resultado.Sucesso(Unit)
@@ -230,10 +239,28 @@ class MovimentacaoRepositorio(
     private val categoriaDao = banco.categoriaDao()
     private val pagamentoDao = banco.pagamentoDao()
 
-    /** Movimentações criadas pelo botão Pagar só mudam pelo próprio pagamento (v0.3). */
-    private suspend fun ehDePagamento(id: String) = pagamentoDao.daMovimentacao(id).isNotEmpty()
+    private val compraDao = banco.compraDao()
+    private val pagamentoFaturaDao = banco.pagamentoFaturaDao()
+    private val ajusteDao = banco.ajusteObrigacaoDao()
 
-    suspend fun ehPagamentoDeConta(id: String): Boolean = ehDePagamento(id)
+    /**
+     * Movimentações criadas pelo botão Pagar (v0.3), por uma compra no crédito ou por um
+     * pagamento de crédito (v0.4) só mudam pela própria operação que as criou.
+     */
+    private suspend fun ehDePagamento(id: String) =
+        pagamentoDao.daMovimentacao(id).isNotEmpty() || pagamentoFaturaDao.daMovimentacao(id).isNotEmpty() ||
+            ajusteDao.daMovimentacao(id).isNotEmpty()
+
+    private suspend fun ehDeCompra(id: String) = compraDao.contarDaMovimentacao(id) > 0
+
+    private suspend fun mensagemSeProtegida(id: String): String? = when {
+        ehDeCompra(id) -> MENSAGEM_COMPRA
+        ehDePagamento(id) -> MENSAGEM_PAGAMENTO
+        else -> null
+    }
+
+    /** True se a movimentação só muda pela operação que a criou (pagamento ou compra). */
+    suspend fun ehPagamentoDeConta(id: String): Boolean = mensagemSeProtegida(id) != null
 
     /** Movimentações não excluídas, da mais recente para a mais antiga. */
     fun observar(): Flow<List<Movimentacao>> = dao.observarTodas().map { lista -> lista.map { it.paraDominio() } }
@@ -243,11 +270,15 @@ class MovimentacaoRepositorio(
     /** Regras que precisam consultar o banco (dentro da transação). */
     private suspend fun validar(m: Movimentacao): String? {
         val contasValidas = mutableMapOf<String, Boolean>()
+        var temCredito = false
         for (id in listOfNotNull(m.contaId, m.contaDestinoId)) {
             val conta = contaDao.buscar(id)
             contasValidas[id] = conta != null && conta.excluidoEm == null
+            if (conta != null && !Validacao.aceitaLancamentoAvulso(Natureza.valueOf(conta.natureza))) temCredito = true
         }
         Validacao.movimentacao(m) { contasValidas[it] == true }?.let { return it }
+        // Regra 6B.7 (ADR 0017): aqui, na camada de dados, e não só na tela.
+        if (temCredito) return Validacao.MENSAGEM_CONTA_DE_CREDITO
         if (m.categoriaId != null) {
             if (!m.tipo.temCategoria) return "Este tipo de movimentação não tem categoria."
             val categoria = categoriaDao.buscar(m.categoriaId)
@@ -293,8 +324,12 @@ class MovimentacaoRepositorio(
         return banco.withTransaction {
             val antes = dao.buscar(m.id)?.takeIf { it.excluidoEm == null }
                 ?: return@withTransaction Resultado.Falha("Movimentação não encontrada.")
-            if (ehDePagamento(m.id)) return@withTransaction Resultado.Falha(MENSAGEM_PAGAMENTO)
+            mensagemSeProtegida(m.id)?.let { return@withTransaction Resultado.Falha(it) }
             validar(limpa)?.let { return@withTransaction Resultado.Falha(it) }
+            // Uma movimentação de conta de crédito (feita por compra/pagamento) também não muda por aqui.
+            if (contaDao.buscar(antes.contaId)?.let { Natureza.valueOf(it.natureza).ehCredito } == true ||
+                antes.contaDestinoId?.let { contaDao.buscar(it) }?.let { Natureza.valueOf(it.natureza).ehCredito } == true
+            ) return@withTransaction Resultado.Falha(Validacao.MENSAGEM_CONTA_DE_CREDITO)
             val depois = antes.copy(
                 tipo = limpa.tipo.name,
                 data = limpa.data.toString(),
@@ -319,7 +354,7 @@ class MovimentacaoRepositorio(
     suspend fun excluir(id: String): Resultado<Unit> = banco.withTransaction {
         val antes = dao.buscar(id)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction Resultado.Falha("Movimentação não encontrada.")
-        if (ehDePagamento(id)) return@withTransaction Resultado.Falha(MENSAGEM_PAGAMENTO)
+        mensagemSeProtegida(id)?.let { return@withTransaction Resultado.Falha(it) }
         val agora = relogio.agora()
         val depois = antes.copy(excluidoEm = agora, atualizadoEm = agora)
         dao.atualizar(depois)
@@ -334,6 +369,10 @@ class MovimentacaoRepositorio(
 /** Mensagem para quem tenta mexer numa movimentação criada pelo botão Pagar. */
 const val MENSAGEM_PAGAMENTO =
     "Este lançamento é o pagamento de uma conta. Para mudar, abra a conta em A pagar e exclua o pagamento."
+
+/** Mensagem para quem tenta mexer na despesa de uma compra no cartão ou crediário (v0.4). */
+const val MENSAGEM_COMPRA =
+    "Este lançamento é uma compra no cartão ou crediário. Para mudar, abra a compra na tela do cartão ou do crediário."
 
 class AuditoriaRepositorio(banco: NkPayBanco) {
     private val dao = banco.auditoriaDao()

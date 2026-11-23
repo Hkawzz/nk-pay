@@ -103,6 +103,10 @@ interface AjusteObrigacaoDao {
     @Query("SELECT * FROM obrigacao_ajuste WHERE pagamentoId = :pagamentoId AND excluidoEm IS NULL")
     suspend fun doPagamento(pagamentoId: String): List<ObrigacaoAjusteEntidade>
 
+    /** Ajustes (não excluídos) que apontam para uma movimentação: encargo, desconto no crédito, parcelas pagas antes. */
+    @Query("SELECT * FROM obrigacao_ajuste WHERE movimentacaoId = :movimentacaoId AND excluidoEm IS NULL")
+    suspend fun daMovimentacao(movimentacaoId: String): List<ObrigacaoAjusteEntidade>
+
     @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun inserir(a: ObrigacaoAjusteEntidade)
     @Update suspend fun atualizar(a: ObrigacaoAjusteEntidade)
 }
@@ -123,6 +127,10 @@ fun ObrigacaoEntidade.paraDominio() = Obrigacao(
     mesReferencia = mesReferencia?.let { YearMonth.parse(it) },
     contaFixaId = contaFixaId,
     categoriaId = categoriaId,
+    contaCreditoId = contaCreditoId,
+    compraId = compraId,
+    numeroParcela = numeroParcela,
+    totalParcelas = totalParcelas,
 )
 
 fun PagamentoEntidade.paraDominio() = Pagamento(id, obrigacaoId, movimentacaoId, valorAplicadoCentavos)
