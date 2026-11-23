@@ -31,6 +31,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#39](https://github.com/Hkawzz/nk-pay/pull/39) | 4 | Análises: "Despesas registradas" × "Saídas do dinheiro próprio" com "?", mês atual destacado e resultado em texto na evolução, "?" em Resultado, Descontos e Cartões | ✅ |
 | [#40](https://github.com/Hkawzz/nk-pay/pull/40) | 5 | Banco v4: tabela `emprestimo`, `obrigacao.emprestimoId`, migração 3→4, backup com empréstimos, categoria "Juros recebidos" auditada. Migração com banco v3 fiel e a matriz de backup | ✅ |
 | [#41](https://github.com/Hkawzz/nk-pay/pull/41) | 6 | Domínio de empréstimos (J1, K2 com fechamento exato, invariantes, atraso) e `ehContaDeTerceiros` como ponto único da integridade | ✅ |
+| [#42](https://github.com/Hkawzz/nk-pay/pull/42) | 7 | Área Empréstimos: abas Recebidos/Concedidos agrupadas por pessoa, cadastro (automático ou personalizado, total e juros na hora), anterior ao app (D5) com aviso de duplicidade, tela do empréstimo com atraso e excluir | ✅ |
 
 **Decisões tomadas sozinho** (a opção mais simples, mais segura para os dados e mais fácil de reverter; detalhes na [0021](decisoes/0021-emprestimos.md))
 - **Juros K2 ligados ao recebimento** por um ajuste neutro (`JUROS_RECEBIDOS`), em vez de duas linhas de `pagamento`. O desfazer da v0.4 já remove esse ajuste e a entrada de juros junto, sem código novo de exclusão.

@@ -78,6 +78,16 @@ class AppContainer(
     val compras = com.nkpay.app.dados.CompraServico(banco, auditor, relogio)
     val pagamentosCredito = com.nkpay.app.dados.PagamentoCreditoServico(banco, auditor, relogio)
 
+    // --- Empréstimos (v0.5) ---
+    val emprestimos = com.nkpay.app.dados.EmprestimoServico(banco, auditor, relogio)
+
+    /** Contas, movimentações, empréstimos, parcelas, pagamentos e ajustes, sempre atualizados. */
+    val visaoEmprestimos: StateFlow<com.nkpay.app.dominio.VisaoEmprestimos?> =
+        combine(visao, visaoAPagar, banco.emprestimoDao().observarValidos().map { l -> l.map { it.paraDominio() } }) { v, a, e ->
+            if (v == null || a == null) null
+            else com.nkpay.app.dominio.VisaoEmprestimos(v.contas, v.movimentacoes, e, a.obrigacoes, a.pagamentos, a.ajustes)
+        }.stateIn(escopo, SharingStarted.Eagerly, null)
+
     /** Último filtro das Análises: só na memória, enquanto o app estiver aberto (nada é gravado). */
     val filtroAnalises = MutableStateFlow(com.nkpay.app.dominio.FiltroPeriodo.MES_ATUAL)
 

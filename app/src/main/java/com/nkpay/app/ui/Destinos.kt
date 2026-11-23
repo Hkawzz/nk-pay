@@ -34,6 +34,12 @@ object Rotas {
     const val PARCELA = "mais/parcela/{id}"
     fun parcela(id: String) = "mais/parcela/$id"
     const val ANALISES = "mais/analises"
+    // Empréstimos (v0.5)
+    const val EMPRESTIMOS = "mais/emprestimos"
+    const val EMPRESTIMO_FORM = "mais/emprestimo-form?tipo={tipo}"
+    fun emprestimoForm(tipo: com.nkpay.app.dominio.TipoEmprestimo) = "mais/emprestimo-form?tipo=${tipo.name}"
+    const val EMPRESTIMO = "mais/emprestimo/{id}"
+    fun emprestimo(id: String) = "mais/emprestimo/$id"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
     const val BACKUP = "mais/backup"
