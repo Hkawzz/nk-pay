@@ -60,6 +60,11 @@ data class CategoriaEntidade(
     val criadoEm: Long,
     val atualizadoEm: Long,
     val excluidoEm: Long?,
+    // Versão 3 (v0.4). Os valores padrão mantêm os backups da v0.3 restauráveis.
+    /** Nome do ícone (ui/icones/IconesNk.kt). Vazio = ainda sem aparência. */
+    val icone: String? = null,
+    /** Cor em ARGB. */
+    val cor: Long? = null,
 )
 
 @Serializable

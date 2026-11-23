@@ -27,6 +27,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#20](https://github.com/Hkawzz/nk-pay/pull/20) | F0 | Regras 6B, 6C e 6D em `regras-financeiras.md` e as decisões 0014 a 0018. Sem código | ✅ |
 | [#21](https://github.com/Hkawzz/nk-pay/pull/21) | V0 | Capturas de referência das telas atuais (`ref-*` no artefato do CI) e o APK de debug guardado pelo CI | ✅ |
 | [#22](https://github.com/Hkawzz/nk-pay/pull/22) | V1 | Design system v2: tokens, `NkCardDestaque`, `NkIconeComFundo`, `NkCardConta`, `NkCartaoCredito`, `NkValorAjustavel`, 40 ícones próprios e 12 cores, com vitrine no Android 8, 9 e atual | ✅ |
+| [#23](https://github.com/Hkawzz/nk-pay/pull/23) | F1 | Banco v3: tabelas `compra` e `pagamento_fatura`, `icone` e `cor` na categoria, migração 2→3 explícita, backup com as tabelas novas. Testes de migração com banco v2 fiel e a matriz de backup | ✅ |
 
 **Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
 - **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
@@ -39,7 +40,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 **Pendências:** nenhuma até aqui.
 
-**Problemas encontrados:** nenhum até aqui.
+**Problemas encontrados**
+- **Duas linhas de um teste antigo (`MigracaoTest`, "migrar de 1 para 2") precisaram mudar**, e não havia como evitar: o teste conferia `db.version == 2` e comparava todas as colunas da `categoria`. Com o banco v3, o caminho 1→2→3 termina na versão 3, e a categoria tem duas colunas novas no fim. As mudanças foram: (1) conferir `NkPayBanco.VERSAO`; (2) comparar as linhas sem o sufixo `|icone=NULL|cor=NULL`, o que **também confere que as colunas novas nascem vazias**. Todo o resto do teste (todas as linhas idênticas, contagens, saldos) continua igual. **Contradição anotada:** o briefing pede os 97 testes "sem alteração" e também uma migração para a v3. As duas coisas não cabem juntas nesse teste, e a regra 5 do briefing permite mudar um teste com justificativa. Os outros 96 testes não mudaram.
 
 ---
 

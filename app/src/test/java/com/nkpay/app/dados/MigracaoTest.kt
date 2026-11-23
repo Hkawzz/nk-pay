@@ -135,8 +135,9 @@ class MigracaoTest {
         val banco = abrirComoOApp()
         try {
             val db = banco.openHelper.writableDatabase // dispara a migração + validação do esquema
-            assertEquals(2, db.version)
-            val depois = tabelasV1.associateWith { t -> foto({ db.query(it) }, t) }
+            assertEquals(NkPayBanco.VERSAO, db.version) // v0.4: o caminho 1 → 2 → 3 termina na versão atual (ADR 0014)
+            // v0.4 (ADR 0014): a categoria ganhou icone e cor no fim, que precisam nascer vazias.
+            val depois = tabelasV1.associateWith { t -> foto({ db.query(it) }, t).map { it.removeSuffix("|icone=NULL|cor=NULL") } }
             for (t in tabelasV1) assertEquals("tabela $t mudou", antes.getValue(t), depois.getValue(t))
             assertEquals(4, depois.getValue("conta").size)
             assertEquals(5, depois.getValue("movimentacao").size)

@@ -21,6 +21,9 @@ fun ContaEntidade.paraDominio() = Conta(
     icone = icone,
     cor = cor,
     arquivada = arquivadaEm != null,
+    limite = limiteCentavos,
+    diaFechamento = diaFechamento,
+    diaVencimento = diaVencimento,
 )
 
 fun CategoriaEntidade.paraDominio() = Categoria(
@@ -28,6 +31,19 @@ fun CategoriaEntidade.paraDominio() = Categoria(
     nome = nome,
     codigoSistema = codigoSistema,
     arquivada = arquivadaEm != null,
+    icone = icone,
+    cor = cor,
+)
+
+fun CompraEntidade.paraDominio() = com.nkpay.app.dominio.Compra(
+    id = id, contaCreditoId = contaCreditoId, descricao = descricao, categoriaId = categoriaId,
+    dataCompra = LocalDate.parse(dataCompra), valorTotal = valorTotalCentavos, totalParcelas = totalParcelas,
+    movimentacaoId = movimentacaoId, anteriorAoApp = anteriorAoApp,
+)
+
+fun PagamentoFaturaEntidade.paraDominio() = com.nkpay.app.dominio.PagamentoFatura(
+    id = id, contaCreditoId = contaCreditoId, mesReferencia = java.time.YearMonth.parse(mesReferencia),
+    movimentacaoId = movimentacaoId, valor = valorCentavos,
 )
 
 fun MovimentacaoEntidade.paraDominio() = Movimentacao(

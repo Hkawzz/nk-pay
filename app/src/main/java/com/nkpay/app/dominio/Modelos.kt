@@ -21,6 +21,9 @@ enum class Natureza(val rotulo: String) {
     CREDIARIO("Crediário"),
     ;
 
+    /** Cartão e crediário: só mudam por compras e pagamentos (ADR 0017). */
+    val ehCredito: Boolean get() = this == CARTAO || this == CREDIARIO
+
     companion object {
         /** Naturezas que a interface da v0.1 permite escolher. */
         val disponiveisNaV01 = listOf(PROPRIO, BENEFICIO)
@@ -56,7 +59,13 @@ data class Conta(
     /** Cor em ARGB, opcional. */
     val cor: Long? = null,
     val arquivada: Boolean = false,
-)
+    // Contas de crédito (v0.4). Cartão: fechamento e vencimento obrigatórios; limite opcional.
+    val limite: Long? = null,
+    val diaFechamento: Int? = null,
+    val diaVencimento: Int? = null,
+) {
+    val ehCredito: Boolean get() = natureza.ehCredito
+}
 
 data class Categoria(
     val id: String,
@@ -64,6 +73,10 @@ data class Categoria(
     /** Preenchido só nas categorias do sistema (que não podem ser excluídas). */
     val codigoSistema: String? = null,
     val arquivada: Boolean = false,
+    /** Nome do ícone (v0.4). Null = ainda sem aparência. */
+    val icone: String? = null,
+    /** Cor em ARGB (v0.4). */
+    val cor: Long? = null,
 ) {
     val ehDoSistema: Boolean get() = codigoSistema != null
 }
