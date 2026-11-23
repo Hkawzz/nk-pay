@@ -104,6 +104,10 @@ class ContaRepositorio(
         val antes = dao.buscar(id)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction Resultado.Falha("Conta não encontrada.")
         if ((antes.arquivadaEm != null) == arquivar) return@withTransaction Resultado.Sucesso(Unit)
+        // v0.6 (A3, A5, ADR 0027): cartão, crediário ou pessoa com algo em aberto não some das telas.
+        if (arquivar && Natureza.valueOf(antes.natureza).ehContaDeTerceiros) {
+            emAberto(antes)?.let { return@withTransaction Resultado.Falha(it) }
+        }
         val agora = relogio.agora()
         val depois = antes.copy(arquivadaEm = if (arquivar) agora else null, atualizadoEm = agora)
         dao.atualizar(depois)
@@ -119,13 +123,55 @@ class ContaRepositorio(
         data object Excluida : ResultadoExclusao
         /** A exclusão foi bloqueada: a conta tem movimentações. A tela oferece arquivar. */
         data class TemMovimentacoes(val quantidade: Int) : ResultadoExclusao
+        /** v0.6 (A3, A5): cartão, crediário ou pessoa com registros ligados. A tela oferece arquivar. */
+        data class TemVinculos(val motivo: String) : ResultadoExclusao
         data object NaoEncontrada : ResultadoExclusao
+    }
+
+    /** v0.6: o que ainda está em aberto numa conta de terceiros (null = nada). */
+    private suspend fun emAberto(c: ContaEntidade): String? {
+        val b = banco.backupDao()
+        val conta = c.paraDominio()
+        val movs = b.movimentacoes().filter { it.excluidoEm == null && (it.contaId == c.id || it.contaDestinoId == c.id) }.map { it.paraDominio() }
+        val saldo = com.nkpay.app.dominio.Saldos.saldosPorConta(listOf(conta), movs)[c.id] ?: 0
+        val parcelas = b.obrigacoes().filter { it.excluidoEm == null && it.contaCreditoId == c.id }.map { it.paraDominio() }
+        val ids = parcelas.map { it.id }.toSet()
+        val vc = com.nkpay.app.dominio.VisaoCredito(
+            listOf(conta), movs, parcelas,
+            banco.pagamentoDao().validosTodos().filter { it.obrigacaoId in ids }.map { it.paraDominio() },
+            banco.ajusteObrigacaoDao().validosTodos().filter { it.obrigacaoId in ids }.map { it.paraDominio() },
+            banco.pagamentoFaturaDao().validosDaConta(c.id).map { it.paraDominio() },
+            b.compras().filter { it.excluidoEm == null && it.contaCreditoId == c.id }.map { it.paraDominio() },
+        )
+        val restante = vc.restanteEmAberto(c.id, relogio.hoje())
+        return when (conta.natureza) {
+            Natureza.CARTAO, Natureza.CREDIARIO -> if (saldo != 0L || restante > 0) "Ainda há ${Dinheiro.formatar(maxOf(-saldo, restante))} a pagar neste cartão ou crediário. Quite antes de arquivar." else null
+            Natureza.EMPRESTIMO_RECEBIDO -> if (saldo != 0L || restante > 0) "Você ainda deve ${Dinheiro.formatar(maxOf(-saldo, restante))} para “${c.nome}”. Quite antes de arquivar." else null
+            Natureza.EMPRESTIMO_CONCEDIDO -> if (saldo != 0L || restante > 0) "“${c.nome}” ainda te deve ${Dinheiro.formatar(maxOf(saldo, restante))}. Receba antes de arquivar." else null
+            else -> null
+        }
+    }
+
+    /** v0.6: os registros ligados a uma conta de terceiros, para explicar por que não dá para excluir. */
+    private suspend fun vinculos(id: String): String? {
+        val b = banco.backupDao()
+        val partes = listOfNotNull(
+            b.compras().count { it.excluidoEm == null && it.contaCreditoId == id }.takeIf { it > 0 }?.let { "$it compra(s)" },
+            b.emprestimos().count { it.excluidoEm == null && it.contaId == id }.takeIf { it > 0 }?.let { "$it empréstimo(s)" },
+            b.obrigacoes().count { it.excluidoEm == null && it.contaCreditoId == id }.takeIf { it > 0 }?.let { "$it parcela(s)" },
+            banco.pagamentoFaturaDao().validosDaConta(id).size.takeIf { it > 0 }?.let { "$it abatimento(s) de fatura" },
+            dao.contarMovimentacoes(id).takeIf { it > 0 }?.let { "$it movimentação(ões)" },
+        )
+        return if (partes.isEmpty()) null else "Tem " + partes.joinToString(", ") + ". Para tirar das listas sem apagar o histórico, arquive."
     }
 
     /** Exclusão lógica. Bloqueada se a conta tiver movimentações (não excluídas). */
     suspend fun excluir(id: String): ResultadoExclusao = banco.withTransaction {
         val antes = dao.buscar(id)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction ResultadoExclusao.NaoEncontrada
+        if (Natureza.valueOf(antes.natureza).ehContaDeTerceiros) {
+            vinculos(id)?.let { return@withTransaction ResultadoExclusao.TemVinculos(it) }
+        }
         val quantidade = dao.contarMovimentacoes(id)
         if (quantidade > 0) return@withTransaction ResultadoExclusao.TemMovimentacoes(quantidade)
         val agora = relogio.agora()

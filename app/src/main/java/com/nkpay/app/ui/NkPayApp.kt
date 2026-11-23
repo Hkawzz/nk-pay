@@ -235,7 +235,14 @@ fun NkPayApp() {
                         aoVoltar = { navController.popBackStack() },
                         aoAbrir = { navController.navigate(Rotas.emprestimo(it)) },
                         aoNovo = { navController.navigate(Rotas.emprestimoForm(it)) },
+                        aoPessoas = { navController.navigate(Rotas.PESSOAS) },
                     )
+                }
+                composable(Rotas.PESSOAS) {
+                    com.nkpay.app.ui.emprestimos.PessoasTela(aoVoltar = { navController.popBackStack() }, aoAbrir = { navController.navigate(Rotas.pessoa(it)) })
+                }
+                composable(Rotas.PESSOA, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entrada ->
+                    com.nkpay.app.ui.emprestimos.PessoaTela(id = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
                 }
                 composable(Rotas.EMPRESTIMO_FORM, arguments = listOf(navArgument("tipo") { type = NavType.StringType; defaultValue = "RECEBIDO" })) { entrada ->
                     com.nkpay.app.ui.emprestimos.EmprestimoFormTela(
