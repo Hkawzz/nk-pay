@@ -281,7 +281,7 @@ As análises ficam em **Mais → Análises** e são calculadas a partir dos mesm
 | Análise | Definição |
 |---|---|
 | **Entradas, despesas e resultado** | A regra da seção 3.3: entradas − despesas do período. Compras no cartão contam no mês da compra. Transferências, ajustes e pagamentos de fatura ou crediário **não** entram |
-| **Fluxo financeiro** | O dinheiro que **entra e sai das contas de dinheiro próprio** no período: entradas, despesas pagas com dinheiro próprio e pagamentos de fatura ou crediário. Transferências entre duas contas próprias **não** entram. Benefícios ficam fora |
+| **Fluxo financeiro** | O dinheiro que **entra e sai das contas de dinheiro próprio** no período: entradas, despesas pagas com dinheiro próprio e pagamentos de fatura ou crediário. Transferências entre duas contas próprias **não** entram. Benefícios ficam fora. **v0.5:** generalizado na regra 6E.2 (é o mesmo cálculo do Resumo da Início) |
 | **Despesas por categoria** | Soma das despesas de cada categoria no período, do maior para o menor, com ícone, cor, nome e percentual |
 | **Contas e carteiras** | O saldo de cada conta de dinheiro próprio e de benefício no fim de cada mês do período |
 | **Cartões e crediários** | Devido, limite usado e disponível, faturas pagas, em aberto e atrasadas, e o total de compras anteriores ao app |
@@ -293,6 +293,116 @@ As análises ficam em **Mais → Análises** e são calculadas a partir dos mesm
 > - Fluxo: entrou R$ 3.000,00, saiu **R$ 500,00** (R$ 200,00 do mercado + R$ 300,00 da fatura). A transferência Pix → Dinheiro não conta.
 
 **Período:** mês atual (padrão), últimos 3, 6 ou 12 meses. O último filtro escolhido fica guardado **na memória enquanto o app estiver aberto** (nada é gravado).
+
+---
+
+## 6E. Empréstimos, fluxo do dinheiro próprio e a Início ✅ v0.5
+
+Aprovadas em 23/11/2026 (`planejamento/especificacao-v0.5.0.md` e briefing da v0.5, decisões D1 a D5). Ver as decisões [0020](decisoes/0020-banco-v4.md) a [0023](decisoes/0023-inicio-saldo-e-ajuda.md).
+
+### 6E.1 Contas de terceiros
+| Natureza | O que é | Entra no Saldo total? | Aparece nas listas avulsas? |
+|---|---|---|---|
+| `EMPRESTIMO_RECEBIDO` | Pessoa ou instituição de quem peguei dinheiro (eu devo) | Não | Não |
+| `EMPRESTIMO_CONCEDIDO` | Pessoa a quem emprestei (me deve) | Não | Não |
+
+**Conta de terceiros** é o nome comum de `CARTAO`, `CREDIARIO` e das duas naturezas novas. Todas seguem a integridade da regra 6B.7: ficam fora das listas "Conta", "De/Para" e "Pagar com", são bloqueadas em Movimentações, são recusadas na validação e começam com saldo inicial zero.
+
+**Pessoa = conta:** cada pessoa ou instituição é uma conta. Vários empréstimos com a mesma pessoa somam na mesma conta ("quanto o Tonho me deve"). Quem me deve e a quem eu devo são contas separadas.
+
+### 6E.2 Fluxo do dinheiro próprio (D1)
+```
+Entradas do fluxo = entradas em contas PROPRIO
+                  + transferências de qualquer conta NÃO própria → conta PROPRIO
+Saídas do fluxo   = despesas pagas com conta PROPRIO
+                  + transferências de conta PROPRIO → qualquer conta NÃO própria
+Transferência PROPRIO → PROPRIO: não entra. Ajustes: não entram.
+```
+É o mesmo cálculo no **Resumo do mês da Início** (Entradas, Saídas e Saldo das movimentações) e nas **"Saídas do dinheiro próprio"** das Análises. A compra no cartão **nunca** é saída: a saída acontece quando a fatura é paga. Despesas pagas com VA/VR ficam fora do fluxo (continuam em "Despesas registradas").
+
+| Evento | Saldo total | Fluxo (Início) | Receitas (Análises) | Despesas (Análises) |
+|---|---|---|---|---|
+| Pegar emprestado R$ 1.000,00 (10 × R$ 110,00) | +1.000,00 | Entrada 1.000,00 | — | Juros 100,00, **uma vez** |
+| Pagar parcela de R$ 110,00 | −110,00 | Saída 110,00 | — | — |
+| Emprestar R$ 1.000,00 (10 × R$ 110,00) | −1.000,00 | Saída 1.000,00 | — | — |
+| Receber parcela de R$ 110,00 | +110,00 | Entrada 110,00 | Juros 10,00 | — |
+| Compra de R$ 600,00 no cartão | — | — | — | 600,00 |
+| Pagar fatura de R$ 300,00 | −300,00 | Saída 300,00 | — | — |
+| Transferência Pix → Dinheiro | — | — | — | — |
+| Empréstimo anterior ao app | — | — | — | — |
+
+### 6E.3 A Início
+| Indicador | Fórmula | Quando aparece |
+|---|---|---|
+| **Saldo disponível** | Saldo total − Guardado | Sempre, em destaque |
+| **Saldo total** | Σ contas `PROPRIO` (sem VA/VR, cartões e empréstimos) | Só se Guardado > 0 |
+| **Guardado** | Σ reservas dos objetivos | Só se Guardado > 0 |
+
+Até a v0.7 (objetivos), o Guardado é R$ 0,00, então só o Saldo disponível aparece. É a mesma fórmula do antigo "Disponível", com nome novo.
+
+### 6E.4 Empréstimo recebido (eu devo): juros J1 (D2)
+Os **juros** (total das parcelas − valor original) viram **uma despesa** em "Encargos financeiros", na conta do empréstimo, **na data da contratação**. Pagar uma parcela é **só transferência**.
+
+> **Exemplo.** Recebo R$ 1.000,00 no Pix em 10/12 e assumo 10 × R$ 110,00.
+> - Contratação: transferência Empréstimo → Pix de R$ 1.000,00 + despesa de R$ 100,00 (Encargos financeiros), em 10/12. Pix +1.000,00; dívida **R$ 1.100,00**; despesas de dezembro +100,00 (uma vez).
+> - 1ª parcela paga: transferência Pix → Empréstimo de R$ 110,00. Pix −110,00; dívida R$ 990,00; despesas inalteradas.
+
+Invariante: **dívida = Σ restante das parcelas** (dívida = −saldo da conta do empréstimo).
+
+### 6E.5 Empréstimo concedido (me devem): juros K2 (D3)
+Emprestar é **só transferência**. Os juros viram **receita** ("Juros recebidos", categoria de sistema) **só quando recebidos**, na proporção:
+```
+juros não reconhecidos  = Σ restante das parcelas − principal a receber
+proporção               = juros não reconhecidos ÷ Σ restante das parcelas
+juros deste recebimento = valor recebido × proporção   (arredondado em centavos)
+```
+O **recebimento que quita o empréstimo** reconhece exatamente os juros que faltam (os centavos fecham).
+
+> **Exemplo.** Empresto R$ 1.000,00 do Pix em 10/12, a receber 10 × R$ 110,00.
+> - Contratação: transferência Pix → Empréstimo de R$ 1.000,00. Pix −1.000,00; a receber (principal) R$ 1.000,00; nenhuma despesa.
+> - 1ª parcela recebida: transferência Empréstimo → Pix de **R$ 100,00** + entrada de **R$ 10,00** em "Juros recebidos", no Pix. Pix +110,00; a receber R$ 900,00; entradas +10,00.
+> - Parcial: receber R$ 55,00 = R$ 50,00 de principal + R$ 5,00 de juros.
+
+Invariante: **a receber (principal) = Σ restante das parcelas − juros não reconhecidos.**
+
+### 6E.6 Pagamentos parciais e diferenças (o app pergunta, nunca presume)
+| Caso | O app pergunta | Registro |
+|---|---|---|
+| Recebido, paguei a mais | Juros, multa, tarifa, IOF, outro | Despesa de encargo na conta do empréstimo + acréscimo na parcela |
+| Recebido, paguei a menos | Parcial **ou** desconto | Parcial: o restante continua. Desconto: ajuste na conta do empréstimo + abatimento, **sem receita** ("Descontos obtidos") |
+| Concedido, recebi a mais | Juros, multa, outro | Entrada em "Juros recebidos" pelo excedente + acréscimo na parcela |
+| Concedido, recebi a menos | Parcial **ou** desconto concedido | Parcial: o restante continua. Desconto: abatimento **sem despesa** ("Descontos concedidos"). Ele consome **primeiro os juros não reconhecidos**; só o que passar reduz o principal (ajuste na conta) |
+
+O valor previsto de uma parcela **nunca muda**: toda diferença é um registro separado e auditado.
+
+### 6E.7 Atraso
+Uma parcela com vencimento antes de hoje e restante > 0 fica **Atrasada**: "vencida há N dias", até a quitação. É calculado, nunca gravado, e não há juros automáticos.
+
+### 6E.8 Edição de parcelas
+- Só as parcelas **sem nenhum pagamento ou recebimento** podem ser editadas (uma parcela ou "esta e as futuras"): valor e data.
+- A mudança de valor é um **acréscimo ou abatimento** na parcela (o previsto não muda), datado no dia da edição:
+  - **Recebido (J1):** se aumentou, uma despesa de encargo nesse dia; se diminuiu, um ajuste de redução na conta do empréstimo ("Descontos obtidos"). O mês da contratação nunca é reescrito.
+  - **Concedido (K2):** só mudam os juros não reconhecidos (a proporção é recalculada para os próximos recebimentos). Os juros já reconhecidos não mudam. A edição não pode deixar o total abaixo do principal a receber.
+- Valor original e data da contratação: só enquanto nada foi pago ou recebido (excluir e cadastrar de novo).
+
+### 6E.9 Desfazer e excluir
+- Desfazer um pagamento ou recebimento remove juntos, numa transação: a transferência, a entrada de juros proporcional e os acréscimos e abatimentos daquele pagamento. Pode ser feito em qualquer ordem.
+- Excluir um empréstimo só é possível sem nenhum pagamento ou recebimento. Isso remove a transferência inicial (ou o ajuste de abertura), os juros J1, as parcelas e as edições. Tudo fica auditado, com exclusão lógica.
+
+### 6E.10 Empréstimo anterior ao app
+- Só as **parcelas pendentes** são cadastradas, e **nenhuma transferência** toca no Pix.
+- **Ajuste de abertura** na conta do empréstimo:
+  - Recebido: −Σ pendentes. Nenhuma despesa (os juros J1 pertencem a uma contratação anterior ao app).
+  - Concedido (D5): +(Σ pendentes − **juros contidos nas parcelas pendentes**), um campo opcional com padrão R$ 0,00. Com zero, todo recebimento é devolução de principal, sem receita.
+- Aviso de possível duplicidade, como na compra anterior. Nada é convertido sozinho.
+
+### 6E.11 Integração
+- O valor original é sempre transferência, nunca entrada nem despesa.
+- Juros J1: uma despesa criada só na contratação ou na edição.
+- Juros K2: uma entrada criada **só** junto com um recebimento e desfeita com ele.
+- Pagamentos de dívida são transferências, nunca despesas.
+- A categoria de um empréstimo é só descritiva e **não** entra em "Despesas por categoria".
+- As parcelas de empréstimo **recebido** aparecem em A pagar; as de **concedido**, nunca (só em Empréstimos → Concedidos).
 
 ---
 
@@ -341,8 +451,8 @@ São **reservas virtuais** sobre o dinheiro próprio: o dinheiro continua na con
 - As pendências não levadas para o mês continuam visíveis.
 - O vencimento pode ficar vazio.
 
-### 7.7 Empréstimos entre pessoas
-Não são receita nem despesa. O modelo ainda vai ser definido.
+### 7.7 Empréstimos entre pessoas ✅ v0.5
+Detalhados e implementados na v0.5: ver a seção 6E.
 
 ### 7.8 Backup e restauração ✅ v0.2
 Completos e offline. A restauração substitui tudo (nunca mistura), guarda antes uma cópia do estado atual e fica registrada no Registro de alterações. Ver [`decisoes/0010-backup.md`](decisoes/0010-backup.md).
