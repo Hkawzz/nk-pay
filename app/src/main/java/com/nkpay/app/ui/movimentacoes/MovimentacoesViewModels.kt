@@ -61,6 +61,8 @@ class MovimentacaoFormViewModel(
     var erroValor by mutableStateOf<String?>(null); private set
     var erroGeral by mutableStateOf<String?>(null); private set
     var salvando by mutableStateOf(false); private set
+    /** True se esta movimentação foi criada pelo botão Pagar (só muda pelo pagamento). */
+    var ehPagamentoDeConta by mutableStateOf(false); private set
 
     /** A movimentação como estava no banco (na edição). */
     private var original: Movimentacao? = null
@@ -69,6 +71,7 @@ class MovimentacaoFormViewModel(
     init {
         if (id != null) {
             viewModelScope.launch {
+                ehPagamentoDeConta = container.movimentacoes.ehPagamentoDeConta(id)
                 container.movimentacoes.buscar(id)?.let { m ->
                     original = m
                     tipo = m.tipo

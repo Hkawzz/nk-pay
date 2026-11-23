@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nkpay.app.AppContainer
@@ -118,6 +119,13 @@ class ObrigacaoFormViewModel(private val container: AppContainer, private val id
             }
         }
     }
+
+    /** Desfaz um pagamento inteiro (despesa, encargo e desconto ligados a ele). */
+    fun excluirPagamento(pagamentoId: String) {
+        viewModelScope.launch {
+            (container.pagamentos.excluir(pagamentoId) as? Resultado.Falha)?.let { erro = it.mensagem }
+        }
+    }
 }
 
 /** Seletor de mês compacto (‹ Dezembro de 2026 ›). */
@@ -134,12 +142,13 @@ fun SeletorDeMes(rotulo: String, mes: YearMonth, aoMudar: (YearMonth) -> Unit) {
 }
 
 @Composable
-fun ObrigacaoFormTela(id: String?, mesInicial: YearMonth, aoVoltar: () -> Unit) {
+fun ObrigacaoFormTela(id: String?, mesInicial: YearMonth, aoVoltar: () -> Unit, aoPagar: (String) -> Unit = {}) {
     val container = LocalContainer.current
     val vm = nkViewModel(chave = "obrig-$id-$mesInicial") { ObrigacaoFormViewModel(it, id, mesInicial) }
     val visao by container.visao.collectAsState()
     val aPagar by container.visaoAPagar.collectAsState()
     var confirmarExclusao by rememberSaveable { mutableStateOf(false) }
+    var pagamentoParaExcluir by rememberSaveable { mutableStateOf<String?>(null) }
 
     Subtela(
         titulo = if (vm.editando) "Conta a pagar" else "Nova conta a pagar",
@@ -154,17 +163,52 @@ fun ObrigacaoFormTela(id: String?, mesInicial: YearMonth, aoVoltar: () -> Unit) 
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Espaco.l, vertical = Espaco.xs),
             verticalArrangement = Arrangement.spacedBy(Espaco.s),
         ) {
-            // Na edição, mostra a situação calculada (o pagamento chega no próximo PR).
-            val s = aPagar?.obrigacao(id)?.let { aPagar?.situacao(it, container.relogio.hoje()) }
-            if (s != null) {
+            // Na edição: situação calculada, botão Pagar e o histórico de pagamentos.
+            val ap = aPagar
+            val s = ap?.obrigacao(id)?.let { ap.situacao(it, container.relogio.hoje()) }
+            if (ap != null && s != null) {
                 NkCard {
                     Row(Modifier.padding(Espaco.m)) {
-                        NkValorRotulado("Previsto", s.obrigacao.valorPrevisto, Modifier.weight(1f))
-                        NkValorRotulado("Pago", s.pago, Modifier.weight(1f))
-                        NkValorRotulado("Falta", s.restante, Modifier.weight(1f), corValor = corDoStatus(s.status))
+                        // Três colunas: valores no tamanho de lista para caberem inteiros.
+                        NkValorRotulado("Previsto", s.obrigacao.valorPrevisto, Modifier.weight(1f), tamanho = com.nkpay.app.ui.componentes.TamanhoValor.LISTA)
+                        NkValorRotulado("Pago", s.pago, Modifier.weight(1f), tamanho = com.nkpay.app.ui.componentes.TamanhoValor.LISTA)
+                        NkValorRotulado("Falta", s.restante, Modifier.weight(1f), tamanho = com.nkpay.app.ui.componentes.TamanhoValor.LISTA, corValor = corDoStatus(s.status))
                     }
                     NkTextoAjuda("${s.status.rotulo} · ${s.obrigacao.origem.rotulo}")
                 }
+                if (s.status != com.nkpay.app.dominio.StatusObrigacao.QUITADA) {
+                    NkBotaoPrimario("Pagar", { aoPagar(s.obrigacao.id) })
+                }
+
+                // Pagamentos "principais" (as despesas de encargo aparecem junto do seu pagamento).
+                val movsDeEncargo = ap.ajustes.mapNotNull { it.movimentacaoId }.toSet()
+                val pagos = ap.pagamentos.filter { it.obrigacaoId == s.obrigacao.id && it.movimentacaoId !in movsDeEncargo }
+                if (pagos.isNotEmpty()) {
+                    NkCabecalhoSecao("Pagamentos", Modifier.padding(0.dp))
+                    NkCard(Modifier.padding(0.dp)) {
+                        pagos.forEachIndexed { i, p ->
+                            if (i > 0) NkDivisor()
+                            val mov = v.movimentacoes.firstOrNull { it.id == p.movimentacaoId }
+                            val extras = ap.ajustes.filter { it.pagamentoId == p.id }.joinToString(" · ") {
+                                (if (it.natureza.ehAcrescimo) "+ " else "− ") + it.natureza.rotulo.lowercase() + " " + Dinheiro.formatar(it.valor)
+                            }
+                            // Total que saiu da conta: o pagamento + o encargo (despesa separada) ligado a ele.
+                            val encargo = ap.ajustes.filter { it.pagamentoId == p.id && it.movimentacaoId != null }.sumOf { it.valor }
+                            NkListItem(
+                                titulo = mov?.let { Formatos.data(it.data) } ?: "Pagamento",
+                                subtitulo = listOfNotNull(v.conta(mov?.contaId)?.nome, extras.ifEmpty { null }).joinToString(" · "),
+                                fim = { NkValor(p.valor + encargo) },
+                                aoClicar = { pagamentoParaExcluir = p.id },
+                            )
+                        }
+                    }
+                    Text(
+                        "Toque em um pagamento para desfazê-lo.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                NkCabecalhoSecao("Dados da conta", Modifier.padding(0.dp))
             }
 
             NkCampo("Descrição", vm.descricao, { vm.descricao = it }, ajuda = "Ex.: Conta de luz, IPVA, Presente")
@@ -194,6 +238,17 @@ fun ObrigacaoFormTela(id: String?, mesInicial: YearMonth, aoVoltar: () -> Unit) 
             NkBotaoPrimario(if (vm.editando) "Salvar alterações" else "Adicionar", { vm.salvar(aoVoltar) })
             Spacer(Modifier.height(Espaco.l))
         }
+    }
+
+    pagamentoParaExcluir?.let { pid ->
+        DialogoConfirmacao(
+            titulo = "Desfazer este pagamento?",
+            texto = "A despesa (e o encargo ou desconto ligado a ela) será excluída, e a conta volta a ter o valor que faltava antes. Fica tudo no Registro de alterações.",
+            textoConfirmar = "Desfazer",
+            destrutivo = true,
+            aoConfirmar = { pagamentoParaExcluir = null; vm.excluirPagamento(pid) },
+            aoCancelar = { pagamentoParaExcluir = null },
+        )
     }
 
     if (confirmarExclusao) {

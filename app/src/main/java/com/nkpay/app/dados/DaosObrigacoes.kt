@@ -57,6 +57,12 @@ interface PagamentoDao {
     )
     fun observarValidos(): Flow<List<PagamentoEntidade>>
 
+    @Query(
+        """SELECT p.* FROM pagamento p JOIN movimentacao m ON m.id = p.movimentacaoId
+           WHERE p.obrigacaoId = :obrigacaoId AND p.excluidoEm IS NULL AND m.excluidoEm IS NULL""",
+    )
+    suspend fun validosDa(obrigacaoId: String): List<PagamentoEntidade>
+
     @Query("SELECT * FROM pagamento WHERE id = :id") suspend fun buscar(id: String): PagamentoEntidade?
     @Query("SELECT * FROM pagamento WHERE movimentacaoId = :movimentacaoId AND excluidoEm IS NULL")
     suspend fun daMovimentacao(movimentacaoId: String): List<PagamentoEntidade>
@@ -67,12 +73,32 @@ interface PagamentoDao {
 
 @Dao
 interface AjusteObrigacaoDao {
-    /** Ajustes válidos: não excluídos e, se têm movimentação (encargo), ela não foi excluída. */
+    /**
+     * Ajustes válidos: não excluídos; se têm movimentação (encargo), ela não foi excluída;
+     * se nasceram de um pagamento, esse pagamento (e a movimentação dele) continua válido.
+     * Assim, um desconto some junto com o pagamento que o originou.
+     */
     @Query(
-        """SELECT a.* FROM obrigacao_ajuste a LEFT JOIN movimentacao m ON m.id = a.movimentacaoId
-           WHERE a.excluidoEm IS NULL AND (a.movimentacaoId IS NULL OR m.excluidoEm IS NULL)""",
+        """SELECT a.* FROM obrigacao_ajuste a
+           LEFT JOIN movimentacao m ON m.id = a.movimentacaoId
+           LEFT JOIN pagamento p ON p.id = a.pagamentoId
+           LEFT JOIN movimentacao pm ON pm.id = p.movimentacaoId
+           WHERE a.excluidoEm IS NULL
+             AND (a.movimentacaoId IS NULL OR m.excluidoEm IS NULL)
+             AND (a.pagamentoId IS NULL OR (p.excluidoEm IS NULL AND pm.excluidoEm IS NULL))""",
     )
     fun observarValidos(): Flow<List<ObrigacaoAjusteEntidade>>
+
+    @Query(
+        """SELECT a.* FROM obrigacao_ajuste a
+           LEFT JOIN movimentacao m ON m.id = a.movimentacaoId
+           LEFT JOIN pagamento p ON p.id = a.pagamentoId
+           LEFT JOIN movimentacao pm ON pm.id = p.movimentacaoId
+           WHERE a.obrigacaoId = :obrigacaoId AND a.excluidoEm IS NULL
+             AND (a.movimentacaoId IS NULL OR m.excluidoEm IS NULL)
+             AND (a.pagamentoId IS NULL OR (p.excluidoEm IS NULL AND pm.excluidoEm IS NULL))""",
+    )
+    suspend fun validosDa(obrigacaoId: String): List<ObrigacaoAjusteEntidade>
 
     @Query("SELECT * FROM obrigacao_ajuste WHERE pagamentoId = :pagamentoId AND excluidoEm IS NULL")
     suspend fun doPagamento(pagamentoId: String): List<ObrigacaoAjusteEntidade>

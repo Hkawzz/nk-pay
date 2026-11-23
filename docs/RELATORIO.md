@@ -6,10 +6,51 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 | Versão | Data | Em uma frase | Release |
 |---|---|---|---|
+| v0.3.0 | 22/11/2026 | Contas a pagar (fixas, avulsas, botão Pagar) e visual refinado | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.3.0) |
 | v0.2.0 | 22/11/2026 | Backup e restauração | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.2.0) |
 | v0.1.1 | 22/11/2026 | Valor estilo app de banco, transições e saldo por conta na Início | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.1.1) |
 | v0.1.0 | 22/11/2026 | Primeira versão de uso real: contas, categorias, movimentações, Início e auditoria | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.1.0) |
 | v0.0.1 | 21/11/2026 | Esqueleto instalável para validar o caminho até o celular | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.0.1) |
+
+---
+
+## v0.3.0 — Contas a pagar e visual refinado
+
+**Objetivo:** substituir as colunas "Fixos", "Contas do Mês" e "Pago?" da planilha (adendo `planejamento/adendo-v0.3-visual.md`), com o visual padronizado antes das telas novas.
+
+**O que foi feito**, na ordem de PRs do adendo:
+
+| PR | O que entrou |
+|---|---|
+| [#14](https://github.com/Hkawzz/nk-pay/pull/14) | Ajustes rápidos: o "+" saiu da Início, a aba Mais sempre volta ao menu e as transições ficaram mais rápidas |
+| [#15](https://github.com/Hkawzz/nk-pay/pull/15) | Tokens de design (espaçamento, cantos, tipografia) e os componentes `Nk*` |
+| [#16](https://github.com/Hkawzz/nk-pay/pull/16) | Componentes aplicados em todas as telas, ícones em um estilo só, barra inferior mais clara (com antes e depois) |
+| [#17](https://github.com/Hkawzz/nk-pay/pull/17) | Banco versão 2: 4 tabelas novas, migração explícita, cópia de segurança antes de migrar e testes de migração |
+| [#18](https://github.com/Hkawzz/nk-pay/pull/18) | Aba A pagar, contas fixas, conta avulsa e lançamento manual das fixas do mês, sem duplicar |
+| [#19](https://github.com/Hkawzz/nk-pay/pull/19) | Botão Pagar: pagamento parcial, desconto, encargos separados e desfazer pagamento |
+
+**Decisões aprovadas por você**
+- Estrutura do banco v2 ([0012](decisoes/0012-banco-v2-obrigacoes.md)): só tabelas novas, sem mexer nas existentes.
+- Regras de pagamento ([0013](decisoes/0013-regras-de-pagamento.md)): a despesa é o valor efetivamente pago, cada parcial gera a sua despesa, os encargos ficam em "Encargos financeiros", o desconto quita sem receita, as fixas entram por seleção manual sem duplicar e as atrasadas ficam no mês original.
+
+**Decisões tomadas sozinho**
+- A aba Mais reabre no menu; um formulário não salvo se perde ao sair dela ([0011](decisoes/0011-aba-mais-volta-ao-menu.md)).
+- Uma despesa criada pelo Pagar só muda desfazendo o pagamento, para os números nunca se desencontrarem.
+- Pagar uma conta já paga é recusado. "Crédito/pagamento adiantado" fica para depois.
+- Dividir uma mesma diferença entre vários motivos fica para depois: na v0.3, cada pagamento tem uma classificação.
+
+**Proteção dos dados reais**
+- A migração 1→2 só cria tabelas; ela foi testada com um banco igual ao da v0.2, e tudo ficou idêntico campo a campo.
+- Antes de migrar, o app copia o arquivo do banco (as 3 últimas cópias ficam guardadas).
+- Backups da v0.2 continuam restauráveis.
+- As notas da Release pedem um backup antes de atualizar.
+
+**Problemas encontrados e resolvidos**
+- O `MigrationTestHelper` do Room falha com caminhos do Windows no Robolectric. O teste passou a montar o banco v1 a partir do esquema oficial, e o próprio Room valida o resultado.
+- As capturas mostraram valores cortados em 3 colunas e o histórico sem o valor do encargo. Os dois foram corrigidos antes da publicação.
+- O limite de uso acabou no meio do PR 6. O trabalho foi salvo numa branch separada, sem ir para a `main`, e retomado depois.
+
+**Testes:** 97, todos com dados fictícios (eram 54 na v0.2), incluindo migração, pagamentos e dois roteiros pela interface.
 
 ---
 

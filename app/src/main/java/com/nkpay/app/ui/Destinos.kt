@@ -26,6 +26,9 @@ object Rotas {
     const val CONTA_FIXA_FORM = "mais/conta-fixa-form?id={id}"
     fun contaFixaForm(id: String? = null) = if (id == null) "mais/conta-fixa-form" else "mais/conta-fixa-form?id=$id"
 
+    const val PAGAR = "pagar/{id}"
+    fun pagar(obrigacaoId: String) = "pagar/$obrigacaoId"
+
     /** Conta a pagar: sem id cria uma avulsa no mês informado. */
     const val OBRIGACAO_FORM = "obrigacao-form?id={id}&mes={mes}"
     fun obrigacaoForm(id: String? = null, mes: java.time.YearMonth? = null): String {

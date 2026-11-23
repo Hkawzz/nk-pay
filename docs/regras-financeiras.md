@@ -144,7 +144,7 @@ Toda criação, edição, exclusão e restauração grava uma linha no **Registr
 
 ---
 
-## 6A. Contas a pagar (contas fixas e avulsas) 🚧 v0.3
+## 6A. Contas a pagar (contas fixas e avulsas) ✅ v0.3
 
 Aprovadas em 22/11/2026. Ver [`decisoes/0013-regras-de-pagamento.md`](decisoes/0013-regras-de-pagamento.md).
 

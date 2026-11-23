@@ -11,6 +11,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -102,5 +104,41 @@ class APagarTest {
         regra.onNodeWithText("Contas fixas").performClick()
         esperar("Ativas")
         foto("15-contas-fixas")
+    }
+
+    @Test
+    fun pagarComMultaPelaInterface() {
+        runBlocking {
+            container.categorias.garantirCategoriasIniciais()
+            container.contas.criar(com.nkpay.app.dominio.Conta("", "Pix", com.nkpay.app.dominio.Natureza.PROPRIO, null, 120_000, LocalDate.of(2026, 12, 1)))
+            val f = (container.contasFixas.criar(ContaFixa("", "Luz", 10_000, 10)) as com.nkpay.app.dados.Resultado.Sucesso).valor
+            container.obrigacoes.lancarFixas(YearMonth.of(2026, 12), listOf(f))
+        }
+        regra.setContent { NkPayTema { CompositionLocalProvider(LocalContainer provides container) { NkPayApp() } } }
+
+        regra.onNodeWithText("A pagar").performClick()
+        esperar("Luz")
+        regra.onNodeWithText("Luz").performClick()
+        esperar("Pagar")
+        regra.onNodeWithText("Pagar").performScrollTo().performClick()
+        esperar("Confirmar pagamento")
+
+        // Paga R$ 105,00: o app pergunta o que são os R$ 5,00 a mais.
+        regra.onNode(androidx.compose.ui.test.hasSetTextAction() and hasText("Valor pago")).performTextClearance()
+        regra.onNode(androidx.compose.ui.test.hasSetTextAction() and hasText("Valor pago")).performTextInput("10500")
+        esperar("Você está pagando R$ 5,00 a mais. O que é essa diferença?")
+        regra.onNodeWithText("Multa").performClick()
+        esperar("A conta fica paga.")
+        foto("16-pagar-com-multa")
+        regra.onNodeWithText("Confirmar pagamento").performScrollTo().performClick()
+
+        // De volta à conta: paga, com o pagamento no histórico.
+        esperar("Pagamentos")
+        foto("17-conta-paga")
+        val pagas = runBlocking { container.visaoAPagar.value!! }
+        val s = pagas.situacao(pagas.obrigacoes.single(), LocalDate.of(2026, 12, 1))
+        assertEquals(com.nkpay.app.dominio.StatusObrigacao.QUITADA, s.status)
+        val despesas = runBlocking { container.movimentacoes.observar().first() }
+        assertEquals(listOf(500L, 10_000L), despesas.map { it.valor }.sorted())
     }
 }
