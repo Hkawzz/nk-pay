@@ -31,6 +31,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#58](https://github.com/Hkawzz/nk-pay/pull/58) | Banco v6 | Migração 5 → 6 só com tabelas novas (`objetivo` e `movimento_reserva`), backup com as duas, banco v5 fiel e matriz de backup (v0.6 → v0.7, ida e volta com objetivos, v0.6 recusa v0.7) | ✅ |
 | [#59](https://github.com/Hkawzz/nk-pay/pull/59) | Domínio | Guardado calculado pelos movimentos, Saldo disponível com o Guardado real, guardar (bloqueado sem disponível), retirar, mover, ajustar, desfazer sem negativo, O2 (aviso na Início) e O3; testes da Início com Guardado > 0 | ✅ |
 | [#60](https://github.com/Hkawzz/nk-pay/pull/60) | Aba Objetivos | Lista (ativos × concluídos/arquivados) com guardado, meta, falta, %, prazo e "guardar R$ X/mês"; cadastro com ícone e cor; detalhe com histórico e desfazer; guardar, retirar, mover e ajustar em tela cheia; concluir, arquivar e excluir (O3); "?" com o passo a passo do O1 | ✅ |
+| [#61](https://github.com/Hkawzz/nk-pay/pull/61) | Análises | Seção Objetivos: guardado agora, guardado e retirado no período, progresso de cada objetivo, com "?" dizendo que objetivos não são entrada, saída nem despesa | ✅ |
 
 **Decisões tomadas sozinho**
 - **Desfazer uma retirada** (que aumenta o guardado) segue o mesmo bloqueio do Guardar: não pode passar do disponível. É a opção mais segura e coerente com a regra "nova reserva bloqueada sem disponível".

@@ -73,12 +73,12 @@ import java.time.LocalDate
 // Para reordenar as seções, mude só a lista ORDEM_DAS_SECOES.
 // =====================================================================================
 
-enum class SecaoAnalise { RESUMO, CATEGORIAS, EVOLUCAO, FLUXO, CONTAS, CREDITO, EMPRESTIMOS }
+enum class SecaoAnalise { RESUMO, CATEGORIAS, EVOLUCAO, FLUXO, CONTAS, CREDITO, EMPRESTIMOS, OBJETIVOS }
 
 /** Ordem das seções na tela (fácil de ajustar depois, como pede o briefing). */
 val ORDEM_DAS_SECOES = listOf(
     SecaoAnalise.RESUMO, SecaoAnalise.CATEGORIAS, SecaoAnalise.EVOLUCAO,
-    SecaoAnalise.FLUXO, SecaoAnalise.CONTAS, SecaoAnalise.CREDITO, SecaoAnalise.EMPRESTIMOS,
+    SecaoAnalise.FLUXO, SecaoAnalise.CONTAS, SecaoAnalise.CREDITO, SecaoAnalise.EMPRESTIMOS, SecaoAnalise.OBJETIVOS,
 )
 
 @Composable
@@ -136,6 +136,7 @@ fun AnalisesTela(aoVoltar: () -> Unit) {
                     SecaoAnalise.CONTAS -> SecaoContas(v, periodo)
                     SecaoAnalise.CREDITO -> SecaoCredito(vc, hoje)
                     SecaoAnalise.EMPRESTIMOS -> emprestimos?.let { SecaoEmprestimos(Analises.emprestimos(it, periodo, hoje)) }
+                    SecaoAnalise.OBJETIVOS -> SecaoObjetivos(v.objetivos, periodo)
                 }
             }
             item { Spacer(Modifier.height(Espaco.xl)) }
@@ -401,6 +402,31 @@ private fun SecaoEmprestimos(r: com.nkpay.app.dominio.ResumoDeEmprestimos) {
             if (r.parcelasAtrasadas > 0) Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("${r.parcelasAtrasadas} ${if (r.parcelasAtrasadas == 1) "parcela atrasada" else "parcelas atrasadas"}", color = RosaDespesa, style = MaterialTheme.typography.bodyMedium)
                 NkAjuda(ChaveAjuda.EMPRESTIMO_ATRASADA)
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- 8. objetivos (v0.7, regra 6F.6)
+
+@Composable
+private fun SecaoObjetivos(vo: com.nkpay.app.dominio.VisaoObjetivos, periodo: Periodo) {
+    if (vo.objetivos.isEmpty()) return
+    Titulo("Objetivos", "Reservas sobre o seu dinheiro próprio. Não são entrada, saída nem despesa.", ChaveAjuda.ANALISES_OBJETIVOS)
+    NkCard {
+        Column(Modifier.padding(Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
+            LinhaValor("Guardado agora", vo.totalGuardado, MaterialTheme.colorScheme.onSurface)
+            LinhaValor("Guardado no período", vo.guardadoNoPeriodo(periodo), Lilas)
+            LinhaValor("Retirado no período", vo.retiradoNoPeriodo(periodo), MaterialTheme.colorScheme.onSurfaceVariant)
+            NkDivisor()
+            for (s in vo.ativos + vo.encerrados) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.objetivo.nome + (if (!s.objetivo.ativo) " (encerrado)" else ""), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text(
+                        Dinheiro.formatar(s.guardado) + (s.objetivo.meta?.let { " de ${Dinheiro.formatar(it)} (${s.progresso}%)" } ?: ""),
+                        style = EstiloValor.lista,
+                    )
+                }
             }
         }
     }
