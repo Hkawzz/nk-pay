@@ -29,11 +29,14 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 |---|---|---|---|
 | [#57](https://github.com/Hkawzz/nk-pay/pull/57) | Docs | Regra 6F (objetivos, com exemplos e O1 a O3), 7.5, 4 e 6E.3 atualizadas; decisões 0028 e 0029. Sem código | ✅ |
 | [#58](https://github.com/Hkawzz/nk-pay/pull/58) | Banco v6 | Migração 5 → 6 só com tabelas novas (`objetivo` e `movimento_reserva`), backup com as duas, banco v5 fiel e matriz de backup (v0.6 → v0.7, ida e volta com objetivos, v0.6 recusa v0.7) | ✅ |
+| [#59](https://github.com/Hkawzz/nk-pay/pull/59) | Domínio | Guardado calculado pelos movimentos, Saldo disponível com o Guardado real, guardar (bloqueado sem disponível), retirar, mover, ajustar, desfazer sem negativo, O2 (aviso na Início) e O3; testes da Início com Guardado > 0 | ✅ |
 
 **Decisões tomadas sozinho**
 - **Desfazer uma retirada** (que aumenta o guardado) segue o mesmo bloqueio do Guardar: não pode passar do disponível. É a opção mais segura e coerente com a regra "nova reserva bloqueada sem disponível".
 - **Só se guarda em objetivo ativo**; retirar e mover continuam valendo para concluídos e arquivados (o dinheiro deles continua guardado, O3).
 - **Análises:** "guardado no período" = guardar + ajustes para cima; "retirado no período" = retirar + ajustes para baixo; mover não conta.
+- **Mover só para objetivo ativo**, e **ajuste para cima só em objetivo ativo** (as duas são formas de guardar mais). Ajuste para baixo vale sempre.
+- **O objetivo não escolhe conta:** ele reserva uma parte do Saldo total do dinheiro próprio. O disponível para guardar é calculado dentro da transação, com o Guardado de todos os objetivos não excluídos.
 - **Guardar por mês:** meses do mês atual ao do prazo, contando os dois, arredondado para cima; prazo vencido não sugere valor.
 
 **Pendências:** nenhuma até aqui.

@@ -8,9 +8,11 @@ data class VisaoFinanceira(
     val contas: List<Conta>,
     val categorias: List<Categoria>,
     val movimentacoes: List<Movimentacao>,
+    /** v0.7 (6F): os objetivos; o Guardado deles entra no Saldo disponível. */
+    val objetivos: VisaoObjetivos = VisaoObjetivos.VAZIA,
 ) {
     val saldos: Map<String, Long> by lazy { Saldos.saldosPorConta(contas, movimentacoes) }
-    val resumo: Resumo by lazy { Saldos.resumo(contas, movimentacoes) }
+    val resumo: Resumo by lazy { Saldos.resumo(contas, movimentacoes, objetivos.totalGuardado) }
     private val contasPorId by lazy { contas.associateBy { it.id } }
     private val categoriasPorId by lazy { categorias.associateBy { it.id } }
 

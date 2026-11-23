@@ -65,8 +65,13 @@ class AppContainer(
      * É `null` até a primeira leitura do banco terminar.
      */
     val visao: StateFlow<VisaoFinanceira?> =
-        combine(contas.observar(), categorias.observar(), movimentacoes.observar()) { c, cat, m ->
-            VisaoFinanceira(c, cat, m)
+        combine(
+            contas.observar(), categorias.observar(), movimentacoes.observar(),
+            // v0.7: objetivos e movimentos de reserva (o Guardado do Saldo disponível).
+            banco.objetivoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
+            banco.movimentoReservaDao().observarValidos().map { l -> l.map { it.paraDominio() } },
+        ) { c, cat, m, obj, mov ->
+            VisaoFinanceira(c, cat, m, com.nkpay.app.dominio.VisaoObjetivos(obj, mov))
         }.catch { semBanco(it) }.stateIn(escopo, SharingStarted.Eagerly, null)
 
     // --- Contas a pagar (v0.3) ---
@@ -88,6 +93,8 @@ class AppContainer(
     // --- Cartões e crediários (v0.4) ---
     val compras = com.nkpay.app.dados.CompraServico(banco, auditor, relogio)
     val pagamentosCredito = com.nkpay.app.dados.PagamentoCreditoServico(banco, auditor, relogio)
+    /** v0.7: objetivos e reservas (regra 6F). */
+    val objetivos = com.nkpay.app.dados.ObjetivoServico(banco, auditor, relogio)
     /** v0.6: Preparar próximo mês (regra 7.6). */
     val prepararMes = com.nkpay.app.dados.PrepararMesServico(banco, auditor, relogio)
 
