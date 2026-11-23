@@ -29,6 +29,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#37](https://github.com/Hkawzz/nk-pay/pull/37) | 2 | Fluxo com as quantidades; Resumo da Início pelo fluxo (Entradas, Saídas, Saldo das movimentações); card "Saldo disponível" (Saldo total e Guardado só com Guardado > 0) | ✅ |
 | [#38](https://github.com/Hkawzz/nk-pay/pull/38) | 3 | Ajuda "?" (`NkAjuda`) com todos os textos num arquivo só, conferidos contra o domínio; aplicada à Início | ✅ |
 | [#39](https://github.com/Hkawzz/nk-pay/pull/39) | 4 | Análises: "Despesas registradas" × "Saídas do dinheiro próprio" com "?", mês atual destacado e resultado em texto na evolução, "?" em Resultado, Descontos e Cartões | ✅ |
+| [#40](https://github.com/Hkawzz/nk-pay/pull/40) | 5 | Banco v4: tabela `emprestimo`, `obrigacao.emprestimoId`, migração 3→4, backup com empréstimos, categoria "Juros recebidos" auditada. Migração com banco v3 fiel e a matriz de backup | ✅ |
 
 **Decisões tomadas sozinho** (a opção mais simples, mais segura para os dados e mais fácil de reverter; detalhes na [0021](decisoes/0021-emprestimos.md))
 - **Juros K2 ligados ao recebimento** por um ajuste neutro (`JUROS_RECEBIDOS`), em vez de duas linhas de `pagamento`. O desfazer da v0.4 já remove esse ajuste e a entrada de juros junto, sem código novo de exclusão.
@@ -46,6 +47,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 **Problemas encontrados**
 - **Uma linha de um teste antigo mudou** (`AceiteTest`, da v0.1): ele esperava ver na Início o valor de uma despesa paga com o VA como total do mês. Pela D1, ela não é saída do dinheiro próprio; a linha agora procura a despesa nas últimas movimentações. **Contradição anotada:** a regra aprovada (D1) vence o teste antigo, como manda o briefing.
+- **Cinco linhas de testes de migração antigos mudaram** por causa da versão 4 do banco, que a especificação pede: `MigracaoTest` (1, SQL da `obrigacao` sem a coluna nova) e `MigracaoV3Test` (4: versão atual em 3 lugares e a `obrigacao` sem o sufixo da coluna nova, que também confere que ela nasce vazia). Todas são do mesmo tipo das feitas na v0.4.
+- **Um teste novo deixava uma exceção "vazar" para o teste seguinte no CI** (`AjudaTest` abria o banco também para testes puros). Os testes puros foram para um arquivo sem banco.
 
 ---
 

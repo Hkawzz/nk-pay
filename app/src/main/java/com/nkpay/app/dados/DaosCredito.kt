@@ -28,6 +28,21 @@ interface CompraDao {
 }
 
 @Dao
+interface EmprestimoDao {
+    @Query("SELECT * FROM emprestimo WHERE excluidoEm IS NULL ORDER BY dataContratacao DESC, criadoEm DESC")
+    fun observarValidos(): Flow<List<EmprestimoEntidade>>
+
+    @Query("SELECT * FROM emprestimo WHERE id = :id") suspend fun buscar(id: String): EmprestimoEntidade?
+
+    /** Empréstimos (não excluídos) cuja contratação ou juros J1 é esta movimentação. */
+    @Query("SELECT COUNT(*) FROM emprestimo WHERE excluidoEm IS NULL AND (movimentacaoContratacaoId = :movimentacaoId OR movimentacaoJurosId = :movimentacaoId)")
+    suspend fun contarDaMovimentacao(movimentacaoId: String): Int
+
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun inserir(e: EmprestimoEntidade)
+    @Update suspend fun atualizar(e: EmprestimoEntidade)
+}
+
+@Dao
 interface PagamentoFaturaDao {
     /** Abatimentos gerais válidos: não excluídos e com a transferência ainda existente. */
     @Query(

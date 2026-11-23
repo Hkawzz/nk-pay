@@ -232,6 +232,16 @@ class CategoriaRepositorio(
     }
 
     /**
+     * v0.5 (regra 6E.5): garante a categoria de sistema "Juros recebidos", com auditoria.
+     * Roda na abertura do app e depois de restaurar um backup. Só age se faltar.
+     * @return o id da categoria.
+     */
+    suspend fun garantirJurosRecebidos(): String = banco.withTransaction {
+        dao.buscarPorCodigo(CategoriasDoSistema.JUROS_RECEBIDOS)?.id
+            ?: inserirComAuditoria(relogio.novoId(), "Juros recebidos", CategoriasDoSistema.JUROS_RECEBIDOS, "Categoria de sistema “Juros recebidos” criada")
+    }
+
+    /**
      * Passo auditado da v0.4 (ADR 0018): dá a aparência sugerida às categorias SEM ícone
      * (as que vieram da v0.3, por migração ou por backup). As de nome conhecido recebem a
      * sugestão; as demais, a neutra. Nunca mexe numa categoria que já tem ícone, e nunca

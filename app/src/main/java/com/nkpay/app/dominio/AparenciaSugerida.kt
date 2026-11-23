@@ -51,6 +51,7 @@ object AparenciaSugerida {
         "celular" to Aparencia("celular", 0xFFA78BFA),
         "outros" to NEUTRA,
         "encargos financeiros" to Aparencia("crescimento", 0xFFF87171),
+        "juros recebidos" to Aparencia("crescimento", 0xFF4ADE80),
     )
 
     fun normalizar(nome: String): String =

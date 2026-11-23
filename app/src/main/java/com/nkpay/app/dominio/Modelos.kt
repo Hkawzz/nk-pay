@@ -104,4 +104,6 @@ data class Movimentacao(
 /** Códigos das categorias criadas pelo sistema. */
 object CategoriasDoSistema {
     const val ENCARGOS_FINANCEIROS = "ENCARGOS_FINANCEIROS"
+    /** v0.5: receita dos juros de empréstimos concedidos (regra 6E.5). */
+    const val JUROS_RECEBIDOS = "JUROS_RECEBIDOS"
 }
