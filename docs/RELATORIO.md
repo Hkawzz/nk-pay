@@ -14,6 +14,32 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
+## v0.4.0 (em validação) — Cartões, crediários, categorias com ícone, nova Início e Análises
+
+**Objetivo:** cartões de crédito e crediários (compras parceladas, faturas, pagamento total, parcial ou por compras), categorias com ícone e cor, design system v2, a nova tela Início e a tela de Análises. Fontes: `planejamento/proposta-execucao-v0.4.md` (revisão 2), `planejamento/briefing-v0.4-autonomo.md` e `planejamento/adendo-inicio-v0.4.md`.
+
+**Como foi feito:** de forma autônoma (o dono estava indisponível), seguindo a ordem de PRs da proposta. Cada PR termina com o CI verde e esta seção atualizada, para retomar sem perda se o limite de uso acabar.
+
+**PRs**
+
+| # | Etapa | O que entrou | Estado |
+|---|---|---|---|
+| 1 | F0 | Regras 6B, 6C e 6D em `regras-financeiras.md` e as decisões 0014 a 0018. Sem código | em andamento |
+
+**Decisões tomadas sozinho** (todas com a opção mais simples, mais segura para os dados e mais fácil de reverter)
+- **Compra no dia do fechamento** entra na fatura seguinte (é o comportamento mais comum dos bancos). Regra 6B.3.
+- **1ª parcela do crediário:** no mês seguinte ao da compra, no dia de vencimento do crediário (ou no dia da compra). Sempre editável no cadastro.
+- **Desconto em fatura de cartão não existe na v0.4:** pagar menos é sempre parcial. No crediário, o desconto existe (como na v0.3). ([0015](decisoes/0015-fatura-e-pagamento-de-credito.md))
+- **Pagar compras específicas** quita o restante exato das compras escolhidas e é recusado se passar do restante da fatura.
+- **Contas de crédito nascem com saldo inicial zero**: a dívida anterior entra como compra anterior ao app.
+- **Ícones próprios** (caminhos do Material Icons, Apache 2.0) em vez do pacote "extended"; 12 cores predefinidas e uma personalizada com ajuste de contraste para 3:1. ([0018](decisoes/0018-categorias-com-aparencia.md))
+
+**Pendências:** nenhuma até aqui.
+
+**Problemas encontrados:** nenhum até aqui.
+
+---
+
 ## v0.3.0 — Contas a pagar e visual refinado
 
 **Objetivo:** substituir as colunas "Fixos", "Contas do Mês" e "Pago?" da planilha (adendo `planejamento/adendo-v0.3-visual.md`), com o visual padronizado antes das telas novas.

@@ -48,8 +48,8 @@ Cada conta tem uma **natureza**, que define como ela entra nos cálculos:
 |---|---|---|---|
 | `PROPRIO` | Pix, dinheiro físico, bancos | **Sim** | ✅ v0.1 |
 | `BENEFICIO` | VA, VR (campo `tipoBeneficio`) | **Não, nunca** | ✅ v0.1 |
-| `CARTAO` | Cartão de crédito (limite, instituição, dia de fechamento, dia de vencimento) | Não. O limite nunca entra em saldo nenhum | 🔜 telas na v0.4. A v0.1 já reserva a natureza e as colunas |
-| `CREDIARIO` | Carnê ou boleto parcelado (credor sem limite) | Não | 🔜 decisão provisória. Telas na v0.4 |
+| `CARTAO` | Cartão de crédito (limite, dia de fechamento, dia de vencimento) | Não. O limite nunca entra em saldo nenhum | ✅ v0.4 (seção 6B) |
+| `CREDIARIO` | Carnê ou boleto parcelado (credor sem limite) | Não | ✅ v0.4 (seção 6B) |
 
 ### 2.1 Saldo inicial ✅ v0.1
 Cada conta tem um **saldo inicial** e uma **data do saldo inicial**. **O saldo inicial não é uma entrada**: ele não aparece nos totais de entradas do mês.
@@ -164,7 +164,141 @@ Aprovadas em 22/11/2026. Ver [`decisoes/0013-regras-de-pagamento.md`](decisoes/0
 
 ---
 
+## 6B. Cartões e crediários ✅ v0.4
+
+Aprovadas em 23/11/2026 (proposta de execução da v0.4, revisão 2, e briefing autônomo). Ver as decisões [0014](decisoes/0014-banco-v3.md) a [0017](decisoes/0017-integridade-das-contas-de-credito.md).
+
+### 6B.1 A conta de crédito
+- Cartão e crediário são **contas** de natureza `CARTAO` ou `CREDIARIO`. Elas começam com **saldo inicial zero**: o que já se deve entra como **compra anterior ao app** (6B.5).
+- O saldo da conta de crédito é negativo enquanto houver dívida. `Devido = −saldo da conta de crédito`.
+- O cartão tem **dia de fechamento** e **dia de vencimento** (obrigatórios) e um **limite** (opcional). O crediário não tem limite e pode ter um dia de vencimento.
+- Contas de crédito **nunca** entram no Dinheiro próprio, no Disponível nem nos Benefícios, e não aparecem na Início.
+
+```
+Devido            = compras − pagamentos recebidos + encargos − descontos − parcelas pagas antes do app
+Limite usado      = Devido
+Limite disponível = Limite − Devido
+Invariante        = Devido = Σ restante das faturas (cartão) ou das parcelas (crediário) em aberto
+```
+
+### 6B.2 Compra parcelada
+- Uma compra cria **uma DESPESA pelo valor total**, na conta de crédito, **na data da compra** e na categoria escolhida. Ela entra nas despesas do mês da compra.
+- Cria também **N parcelas** (obrigações de origem `PARCELA`). `valor da parcela = total ÷ N` (arredondado para baixo, em centavos), e **a última parcela absorve a diferença**.
+- Uma compra à vista no cartão é uma compra de 1 parcela.
+- A despesa da compra fica **bloqueada para edição direta** em Movimentações. Uma compra só pode ser excluída enquanto nenhuma parcela tiver pagamento (e a fatura dela não tiver abatimento geral). Depois disso, é preciso desfazer os pagamentos antes.
+
+> **Exemplo.** Compra de R$ 100,00 em 3x → parcelas de R$ 33,33, R$ 33,33 e **R$ 33,34**. As despesas do mês da compra sobem R$ 100,00. O devido do cartão sobe R$ 100,00.
+
+### 6B.3 Datas das parcelas
+**Cartão** (fechamento F, vencimento V):
+1. A fatura fecha no dia F do mês da compra. Se a compra for **no dia do fechamento ou depois**, ela entra na fatura que fecha no mês seguinte.
+2. A fatura vence no dia V: no **mesmo mês do fechamento** se V > F, ou no **mês seguinte** se V ≤ F.
+3. A parcela *k* vence *k − 1* meses depois da primeira.
+4. Um dia que não existe no mês (ex.: 31 em fevereiro) vira o **último dia do mês**.
+
+| Cartão | Compra | 1ª parcela vence |
+|---|---|---|
+| F = 5, V = 12 | 03/12/2026 | 12/12/2026 |
+| F = 5, V = 12 | **05/12/2026** (dia do fechamento) | 12/01/2027 |
+| F = 28, V = 5 | 10/12/2026 | 05/01/2027 (virada de ano) |
+| F = 31, V = 10 | 28/02/2027 (fecha em 28/02) | 10/04/2027 |
+
+**Crediário:** a 1ª parcela vence no mês seguinte ao da compra, no dia de vencimento do crediário (ou no mesmo dia da compra, se o crediário não tiver dia). Em todos os casos, **a data da 1ª parcela pode ser editada** no cadastro da compra, e as demais seguem mês a mês.
+
+O **mês de referência** de cada parcela é o mês do vencimento dela. Ele nunca muda.
+
+### 6B.4 Fatura (cartão)
+A fatura **não é gravada**: ela é o conjunto das parcelas do cartão com o mesmo mês de referência.
+
+```
+Restante da fatura = Σ restante das parcelas da fatura − Σ abatimentos gerais da fatura
+Parcela quitada    = restante dela ≤ 0  OU  restante da fatura ≤ 0
+```
+
+Exemplo: fatura de dezembro com as parcelas A R$ 100,00, B R$ 200,00 e C R$ 180,00 (total R$ 480,00).
+
+| Ação | O que é gravado | Resultado |
+|---|---|---|
+| **Pagar total** | 1 transferência Pix → Cartão de R$ 480,00, ligada a A, B e C | Fatura quitada. Despesas do mês: sem mudança |
+| **Pagar parcial** de R$ 300,00 | 1 transferência de R$ 300,00 + 1 **abatimento geral** de R$ 300,00 na fatura | Restante R$ 180,00. Nenhuma compra é dada como quitada |
+| Depois, pagar R$ 180,00 | Transferência + abatimento geral de R$ 180,00 | Fatura quitada: todas as parcelas passam a "pagas" |
+| **Pagar compras específicas** (só B) | Transferência de R$ 200,00 ligada a B | B quitada. Restante da fatura R$ 280,00 |
+| Desfazer qualquer pagamento | Exclusão lógica da transferência e das ligações | Volta ao estado anterior |
+
+Regras:
+- **Pagar uma fatura é uma transferência**, nunca uma despesa: a despesa já foi contada no mês da compra.
+- **Fatura vencida com restante** fica **atrasada no mês original**. Ela não passa para a fatura seguinte e não recebe juros automáticos. Pagamentos posteriores continuam abatendo a fatura original.
+- **Um pagamento pode cobrir várias faturas em aberto**: o valor é distribuído da **mais antiga para a mais nova**. Cada fatura coberta inteira é quitada; a última, se coberta em parte, recebe um abatimento geral. A transferência é uma só.
+- **Pagar compras específicas** quita exatamente o restante das compras escolhidas e não pode passar do restante da fatura.
+- **Pagar mais que o restante** das faturas em aberto: o app **pergunta a natureza** da diferença (juros, multa, tarifa, IOF, outro acréscimo). O excedente vira uma **despesa de encargo na conta do cartão**, na categoria "Encargos financeiros", com um acréscimo na parcela. Nada é automático e não existe "lançar encargo" avulso.
+- **Desconto em fatura** não existe na v0.4: pagar menos que o restante é sempre um pagamento parcial (abatimento geral).
+
+> **Exemplo de encargo.** Fatura de R$ 480,00 paga com R$ 492,00, classificando R$ 12,00 como juros: transferência de R$ 492,00 Pix → Cartão; despesa de R$ 12,00 em Encargos financeiros, na conta do cartão; acréscimo de R$ 12,00 numa parcela da fatura. Devido: R$ 0,00. Despesas do mês: +R$ 12,00 (só o encargo).
+
+### 6B.5 Crediário (carnê, boleto)
+Não tem fatura. Cada parcela é paga **individualmente**, como uma conta a pagar, mas por **transferência** para a conta do crediário (sem despesa). Valem as mesmas perguntas da seção 6A:
+- **Pagou menos:** *parcial* (o restante continua) ou *desconto*. No crédito, o desconto é um **AJUSTE positivo na conta do crediário** (reduz o devido) e um abatimento na parcela. Não é receita.
+- **Pagou mais:** o excedente é uma despesa de encargo na conta do crediário, com acréscimo na parcela (como no cartão).
+
+> **Exemplo.** Parcela de R$ 150,00. Paga R$ 140,00 com desconto de R$ 10,00 → transferência de R$ 140,00 Pix → Crediário; ajuste de +R$ 10,00 no crediário; parcela quitada; devido −R$ 150,00. Entradas e despesas do mês: inalteradas.
+
+### 6B.6 Compra feita antes de usar o app
+Para registrar algo que você já devia quando começou a usar o app (ex.: compra de R$ 1.200,00 em 12x, de 10/08, com as parcelas 1 a 4 já pagas):
+
+| Registro | Valor | Efeito |
+|---|---|---|
+| Compra marcada como **anterior ao app** | R$ 1.200,00 | Identifica o registro histórico |
+| DESPESA na conta do crédito, em **10/08** (o mês original), na categoria da compra | R$ 1.200,00 | Entra nas despesas de **agosto**, mesmo que agosto seja o mês atual |
+| 12 parcelas | 12 × R$ 100,00 | Histórico completo |
+| Parcelas 1 a 4: abatimento **"quitada antes do app"** | 4 × R$ 100,00 | Aparecem como pagas antes do app. Não são pagamentos nem descontos |
+| AJUSTE de +R$ 400,00 na conta do crédito ("Parcelas pagas antes do app") | +R$ 400,00 | O devido cai para R$ 800,00 |
+
+- **Pix, dinheiro e benefícios não mudam.** Disponível: igual.
+- Se uma parcela foi paga **só em parte** antes do app, informe o valor já pago dela: ele vira um abatimento "quitada antes do app" pelo valor parcial.
+- "Quitada antes do app" **nunca** entra em "descontos obtidos".
+- **Possível duplicidade:** se você já lançou essa compra no app (como conta avulsa ou despesa), o app **avisa** quando encontrar nome ou valor parecidos e explica o roteiro: desfazer o lançamento antigo e pagar a parcela pelo fluxo do cartão. **Ele nunca converte nada sozinho.**
+
+### 6B.7 Integridade
+Contas de crédito **não podem** ser usadas em entradas, despesas, ajustes ou transferências **avulsas** (lançadas em Movimentações). Só mudam por compras, pagamentos e pelos registros de 6B.6. Essa regra fica na camada de dados, e não só na tela. Ver [0017](decisoes/0017-integridade-das-contas-de-credito.md).
+
+---
+
+## 6C. Categorias com ícone e cor ✅ v0.4
+
+- Cada categoria tem um **ícone** e uma **cor**. Aparência **nunca** toca em registros financeiros.
+- As categorias existentes recebem a **aparência sugerida pelo nome** (sem maiúsculas e sem acentos), com auditoria. Só categorias **sem ícone** recebem sugestão, então uma escolha sua nunca é sobrescrita. Categorias com nome desconhecido recebem um ícone e uma cor neutros.
+- A cor personalizada é **clareada automaticamente** até ter contraste mínimo de 3:1 com o fundo escuro.
+- Nos gráficos, a categoria sempre aparece com o **nome** junto (duas categorias podem ter a mesma cor).
+
+Ver [0018](decisoes/0018-categorias-com-aparencia.md).
+
+---
+
+## 6D. Análises ✅ v0.4
+
+As análises ficam em **Mais → Análises** e são calculadas a partir dos mesmos dados das outras telas (nada é gravado).
+
+| Análise | Definição |
+|---|---|
+| **Entradas, despesas e resultado** | A regra da seção 3.3: entradas − despesas do período. Compras no cartão contam no mês da compra. Transferências, ajustes e pagamentos de fatura ou crediário **não** entram |
+| **Fluxo financeiro** | O dinheiro que **entra e sai das contas de dinheiro próprio** no período: entradas, despesas pagas com dinheiro próprio e pagamentos de fatura ou crediário. Transferências entre duas contas próprias **não** entram. Benefícios ficam fora |
+| **Despesas por categoria** | Soma das despesas de cada categoria no período, do maior para o menor, com ícone, cor, nome e percentual |
+| **Contas e carteiras** | O saldo de cada conta de dinheiro próprio e de benefício no fim de cada mês do período |
+| **Cartões e crediários** | Devido, limite usado e disponível, faturas pagas, em aberto e atrasadas, e o total de compras anteriores ao app |
+| **Evolução mensal** | Entradas, despesas e resultado de cada mês do período. Meses antes do primeiro registro aparecem como "sem dados" |
+| **Descontos obtidos** | Soma dos descontos e abatimentos dados em pagamentos. **Exclui** "quitada antes do app" |
+
+> **Exemplo** (dezembro): entrada de R$ 3.000,00 no Pix; mercado de R$ 200,00 no Pix; compra de R$ 600,00 no cartão; pagamento de fatura de R$ 300,00 Pix → Cartão; transferência de R$ 100,00 Pix → Dinheiro.
+> - Entradas R$ 3.000,00 · Despesas **R$ 800,00** · Resultado **R$ 2.200,00**.
+> - Fluxo: entrou R$ 3.000,00, saiu **R$ 500,00** (R$ 200,00 do mercado + R$ 300,00 da fatura). A transferência Pix → Dinheiro não conta.
+
+**Período:** mês atual (padrão), últimos 3, 6 ou 12 meses. O último filtro escolhido fica guardado **na memória enquanto o app estiver aberto** (nada é gravado).
+
+---
+
 ## 7. Regras futuras 🔜
+
+> As seções 7.1 a 7.4 foram detalhadas e implementadas na v0.4: ver a seção 6B.
 
 Estas regras não são implementadas na v0.1, mas o banco de dados da v0.1 precisa permiti-las.
 
