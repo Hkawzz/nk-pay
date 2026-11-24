@@ -138,6 +138,9 @@ fun InicioTela(
                 }
             }
 
+            // --- v0.8 (V3): objetivos da v0.7 viraram caixinhas zeradas (mensagem de uma vez só) ---
+            com.hkawzz.nkote.ui.objetivos.AvisoCaixinhas()
+
             // --- Aviso de backup: nunca feito, ou feito há 7 dias ou mais ---
             val dias = diasDesde(ultimoBackup, container.relogio.agora())
             if (v.contas.isNotEmpty() && (dias == null || dias >= DIAS_PARA_AVISO)) {

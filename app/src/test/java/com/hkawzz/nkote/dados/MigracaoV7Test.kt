@@ -161,4 +161,55 @@ class MigracaoV7Test {
             banco.close()
         }
     }
+
+    @Test
+    fun `V3 os objetivos da v0_7 viram caixinhas zeradas sem mudar nenhum saldo de conta`() {
+        criarBancoV6()
+        val banco = abrirComoOApp()
+        try {
+            val r = RelogioFalso()
+            val a = Auditor(banco.auditoriaDao(), r)
+            val contas = ContaRepositorio(banco, a, r)
+            val movs = MovimentacaoRepositorio(banco, a, r)
+            val antesMovs = runBlocking { movs.observar().first() }
+            val antesSaldos = Saldos.saldosPorConta(runBlocking { contas.observar().first() }, antesMovs)
+            val servico = ObjetivoServico(banco, a, r)
+            assertEquals(1, runBlocking { servico.converterObjetivosAntigos() })
+            assertEquals(0, runBlocking { servico.converterObjetivosAntigos() }) // idempotente
+            val depoisContas = runBlocking { contas.observar().first() }
+            val depoisMovs = runBlocking { movs.observar().first() }
+            // Nenhuma transferência criada e nenhum saldo de conta mudou.
+            assertEquals(antesMovs, depoisMovs)
+            val depoisSaldos = Saldos.saldosPorConta(depoisContas, depoisMovs)
+            for ((id, s) in antesSaldos) assertEquals("saldo de $id", s, depoisSaldos[id])
+            // A caixinha nasceu zerada; o guardado antigo (R$ 200,00) deixou de contar: o disponível sobe.
+            val o = runBlocking { banco.objetivoDao().buscar("o1") }!!
+            val cx = depoisContas.single { it.id == o.contaCaixinhaId }
+            assertEquals(com.hkawzz.nkote.dominio.Natureza.CAIXINHA, cx.natureza)
+            assertEquals(0L, depoisSaldos[cx.id])
+            assertEquals(30_000L, Saldos.resumo(depoisContas, depoisMovs).disponivel)
+            val vo = com.hkawzz.nkote.dominio.VisaoObjetivos(listOf(o.paraDominio()), runBlocking { banco.movimentoReservaDao().observarValidos().first() }.map { it.paraDominio() }, depoisContas, depoisMovs)
+            assertEquals(0L, vo.guardado("o1"))
+            assertTrue(vo.temHistoricoAntigo)
+            assertEquals(listOf(20_000L), vo.situacao("o1")!!.antigos.map { it.valor })
+        } finally {
+            banco.close()
+        }
+    }
+
+    @Test
+    fun `V3 roda depois de restaurar um backup da v0_7`() {
+        criarBancoV6()
+        val banco = abrirComoOApp()
+        try {
+            val r = RelogioFalso()
+            val servicoObj = ObjetivoServico(banco, Auditor(banco.auditoriaDao(), r), r)
+            val backup = BackupServico(banco, r, "teste", pasta.newFolder("copias"), RegistroDeBackupEmMemoria()) { servicoObj.converterObjetivosAntigos() }
+            val bytes = ByteArrayOutputStream().also { runBlocking { backup.exportar(it) } }.toByteArray()
+            runBlocking { backup.restaurar(backup.ler(ByteArrayInputStream(bytes))) }
+            assertNotNull(runBlocking { banco.objetivoDao().buscar("o1") }!!.contaCaixinhaId)
+        } finally {
+            banco.close()
+        }
+    }
 }

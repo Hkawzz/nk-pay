@@ -142,6 +142,25 @@ private fun CardObjetivo(s: SituacaoObjetivo, hoje: LocalDate, aoClicar: () -> U
     }
 }
 
+/** Texto da mensagem da conversão V3 (regra 6G.3). */
+const val TEXTO_AVISO_CAIXINHAS = "Antes, o objetivo só separava uma parte do saldo, sem tirar o dinheiro da conta. Agora cada objetivo tem uma caixinha de verdade, que começou zerada. Nenhuma conta mudou; o Saldo disponível pode ter subido, porque o dinheiro nunca saiu das contas. Para separar o dinheiro de novo, abra o objetivo e toque em Guardar."
+
+/** v0.8 (V3, ADR 0032): explica, uma vez só, que os objetivos da v0.7 viraram caixinhas zeradas. */
+@Composable
+fun AvisoCaixinhas(modifier: Modifier = Modifier) {
+    val container = LocalContainer.current
+    val visao by container.visao.collectAsState()
+    val visto by container.avisos.conversaoV3Vista.collectAsState()
+    if (visto || visao?.objetivos?.temHistoricoAntigo != true) return
+    NkCard(estilo = com.hkawzz.nkote.ui.componentes.EstiloCard.ELEVADO, modifier = modifier) {
+        Column(Modifier.padding(Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
+            Text("Seus objetivos agora são caixinhas", style = MaterialTheme.typography.titleSmall, color = Lilas)
+            Text(TEXTO_AVISO_CAIXINHAS, style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = { container.avisos.marcarConversaoV3Vista() }) { Text("Entendi") }
+        }
+    }
+}
+
 /** A aba Objetivos: total guardado, Saldo disponível, ativos × concluídos/arquivados. */
 @Composable
 fun ObjetivosTela(aoAbrir: (String) -> Unit, aoNovo: () -> Unit) {
@@ -181,6 +200,7 @@ fun ObjetivosTela(aoAbrir: (String) -> Unit, aoNovo: () -> Unit) {
                     }
                 }
             }
+            item { AvisoCaixinhas() }
             if (vo.objetivos.isEmpty()) {
                 item {
                     NkEstadoVazio(
