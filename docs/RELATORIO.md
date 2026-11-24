@@ -1,4 +1,4 @@
-# Relatório de desenvolvimento do NK Pay
+# Relatório de desenvolvimento do NKote (ex-NK Pay)
 
 Este arquivo conta **tudo o que foi feito**, versão por versão, em linguagem simples: o que entrou, por que, quais decisões foram tomadas, o que deu errado e como foi resolvido. Ele é atualizado **a cada versão publicada**. A versão mais nova fica no topo.
 
@@ -6,6 +6,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 | Versão | Data | Em uma frase | Release |
 |---|---|---|---|
+| v0.8.0 | 24/11/2026 | NKote: saldo sem cheque especial, caixinhas, Início completa, backup automático e AAB (em validação no app de debug) | [link](https://github.com/Hkawzz/nkote/releases/tag/v0.8.0) |
 | v0.7.0 | 23/11/2026 | Objetivos e reservas, Guardado real no Saldo disponível e roteiro do teste profundo (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.7.0) |
 | v0.6.0 | 23/11/2026 | Compras com juros, parcelas antecipadas, excluir e arquivar, e o assistente Preparar próximo mês (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.6.0) |
 | v0.5.0 | 23/11/2026 | Empréstimos (J1 e K2), Resumo da Início pelo fluxo, Saldo disponível e ajuda "?" (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.5.0) |
@@ -18,7 +19,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
-## v0.8.0 (em andamento) - NKote: saldo sem cheque especial, caixinhas, Início completa e backup automático
+## v0.8.0 (em validação) - NKote: saldo sem cheque especial, caixinhas, Início completa e backup automático
 
 **Objetivo:** a versão do teste profundo e do teste fechado na Play. Novo nome, **NKote**; saída sem saldo recusada (R1); objetivos como caixinhas de verdade (R2), com a conversão dos objetivos da v0.7 (V3); exclusões protegidas que sempre respondem (D1, D2); Início completa (V1); backup automático (V2); AAB e Mais → Sobre para a Play (G). Fontes: `planejamento/briefing-v0.8-autonomo.md` (prevalece), `proposta-execucao-v0.8.md`, `achados-teste-v0.7.md` e `logo/LEIA-ME-logo.md`.
 
@@ -39,6 +40,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#72](https://github.com/Hkawzz/nkote/pull/72) | Início completa (V1) | Abaixo do card principal, só com conteúdo: Próximos vencimentos (7 dias + atrasados, com atalho para pagar), Cartões (devido e próxima fatura), Caixinhas (até 3, "Ver todas") e A receber | ✅ |
 | [#73](https://github.com/Hkawzz/nkote/pull/73) | Backup automático (V2) | Mais → Backup: escolher a pasta (Drive permitido), Diário (padrão)/Semanal/Mensal, último resultado, "Fazer agora" e orientação de bateria Samsung; guarda os 7 últimos da série `nkote-auto-`, nunca apaga os manuais; falha avisada na Início | ✅ |
 | [#74](https://github.com/Hkawzz/nkote/pull/74) | AAB e Sobre (G) | A Release passa a anexar também `nkote-vX.Y.Z.aab`, assinado com a mesma keystore e com a mesma conferência da impressão digital do APK; Mais → Sobre mostra a política de privacidade (constante `Contato.POLITICA_DE_PRIVACIDADE`, texto provisório enquanto vazia) e o e-mail de suporte; sem botão Apoiar | ✅ |
+| [#75](https://github.com/Hkawzz/nkote/pull/75) | Qualidade e release | `docs/roteiro-teste-profundo.md` atualizado para a v0.8 (R1, caixinhas, V3, D1/D2, Início, backup automático, Sobre e a instalação como app novo), `docs/roteiro-teste-v0.8.md`, `docs/registro-de-problemas-v0.9.md`, CHANGELOG (começa pelo aviso de backup e pelos passos de instalação), README e tag `v0.8.0` | ✅ |
 
 **Decisões tomadas sozinho**
 - **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.
@@ -55,7 +57,31 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **A política de privacidade ainda não tem endereço:** a constante fica vazia e o Sobre mostra um texto provisório ("o NKote não coleta, não envia e não compartilha nenhum dado"). Tocar no link ou no e-mail abre o navegador ou o app de e-mail do celular; o NKote continua sem a permissão `INTERNET`. A assinatura do AAB é conferida com `keytool -printcert` (o `apksigner` é só para APK); testei localmente com uma chave descartável, apagada em seguida.
 - **Os nomes das classes (`NkPayBanco`, `NkPayTema`...) ficam:** a renomeação troca só o necessário (nome visível, identificador, pacotes, extensão e repositório).
 
-**Pendências:** nenhuma até aqui.
+- **O registro de problemas do teste da v0.8 é um arquivo novo** (`registro-de-problemas-v0.9.md`); o da v0.8 fica como estava, com o que você anotou na v0.7.
+- **O teste da migração no celular é pela restauração:** como o NKote é outro app, o `nkote-v0.8.0-debug.apk` não instala por cima do NK Pay debug. O roteiro manda restaurar no NKote debug o `.nkpay` do NK Pay, que é o mesmo caminho que você fará no app principal.
+
+**Portões do briefing para publicar**
+
+| Portão | Resultado |
+|---|---|
+| CI verde | ✅ em todos os PRs (#64 a #75) |
+| Testes da v0.7 passando; mudanças inevitáveis justificadas | ✅ Dos **244** da v0.7, os de objetivos (`ObjetivosTest` e `ObjetivoServicoTest`) foram reescritos de propósito para caixinhas (R2), e `InicioGuardadoUiTest`, `AnalisesObjetivosUiTest` e um teste do `SaldosTest` foram adaptados pelo mesmo motivo. Fora isso, só linhas mínimas e justificadas (ver Problemas) e a troca de pacote da renomeação. Conferido com `git diff v0.7.0` |
+| Migração v6 fiel → v7, com V3 e saldos idênticos | ✅ `MigracaoV7Test`: banco v6 com dados em todas as tabelas e objetivos com histórico; depois da migração e da conversão, cada objetivo tem caixinha zerada, nenhuma movimentação nova e os saldos de todas as contas idênticos |
+| Matriz de backup | ✅ `.nkpay` da v0.7 restaura na v0.8 (com a conversão V3, `BackupNkpayTest` e `MigracaoV7Test`); ida e volta na v0.8 com caixinhas (`BackupCaixinhasTest`, novo neste PR); a v0.7 recusa um backup da v0.8 (versão 7) |
+| Regressão de crédito, empréstimos, Preparar mês e Pagar | ✅ `PagamentoCreditoTest`, `PagamentoComJurosTest`, `CompraServicoTest`, `PagamentoEmprestimoTest`, `EmprestimoServicoTest`, `PrepararMesTest`, `PagamentoServicoTest` e os de interface passam sem mudança de regra (só o pacote) |
+| Nenhuma lista de pagamento ou despesa mostra caixinhas | ✅ `CaixinhaNaoPagaUiTest` (despesa, Pagar, fatura, crediário e empréstimo) e as recusas na camada de dados (`ObjetivoServicoTest`) |
+| R1 (sem cheque especial) | ✅ `SaldoSemChequeEspecialTest` |
+| Backup automático | ✅ `BackupAutomaticoTest` (7 da série, manuais intactos, falha registrada) |
+
+No total, **271 testes**, todos passando (suíte completa local e no CI).
+
+**Proteção dos dados reais**
+- A migração 6→7 só acrescenta uma coluna vazia (`objetivo.contaCaixinhaId`) e a tabela `configuracao_backup`; nenhuma linha é reescrita. A conversão V3 cria caixinhas zeradas, sem nenhuma movimentação. O nome do arquivo do banco não mudou. Sem `fallbackToDestructiveMigration`.
+- O NKote é instalado ao lado do NK Pay: o NK Pay e os dados dele ficam intactos até você desinstalá-lo.
+- A keystore e os Secrets não mudaram; o APK e o AAB da Release conferem a mesma impressão digital. O CI não publica APK de debug.
+- Nenhum dado real no repositório. APKs de debug (`nk-pay-v0.7.0-debug.apk` e `nkote-v0.8.0-debug.apk`) numa pasta local do computador, fora do repositório, para o roteiro.
+
+**Pendências:** o teste no celular é seu (`docs/roteiro-teste-v0.8.md` e `docs/roteiro-teste-profundo.md`). Ficam para depois: o logo novo (v0.8.x) e o endereço da política de privacidade.
 
 **Problemas encontrados:**
 - Início completa (#72): o `InicioV05Test` (v0.5) conferia que o texto "R$ 400,00" aparecia uma vez só; agora o devido do cartão aparece também no bloco Cartões. Mudança mínima: conferir que o texto existe (1 linha).

@@ -4,6 +4,37 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.8.0] - 2026-11-24
+
+> ⚠️ **Antes de instalar, gere um backup no NK Pay (Mais → Backup e restauração) e guarde o arquivo fora do celular.**
+> **O app agora se chama NKote e é instalado como um app novo**, ao lado do NK Pay (o identificador mudou para `com.hkawzz.nkote`). Ele **não** instala por cima e começa vazio; os seus dados passam pelo backup:
+> 1. No **NK Pay**, faça um backup (arquivo `.nkpay`) e guarde-o fora do celular.
+> 2. Instale o **`nkote-v0.8.0.apk`**. Ele aparece como "NKote", ao lado do NK Pay.
+> 3. No NKote, **Mais → Backup → Restaurar de um arquivo** e escolha o `.nkpay`. O banco é atualizado (versão 7) durante a restauração.
+> 4. **Confira** saldos, contas, cartões, empréstimos e A pagar com o NK Pay ao lado.
+> 5. Só então **desinstale o NK Pay**.
+>
+> Sugestão: teste antes no app de debug, com uma cópia dos dados (`docs/roteiro-teste-v0.8.md`).
+
+**NKote**: caixinhas de verdade, saldo sem cheque especial, Início completa e backup automático.
+
+### Adicionado
+- **Caixinhas:** cada objetivo tem a sua caixinha, uma conta de dinheiro seu separada. **Guardar** e **retirar** são transferências entre a conta e a caixinha (o Saldo total não muda); **mover** entre caixinhas; **rendimento** é uma entrada (categoria Rendimentos). A caixinha **não** é meio de pagamento: não aparece para lançar despesa nem para pagar nada.
+- **Início completa:** abaixo do card principal, só quando há conteúdo: Próximos vencimentos (7 dias e atrasados, com atalho para pagar), Cartões (devido e próxima fatura), Caixinhas (até 3) e A receber.
+- **Backup automático** (Mais → Backup): escolha uma pasta (pode ser do Google Drive) e a frequência (Diário, padrão; Semanal; Mensal). O app guarda os **7 mais recentes** da série automática e **nunca** apaga os backups feitos à mão. Mostra a data e o resultado do último, tem "Fazer agora" e avisa na Início se falhar. Em Samsung, libere o NKote da economia de bateria.
+- **Excluir pela aba Movimentações** um lançamento que pertence a um cartão, empréstimo, caixinha ou conta a pagar explica o motivo e leva à tela certa. A recusa de excluir uma compra com pagamentos lista cada um, com "Desfazer".
+- **Mais → Sobre:** política de privacidade (texto provisório) e e-mail de suporte.
+- **Release:** além do APK, um **AAB** assinado com a mesma chave (para a Play).
+
+### Mudado
+- **Sem cheque especial:** nenhuma saída pode deixar uma conta própria, de benefício ou caixinha negativa. Ex.: "Saldo insuficiente no Pix (R$ 40,00). Registre a entrada antes ou escolha outra conta." Vale para despesas, transferências, pagamentos, empréstimos, guardar, editar, excluir e desfazer.
+- **Saldo total** = contas próprias + caixinhas; **Guardado** = soma das caixinhas.
+- **Objetivos da v0.7 viram caixinhas zeradas:** como na v0.7 o dinheiro nunca saiu das contas, os saldos continuam iguais; o histórico antigo fica só para leitura, e uma mensagem explica isso uma vez.
+- Backups novos terminam em **`.nkote`**; os `.nkpay` continuam sendo aceitos.
+
+### Removido
+- O **ajuste** do valor guardado e o aviso de "guardado maior que o saldo" (com caixinhas de verdade, não acontecem mais).
+
 ## [0.7.0] - 2026-11-23
 
 > ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
