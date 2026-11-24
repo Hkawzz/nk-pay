@@ -412,12 +412,14 @@ private fun SecaoEmprestimos(r: com.hkawzz.nkote.dominio.ResumoDeEmprestimos) {
 @Composable
 private fun SecaoObjetivos(vo: com.hkawzz.nkote.dominio.VisaoObjetivos, periodo: Periodo) {
     if (vo.objetivos.isEmpty()) return
-    Titulo("Objetivos", "Reservas sobre o seu dinheiro próprio. Não são entrada, saída nem despesa.", ChaveAjuda.ANALISES_OBJETIVOS)
+    Titulo("Objetivos", "As caixinhas dos objetivos. Guardar e retirar não são entrada, saída nem despesa; rendimento é receita.", ChaveAjuda.ANALISES_OBJETIVOS)
     NkCard {
         Column(Modifier.padding(Espaco.m), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
             LinhaValor("Guardado agora", vo.totalGuardado, MaterialTheme.colorScheme.onSurface)
             LinhaValor("Guardado no período", vo.guardadoNoPeriodo(periodo), Lilas)
             LinhaValor("Retirado no período", vo.retiradoNoPeriodo(periodo), MaterialTheme.colorScheme.onSurfaceVariant)
+            // v0.8 (R2): rendimento é receita (entra nas entradas e no fluxo).
+            LinhaValor("Rendimentos no período", vo.rendimentosNoPeriodo(periodo), VerdeEntrada)
             NkDivisor()
             for (s in vo.ativos + vo.encerrados) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
