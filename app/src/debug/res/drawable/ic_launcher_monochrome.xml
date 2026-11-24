@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App de debug: camada monocromática com o selo DEBUG. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- O desenho original tem 120 unidades; 0,55 x 120 = 66 dp, a zona segura do ícone adaptável. -->
+    <group android:translateX="21" android:translateY="21" android:scaleX="0.55" android:scaleY="0.55">
+        <group android:pivotX="60" android:pivotY="62" android:rotation="-8">
+            <path
+                android:pathData="M26,30 H84 L96,42 V98 H26 Z"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="5"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M84,30 V42 H96 Z"
+                android:fillColor="#FF000000" />
+            <path
+                android:pathData="M40,22 V36 M54,22 V36 M68,22 V36"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="6"
+                android:strokeLineCap="round" />
+            <path
+                android:pathData="M38,80 V52 L52,74 V52"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="8"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M62,52 V80 M80,52 L64,66 L82,80"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="8"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M38,90 H70"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="5"
+                android:strokeLineCap="round" />
+        </group>    </group>
+    <!-- Selo DEBUG em uma cor: contorno da pílula e letras. -->
+    <path
+        android:pathData="M43,74 H65 A5,5 0 0 1 65,84 H43 A5,5 0 0 1 43,74 Z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.2" />
+    <path
+        android:pathData="M40.8,76 V82 H42.3 Q44.8,82 44.8,79 Q44.8,76 42.3,76 Z M50.4,76 H46.4 V82 H50.4 M46.4,79 H49.6 M52,76 V82 H54.8 Q56,82 56,80.5 Q56,79 54.6,79 H52 M52,76 H54.4 Q55.6,76 55.6,77.5 Q55.6,79 54.4,79 M57.6,76 V80 Q57.6,82 59.6,82 Q61.6,82 61.6,80 V76 M67.2,77 Q66.6,76 65.2,76 Q63.2,76 63.2,79 Q63.2,82 65.2,82 Q67.2,82 67.2,80 V79.4 H65.4"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

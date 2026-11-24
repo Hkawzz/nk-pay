@@ -4,6 +4,18 @@ Todas as mudanças relevantes de cada versão. Formato inspirado em [Keep a Chan
 
 As notas de cada Release do GitHub são tiradas automaticamente da seção da versão correspondente.
 
+## [0.8.1] - 2026-11-24
+
+> ⚠️ **Antes de atualizar, gere um backup em Mais → Backup e guarde o arquivo fora do celular.**
+> Esta versão instala **por cima do NKote 0.8.0** (mesma assinatura) e não mexe no banco de dados. Se você ainda usa o NK Pay, siga primeiro os passos da 0.8.0.
+
+**Logo novo do NKote.**
+
+### Mudado
+- **Ícone novo** (bloco de notas com o monograma NK): ícone adaptável com frente, fundo e camada monocromática (ícones temáticos do Android 13+). O app de debug ganha um selo **DEBUG** para não ser confundido com o principal.
+- **Mais → Sobre** mostra a assinatura do logo.
+- O ícone de 512 px para a Play está em `docs/loja/`.
+
 ## [0.8.0] - 2026-11-24
 
 > ⚠️ **Antes de instalar, gere um backup no NK Pay (Mais → Backup e restauração) e guarde o arquivo fora do celular.**
