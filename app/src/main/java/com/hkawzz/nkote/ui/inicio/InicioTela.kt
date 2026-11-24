@@ -448,7 +448,7 @@ private fun BlocosDaInicio(
                 if (i > 0) com.hkawzz.nkote.ui.componentes.NkDivisor()
                 NkListItem(
                     titulo = x.titulo,
-                    subtitulo = if (x.atrasado) "Atrasada · venceu ${com.hkawzz.nkote.ui.Formatos.data(x.vencimento)}" else "Vence ${com.hkawzz.nkote.ui.Formatos.data(x.vencimento)}",
+                    subtitulo = if (x.atrasado) "Atrasada · ${com.hkawzz.nkote.ui.Formatos.venceuHa(x.vencimento, hoje)}" else "Vence ${com.hkawzz.nkote.ui.Formatos.data(x.vencimento)}",
                     corSubtitulo = if (x.atrasado) RosaDespesa else MaterialTheme.colorScheme.onSurfaceVariant,
                     fim = { com.hkawzz.nkote.ui.componentes.NkValor(x.valor) },
                     aoClicar = { aoAbrirVencimento(x.destino) },

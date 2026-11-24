@@ -97,11 +97,18 @@ private fun iconeDoStatus(s: StatusObrigacao) = when (s) {
 @Composable
 fun LinhaObrigacao(s: SituacaoObrigacao, aoClicar: () -> Unit, mostrarMes: Boolean = false) {
     val o = s.obrigacao
-    val vence = o.vencimento?.let { "Vence ${Formatos.data(it)}" } ?: "Sem vencimento"
-    val mes = if (mostrarMes) o.mesReferencia?.let { " · ref. %02d/%d".format(it.monthValue, it.year) } ?: "" else ""
+    val hoje = LocalContainer.current.relogio.hoje()
+    // v0.9 (item 4): atrasada mostra a data e "venceu há X dias" em vermelho, no lugar do "ref.".
+    val atrasada = s.status == StatusObrigacao.ATRASADA
+    val vence = when {
+        atrasada -> "${Formatos.data(o.vencimento!!)} · ${Formatos.venceuHa(o.vencimento, hoje)}"
+        else -> o.vencimento?.let { "Vence ${Formatos.data(it)}" } ?: "Sem vencimento"
+    }
+    val mes = if (mostrarMes && !atrasada) o.mesReferencia?.let { " · ref. %02d/%d".format(it.monthValue, it.year) } ?: "" else ""
     NkListItem(
         titulo = o.descricao,
         subtitulo = "$vence$mes · ${o.origem.rotulo}",
+        corSubtitulo = if (atrasada) RosaDespesa else MaterialTheme.colorScheme.onSurfaceVariant,
         inicio = { NkIconeRedondo(iconeDoStatus(s.status), corDoStatus(s.status)) },
         fim = {
             Column(horizontalAlignment = Alignment.End) {
@@ -111,6 +118,48 @@ fun LinhaObrigacao(s: SituacaoObrigacao, aoClicar: () -> Unit, mostrarMes: Boole
                     NkValor(s.restante)
                 }
                 Text(s.status.rotulo, style = MaterialTheme.typography.labelMedium, color = corDoStatus(s.status))
+            }
+        },
+        aoClicar = aoClicar,
+    )
+}
+
+/** Uma fatura (ou mês de crediário) em A pagar. v0.9 (item 4): atrasada mostra "venceu há X dias" em vermelho. */
+@Composable
+private fun LinhaFaturaAPagar(c: com.hkawzz.nkote.dominio.Conta, f: com.hkawzz.nkote.dominio.Fatura, mesVisto: YearMonth, hoje: java.time.LocalDate, aoClicar: () -> Unit) {
+    val atrasada = f.status == StatusObrigacao.ATRASADA
+    NkListItem(
+        titulo = (if (c.natureza == com.hkawzz.nkote.dominio.Natureza.CARTAO) "Fatura " else "Parcelas ") + c.nome,
+        subtitulo = if (atrasada) {
+            "${f.vencimento?.let { Formatos.data(it) }} · ${Formatos.venceuHa(f.vencimento, hoje)}"
+        } else {
+            (f.vencimento?.let { "Vence ${Formatos.data(it)}" } ?: "") +
+                (if (f.mes != mesVisto) " · ref. %02d/%d".format(f.mes.monthValue, f.mes.year) else "")
+        },
+        corSubtitulo = if (atrasada) RosaDespesa else MaterialTheme.colorScheme.onSurfaceVariant,
+        inicio = { NkIconeRedondo(iconeDoStatus(f.status), corDoStatus(f.status)) },
+        fim = {
+            Column(horizontalAlignment = Alignment.End) {
+                if (f.restante > 0) NkValor(f.restante) else NkValor(f.total, cor = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(f.status.rotulo, style = MaterialTheme.typography.labelMedium, color = corDoStatus(f.status))
+            }
+        },
+        aoClicar = aoClicar,
+    )
+}
+
+/** Uma parcela de empréstimo recebido em A pagar. */
+@Composable
+private fun LinhaParcelaAPagar(p: com.hkawzz.nkote.dominio.ParcelaEmprestimo, nomeDaConta: String?, aoClicar: () -> Unit) {
+    NkListItem(
+        titulo = p.obrigacao.descricao,
+        subtitulo = com.hkawzz.nkote.ui.emprestimos.rotuloDaParcela(p) + (nomeDaConta?.let { " · $it" } ?: ""),
+        corSubtitulo = if (p.atrasada) RosaDespesa else corDoStatus(p.situacao.status),
+        inicio = { NkIconeRedondo(iconeDoStatus(if (p.atrasada) StatusObrigacao.ATRASADA else p.situacao.status), if (p.atrasada) RosaDespesa else corDoStatus(p.situacao.status)) },
+        fim = {
+            Column(horizontalAlignment = Alignment.End) {
+                if (p.restante > 0) NkValor(p.restante) else NkValor(p.obrigacao.valorPrevisto, cor = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (p.atrasada) Text(StatusObrigacao.ATRASADA.rotulo, style = MaterialTheme.typography.labelMedium, color = RosaDespesa)
             }
         },
         aoClicar = aoClicar,
@@ -219,11 +268,33 @@ fun APagarTela(
             }
             (aviso ?: avisoExterno)?.let { item { NkTextoAjuda(it) } }
 
-            if (anteriores.isNotEmpty()) {
+            // v0.9 (item 4): tudo o que venceu e falta pagar fica junto, no topo, da mais antiga
+            // para a mais nova. As outras seções mostram só o que ainda não venceu.
+            val obrigacoesAtrasadas = (anteriores + doMes).filter { it.status == StatusObrigacao.ATRASADA }.distinctBy { it.obrigacao.id }
+            val faturasAtrasadas = faturas.filter { it.second.status == StatusObrigacao.ATRASADA }
+            val parcelasAtrasadas = parcelasEmprestimo.filter { it.second.atrasada }
+            val atrasadas: List<Pair<java.time.LocalDate, @Composable () -> Unit>> =
+                obrigacoesAtrasadas.map { s -> s.obrigacao.vencimento!! to @Composable { LinhaObrigacao(s, { aoAbrir(s.obrigacao.id) }) } } +
+                    faturasAtrasadas.map { (c, f) -> f.vencimento!! to @Composable { LinhaFaturaAPagar(c, f, vm.mes, hoje) { aoAbrirFatura(c.id, f.mes) } } } +
+                    parcelasAtrasadas.map { (s, p) -> p.obrigacao.vencimento!! to @Composable { LinhaParcelaAPagar(p, emprestimos?.conta(s.emprestimo.contaId)?.nome) { aoAbrirParcelaEmprestimo(p.obrigacao.id) } } }
+            if (atrasadas.isNotEmpty()) {
+                item { NkCabecalhoSecao("Atrasadas") }
+                item {
+                    NkCard {
+                        atrasadas.sortedBy { it.first }.forEachIndexed { i, (_, linha) ->
+                            if (i > 0) NkDivisor()
+                            linha()
+                        }
+                    }
+                }
+            }
+
+            val anterioresEmDia = anteriores.filter { it.status != StatusObrigacao.ATRASADA }
+            if (anterioresEmDia.isNotEmpty()) {
                 item { NkCabecalhoSecao("Pendentes de meses anteriores") }
                 item {
                     NkCard {
-                        anteriores.forEachIndexed { i, s ->
+                        anterioresEmDia.forEachIndexed { i, s ->
                             if (i > 0) NkDivisor()
                             LinhaObrigacao(s, { aoAbrir(s.obrigacao.id) }, mostrarMes = true)
                         }
@@ -231,50 +302,34 @@ fun APagarTela(
                 }
             }
 
-            if (faturas.isNotEmpty()) {
+            val faturasEmDia = faturas - faturasAtrasadas.toSet()
+            if (faturasEmDia.isNotEmpty()) {
                 item { NkCabecalhoSecao("Cartões e crediários") }
                 item {
                     NkCard {
-                        faturas.forEachIndexed { i, (c, f) ->
+                        faturasEmDia.forEachIndexed { i, (c, f) ->
                             if (i > 0) NkDivisor()
-                            NkListItem(
-                                titulo = (if (c.natureza == com.hkawzz.nkote.dominio.Natureza.CARTAO) "Fatura " else "Parcelas ") + c.nome,
-                                subtitulo = (f.vencimento?.let { "Vence ${Formatos.data(it)}" } ?: "") +
-                                    (if (f.mes != vm.mes) " · ref. %02d/%d".format(f.mes.monthValue, f.mes.year) else ""),
-                                inicio = { NkIconeRedondo(iconeDoStatus(f.status), corDoStatus(f.status)) },
-                                fim = {
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        if (f.restante > 0) NkValor(f.restante) else NkValor(f.total, cor = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(f.status.rotulo, style = MaterialTheme.typography.labelMedium, color = corDoStatus(f.status))
-                                    }
-                                },
-                                aoClicar = { aoAbrirFatura(c.id, f.mes) },
-                            )
+                            LinhaFaturaAPagar(c, f, vm.mes, hoje) { aoAbrirFatura(c.id, f.mes) }
                         }
                     }
                 }
             }
 
-            if (parcelasEmprestimo.isNotEmpty()) {
+            val parcelasEmDia = parcelasEmprestimo - parcelasAtrasadas.toSet()
+            if (parcelasEmDia.isNotEmpty()) {
                 item { NkCabecalhoSecao("Empréstimos a pagar") }
                 item {
                     NkCard {
-                        parcelasEmprestimo.forEachIndexed { i, (s, p) ->
+                        parcelasEmDia.forEachIndexed { i, (s, p) ->
                             if (i > 0) NkDivisor()
-                            NkListItem(
-                                titulo = p.obrigacao.descricao,
-                                subtitulo = com.hkawzz.nkote.ui.emprestimos.rotuloDaParcela(p) + (emprestimos?.conta(s.emprestimo.contaId)?.let { " · " + it.nome } ?: ""),
-                                corSubtitulo = if (p.atrasada) RosaDespesa else corDoStatus(p.situacao.status),
-                                inicio = { NkIconeRedondo(iconeDoStatus(if (p.atrasada) StatusObrigacao.ATRASADA else p.situacao.status), if (p.atrasada) RosaDespesa else corDoStatus(p.situacao.status)) },
-                                fim = { if (p.restante > 0) NkValor(p.restante) else NkValor(p.obrigacao.valorPrevisto, cor = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                aoClicar = { aoAbrirParcelaEmprestimo(p.obrigacao.id) },
-                            )
+                            LinhaParcelaAPagar(p, emprestimos?.conta(s.emprestimo.contaId)?.nome) { aoAbrirParcelaEmprestimo(p.obrigacao.id) }
                         }
                     }
                 }
             }
 
-            item { NkCabecalhoSecao("Deste mês") }
+            val doMesEmDia = doMes.filter { it.status != StatusObrigacao.ATRASADA }
+            if (doMes.isEmpty() || doMesEmDia.isNotEmpty()) item { NkCabecalhoSecao("Deste mês") }
             if (doMes.isEmpty()) {
                 item {
                     NkEstadoVazio(
@@ -284,10 +339,10 @@ fun APagarTela(
                         modifier = Modifier.heightIn(min = 240.dp).height(280.dp),
                     )
                 }
-            } else {
+            } else if (doMesEmDia.isNotEmpty()) {
                 item {
                     NkCard {
-                        doMes.forEachIndexed { i, s ->
+                        doMesEmDia.forEachIndexed { i, s ->
                             if (i > 0) NkDivisor()
                             LinhaObrigacao(s, { aoAbrir(s.obrigacao.id) })
                         }

@@ -31,17 +31,21 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | # | Etapa | O que entrou | Estado |
 |---|---|---|---|
 | [#77](https://github.com/Hkawzz/nkote/pull/77) | Início (itens 1, 2, 3 e 5) | Cartões e Caixinhas saíram da Início; grades adaptativas (contas até 2 por linha, benefícios até 3, a linha que sobra ocupa a largura toda); "Editar ordem" das contas e dos benefícios (arrastar ou setas), com `conta.ordem` (banco 8), auditoria e backup | ✅ |
+| [#78](https://github.com/Hkawzz/nkote/pull/78) | Atrasos (itens 4 e 6) | Vencida e não paga = "Atrasada" em vermelho, com a data e "venceu há X dias" ("venceu ontem") no lugar do "ref."; em A pagar, uma seção **Atrasadas** no topo junta contas, faturas e parcelas de empréstimo, da mais antiga para a mais nova; mesmo texto na Início, no cartão, na parcela e no detalhe. Cadastro e edição da conta fixa: "Já tenho uma conta deste tipo vencida e não paga" (data e valor), que entra na hora como atrasada, sem nunca duplicar | ✅ |
 
 **Decisões tomadas sozinho**
 - **Arrastar sem biblioteca** (ADR 0035): alça com o gesto do próprio Compose, mais setas de subir e descer. Evita uma dependência nova para uma lista curta, e as setas servem para acessibilidade e testes.
 - **Ordem 0 = "ainda não reordenada"**: a migração não reescreve nenhuma linha (todas ficam 0, e o desempate pelo nome mantém a ordem de hoje). Depois que você salva uma ordem, conta nova entra no fim; antes disso, continua na posição alfabética. O teste antigo `InicioV2Test` mostrou que mandar sempre para o fim mudaria a ordem de quem nunca reordenou.
 - **Contas e benefícios se reordenam na mesma tela**, cada grupo separado (era trivial reaproveitar).
 - **O limite de cards antes de "Ver todas" continua** (4 contas, 3 benefícios); a grade adaptativa vale para o que está visível.
+- **Reprodução do item 4:** o domínio já calculava "Atrasada" para o que venceu; o que confundia era a tela: as vencidas ficavam espalhadas em "Pendentes de meses anteriores", "Cartões e crediários" e "Deste mês", com o "ref. MM/AAAA" e sem dizer há quanto tempo. Por isso a seção **Atrasadas** no topo junta tudo, e as outras seções mostram só o que ainda não venceu. Status e dias são sempre calculados com o "hoje" do app.
+- **Conta fixa já vencida:** a data padrão é ontem e o valor padrão é o da conta fixa. A data precisa ser anterior a hoje. Se já existir a ocorrência daquele mês, o app recusa (uma por conta fixa por mês). Na edição, a ocorrência é lançada depois de salvar as alterações.
 
 **Pendências:** nenhuma até aqui.
 
 **Problemas encontrados:**
 - Início (#77): os testes de migração antigos (`MigracaoTest`, `MigracaoV3Test` a `MigracaoV7Test`) comparam as linhas do banco antigo com o banco migrado até a versão atual, e a coluna nova `conta.ordem` aparecia na comparação. Mudança mínima: a foto das linhas ignora as colunas acrescentadas depois (`COLUNAS_NOVAS`, conferidas no `MigracaoV8Test`); no `MigracaoV7Test`, 4 linhas trocaram a versão fixa 7 por `NkPayBanco.VERSAO`. Nenhuma regra testada mudou. No `InicioCompletaUiTest` (v0.8), 2 linhas que esperavam os blocos Cartões e Caixinhas agora conferem que eles **não** aparecem (item 1).
+- Atrasos (#78): o `APagarTest` (v0.3) esperava a seção "Pendentes de meses anteriores" para uma conta vencida; agora ela fica em "Atrasadas" (1 linha). O `ParcelaEmprestimoUiTest` (v0.5) esperava "vencida há 6 dias"; agora o texto é o mesmo de A pagar, "venceu há 6 dias" (1 linha). Nenhuma regra testada mudou.
 
 ---
 

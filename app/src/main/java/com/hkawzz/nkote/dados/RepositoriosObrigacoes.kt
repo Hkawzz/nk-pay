@@ -29,10 +29,15 @@ class ContaFixaRepositorio(
     private suspend fun contaPadraoInvalida(id: String?): Boolean =
         id != null && banco.contaDao().buscar(id)?.let { com.hkawzz.nkote.dominio.Natureza.valueOf(it.natureza).ehMeioDePagamento } != true
 
-    suspend fun criar(f: ContaFixa): Resultado<String> {
+    /**
+     * Cria a conta fixa. v0.9 (item 6): com [atrasada], cria junto a ocorrência vencida e não
+     * paga (mês de referência = mês do vencimento), que aparece na hora em A pagar como atrasada.
+     */
+    suspend fun criar(f: ContaFixa, atrasada: OcorrenciaAtrasada? = null): Resultado<String> {
         val limpa = f.copy(nome = f.nome.trim())
         Validacao.contaFixa(limpa)?.let { return Resultado.Falha(it) }
         if (contaPadraoInvalida(limpa.contaPadraoId)) return Resultado.Falha("Escolha uma conta própria ou de benefício como conta padrão.")
+        atrasada?.let { validarAtrasada(it) }?.let { return Resultado.Falha(it) }
         val agora = relogio.agora()
         val nova = ContaFixaEntidade(
             id = relogio.novoId(), nome = limpa.nome, valorPadraoCentavos = limpa.valorPadrao,
@@ -40,14 +45,59 @@ class ContaFixaRepositorio(
             arquivadaEm = null, criadoEm = agora, atualizadoEm = agora, excluidoEm = null,
         )
         banco.withTransaction {
+            val grupo = relogio.novoId()
             dao.inserir(nova)
             auditor.registrar(
-                relogio.novoId(), Operacao.CRIACAO, Auditor.CONTA_FIXA, nova.id,
+                grupo, Operacao.CRIACAO, Auditor.CONTA_FIXA, nova.id,
                 "Conta fixa “${nova.nome}” criada (${Dinheiro.formatar(nova.valorPadraoCentavos)})",
                 ContaFixaEntidade.serializer(), null, nova,
             )
+            if (atrasada != null) inserirAtrasada(nova, atrasada, grupo)
         }
         return Resultado.Sucesso(nova.id)
+    }
+
+    /** v0.9 (item 6): a ocorrência vencida e não paga informada no cadastro ou na edição. */
+    data class OcorrenciaAtrasada(val vencimento: java.time.LocalDate, val valor: Long)
+
+    private fun validarAtrasada(a: OcorrenciaAtrasada): String? = when {
+        !a.vencimento.isBefore(relogio.hoje()) -> "A data da conta vencida precisa ser anterior a hoje."
+        a.valor <= 0 -> "Informe o valor da conta vencida."
+        else -> null
+    }
+
+    /** Insere a ocorrência atrasada. Uma por conta fixa por mês (a regra de sempre). */
+    private suspend fun inserirAtrasada(fixa: ContaFixaEntidade, a: OcorrenciaAtrasada, grupo: String): Resultado<String> {
+        val obrigacaoDao = banco.obrigacaoDao()
+        val mes = YearMonth.from(a.vencimento)
+        if (obrigacaoDao.contarDaFixaNoMes(fixa.id, mes.toString()) > 0) {
+            return Resultado.Falha("Esta conta fixa já foi lançada em ${"%02d/%d".format(mes.monthValue, mes.year)}.")
+        }
+        val agora = relogio.agora()
+        val o = ObrigacaoEntidade(
+            id = relogio.novoId(), origem = OrigemObrigacao.FIXA.name, descricao = fixa.nome,
+            valorPrevistoCentavos = a.valor, vencimento = a.vencimento.toString(), mesReferencia = mes.toString(),
+            contaFixaId = fixa.id, categoriaId = fixa.categoriaId,
+            contaCreditoId = null, compraId = null, numeroParcela = null, totalParcelas = null,
+            canceladaEm = null, criadoEm = agora, atualizadoEm = agora, excluidoEm = null,
+        )
+        obrigacaoDao.inserir(o)
+        auditor.registrar(
+            grupo, Operacao.CRIACAO, Auditor.OBRIGACAO, o.id,
+            "Conta fixa “${fixa.nome}” vencida em ${a.vencimento} e não paga lançada (${Dinheiro.formatar(a.valor)})",
+            ObrigacaoEntidade.serializer(), null, o,
+        )
+        return Resultado.Sucesso(o.id)
+    }
+
+    /** v0.9 (item 6): na edição, lança a ocorrência vencida e não paga de uma conta fixa que já existe. */
+    suspend fun lancarAtrasada(fixaId: String, a: OcorrenciaAtrasada): Resultado<String> {
+        validarAtrasada(a)?.let { return Resultado.Falha(it) }
+        return banco.withTransaction {
+            val fixa = dao.buscar(fixaId)?.takeIf { it.excluidoEm == null }
+                ?: return@withTransaction Resultado.Falha("Conta fixa não encontrada.")
+            inserirAtrasada(fixa, a, relogio.novoId())
+        }
     }
 
     /** Muda o modelo. As obrigações já lançadas não mudam (guardam o valor de quando foram lançadas). */

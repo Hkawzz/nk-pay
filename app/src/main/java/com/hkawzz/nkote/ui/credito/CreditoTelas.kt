@@ -261,7 +261,9 @@ fun ContaCreditoFormTela(id: String?, aoVoltar: () -> Unit) {
 fun LinhaFatura(f: Fatura, aoClicar: (() -> Unit)?) {
     val rotulo = when (f.status) {
         StatusObrigacao.QUITADA -> "Paga"
-        StatusObrigacao.ATRASADA -> "Atrasada · venceu ${f.vencimento?.let { Formatos.data(it) }}"
+        // v0.9 (item 4): "venceu há X dias".
+        StatusObrigacao.ATRASADA -> "Atrasada · ${f.vencimento?.let { Formatos.data(it) }} · " +
+            (Formatos.venceuHa(f.vencimento, com.hkawzz.nkote.ui.LocalContainer.current.relogio.hoje()) ?: "")
         StatusObrigacao.PARCIAL -> "Em parte · vence ${f.vencimento?.let { Formatos.data(it) }}"
         StatusObrigacao.PENDENTE -> "Vence ${f.vencimento?.let { Formatos.data(it) }}"
     }
