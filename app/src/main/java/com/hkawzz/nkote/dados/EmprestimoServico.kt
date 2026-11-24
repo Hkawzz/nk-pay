@@ -82,14 +82,14 @@ class EmprestimoServico(
         validar(n)?.let { return Resultado.Falha(it) }
         val total = n.parcelas.sumOf { it.second }
         val juros = if (n.anteriorAoApp) 0 else total - n.valorOriginal
-        return banco.withTransaction {
+        return banco.transacaoConferida {
             val propria = if (n.anteriorAoApp) null else contaDao.buscar(n.contaPropriaId!!)?.takeIf { it.excluidoEm == null && it.natureza == Natureza.PROPRIO.name }
-                ?: return@withTransaction Resultado.Falha("A conta escolhida precisa ser de dinheiro próprio.")
+                ?: return@transacaoConferida Resultado.Falha("A conta escolhida precisa ser de dinheiro próprio.")
             if (n.categoriaId != null && categoriaDao.buscar(n.categoriaId)?.takeIf { it.excluidoEm == null } == null) {
-                return@withTransaction Resultado.Falha("Categoria não encontrada.")
+                return@transacaoConferida Resultado.Falha("Categoria não encontrada.")
             }
             val encargos = if (n.tipo == TipoEmprestimo.RECEBIDO && juros > 0) {
-                categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) ?: return@withTransaction Resultado.Falha("Categoria “Encargos financeiros” não encontrada.")
+                categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) ?: return@transacaoConferida Resultado.Falha("Categoria “Encargos financeiros” não encontrada.")
             } else null
 
             val grupo = relogio.novoId()
@@ -99,7 +99,7 @@ class EmprestimoServico(
             // Pessoa: a conta existente (da natureza certa) ou uma nova.
             val pessoa = if (n.contaPessoaId != null) {
                 contaDao.buscar(n.contaPessoaId)?.takeIf { it.excluidoEm == null && it.natureza == n.tipo.natureza.name }
-                    ?: return@withTransaction Resultado.Falha("Pessoa não encontrada.")
+                    ?: return@transacaoConferida Resultado.Falha("Pessoa não encontrada.")
             } else {
                 val nova = ContaEntidade(
                     relogio.novoId(), n.nomeNovaPessoa!!.trim().take(60), n.tipo.natureza.name, null, 0, dataTexto, null, null,
@@ -165,11 +165,11 @@ class EmprestimoServico(
     }
 
     /** 6E.9: exclui o empréstimo e tudo o que ele criou. Só sem nenhum pagamento ou recebimento. */
-    suspend fun excluir(id: String): Resultado<Unit> = banco.withTransaction {
-        val emp = emprestimoDao.buscar(id)?.takeIf { it.excluidoEm == null } ?: return@withTransaction Resultado.Falha("Empréstimo não encontrado.")
+    suspend fun excluir(id: String): Resultado<Unit> = banco.transacaoConferida {
+        val emp = emprestimoDao.buscar(id)?.takeIf { it.excluidoEm == null } ?: return@transacaoConferida Resultado.Falha("Empréstimo não encontrado.")
         val parcelas = obrigacaoDao.doEmprestimo(id)
         if (parcelas.any { pagamentoDao.validosDa(it.id).isNotEmpty() }) {
-            return@withTransaction Resultado.Falha("Este empréstimo já tem pagamento ou recebimento. Desfaça-os antes de excluir.")
+            return@transacaoConferida Resultado.Falha("Este empréstimo já tem pagamento ou recebimento. Desfaça-os antes de excluir.")
         }
         val grupo = relogio.novoId()
         val agora = relogio.agora()
