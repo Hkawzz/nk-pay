@@ -45,7 +45,7 @@ fun versionCodeFrom(version: String): Int {
 val keystoreFile: String? = System.getenv("NKPAY_KEYSTORE_FILE")
 
 android {
-    namespace = "com.nkpay.app"
+    namespace = "com.hkawzz.nkote"
     // As bibliotecas do Compose atuais exigem compilar contra o Android 37.2 (API 37, versão menor 2).
     compileSdk {
         version = release(37) {
@@ -55,7 +55,8 @@ android {
 
     defaultConfig {
         // ATENÇÃO: o applicationId é permanente. Trocar faz o celular instalar outro app.
-        applicationId = "com.nkpay.app"
+        // v0.8 (ADR 0030): trocado de com.nkpay.app para com.hkawzz.nkote, a única janela antes da Play.
+        applicationId = "com.hkawzz.nkote"
         minSdk = 26
         targetSdk = 37
         versionCode = versionCodeFrom(nkpayVersion)

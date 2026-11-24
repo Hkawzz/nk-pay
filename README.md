@@ -1,4 +1,4 @@
-# NK Pay
+# NKote
 
 App Android de finanças pessoais, feito para uso de uma única pessoa.
 
@@ -8,7 +8,7 @@ App Android de finanças pessoais, feito para uso de uma única pessoa.
 
 > Estado atual: **v0.7.0**. Tem objetivos (reservas sobre o dinheiro próprio, com o Guardado no Saldo disponível), o assistente Preparar próximo mês, compras parceladas com juros (os juros viram despesa quando cada parcela é paga), parcelas antecipadas antes do app, excluir e arquivar cartões e pessoas, empréstimos (recebidos e concedidos, com juros), a ajuda "?" nos indicadores, o Resumo da Início pelo dinheiro que entra e sai, cartões e crediários (compras parceladas, faturas, compra anterior ao app), categorias com ícone e cor, a nova tela Início, Análises, contas a pagar (contas fixas, contas avulsas e o botão Pagar, com pagamentos parciais, descontos e encargos), contas e carteiras (dinheiro próprio e benefícios), categorias, os 4 tipos de movimentação, a tela Início com o Disponível, o Registro de alterações e **backup e restauração** (Mais → Backup e restauração). O histórico de versões está em [`CHANGELOG.md`](CHANGELOG.md).
 >
-> **Faça backups:** os dados ficam só no celular. Salve o arquivo `.nkpay` em um lugar fora dele (por exemplo, o Google Drive). Para trocar de celular, instale o app no novo e use "Restaurar de um arquivo".
+> **Faça backups:** os dados ficam só no celular. Salve o arquivo `.nkote` em um lugar fora dele (por exemplo, o Google Drive). Para trocar de celular, instale o app no novo e use "Restaurar de um arquivo".
 
 ---
 
@@ -19,8 +19,8 @@ O app não está na Play Store. Cada versão é publicada como um arquivo **APK*
 ### Primeira instalação
 
 1. **No celular**, abra o navegador (Chrome, por exemplo) e entre em <https://github.com>. **Faça login** na sua conta: o repositório é privado, então sem login a página aparece como "não encontrada".
-2. Abra <https://github.com/Hkawzz/nk-pay/releases>. A versão mais nova fica no topo.
-3. Em **Assets**, toque em `nk-pay-vX.Y.Z.apk` (por exemplo, `nk-pay-v0.0.1.apk`). O download começa.
+2. Abra <https://github.com/Hkawzz/nkote/releases>. A versão mais nova fica no topo.
+3. Em **Assets**, toque em `nkote-vX.Y.Z.apk` (por exemplo, `nkote-v0.8.0.apk`). O download começa.
    - Se o Chrome avisar que o arquivo "pode ser perigoso", toque em **Baixar mesmo assim**. O aviso aparece para todo APK baixado fora da Play Store.
 4. Quando o download terminar, toque em **Abrir** na notificação (ou abra o app **Arquivos** → **Downloads** e toque no APK).
 5. Na primeira vez, o Android bloqueia a instalação e mostra **"Por segurança, seu telefone não pode instalar apps desconhecidos desta fonte"**:
@@ -31,7 +31,7 @@ O app não está na Play Store. Cada versão é publicada como um arquivo **APK*
    - Toque em **Mais detalhes** → **Instalar mesmo assim** (os nomes mudam um pouco de aparelho para aparelho).
    - Se ele oferecer **"Enviar o app para verificação"**, você pode recusar.
    - Isso é esperado: o app é assinado por você, e não por um desenvolvedor da Play Store.
-7. Pronto: o **NK Pay** aparece na lista de apps.
+7. Pronto: o **NKote** aparece na lista de apps.
 
 > Dica de segurança: depois de instalar, você pode desligar de novo o "Permitir desta fonte". Na próxima atualização, o Android pede a permissão outra vez.
 
@@ -64,20 +64,20 @@ Requisitos: JDK 21 e Android SDK (plataforma `android-37.2`), com as variáveis 
 
 Em cada PR, o CI publica as capturas de tela como o artefato **capturas-de-tela** (guardado por 3 dias): abra a execução em *Actions* e role até *Artifacts*. O APK de debug **não** é publicado pelo CI; ele é compilado localmente quando necessário.
 
-O APK de debug tem outro identificador (`com.nkpay.app.debug`) e se chama "NK Pay" também. Ele é instalado **ao lado** do app oficial, nunca por cima, para que os testes não toquem nos dados reais.
+O APK de debug tem outro identificador (`com.hkawzz.nkote.debug`) e se chama "NKote debug". Ele é instalado **ao lado** do app oficial, nunca por cima, para que os testes não toquem nos dados reais.
 
 ### Como uma versão é publicada
 
 1. O trabalho é feito em uma branch (`feat/...`) e entra na `main` por Pull Request. O workflow `ci.yml` compila e roda os testes em todo PR e em todo push na `main`.
 2. Para publicar, atualiza-se o `CHANGELOG.md` e cria-se uma tag `vX.Y.Z` na `main`.
-3. O workflow `release.yml` compila o APK de release, assina com a keystore guardada nos GitHub Secrets e cria a Release com o arquivo `nk-pay-vX.Y.Z.apk` e as notas do `CHANGELOG.md`.
+3. O workflow `release.yml` compila o APK de release, assina com a keystore guardada nos GitHub Secrets e cria a Release com o arquivo `nkote-vX.Y.Z.apk` e as notas do `CHANGELOG.md`.
 
 ---
 
 ## Estrutura
 
 ```
-app/src/main/java/com/nkpay/app/
+app/src/main/java/com/hkawzz/nkote/
   dominio/      Regras financeiras em Kotlin puro (sem Android). É o código mais testado.
   dados/        Banco (Room): tabelas, consultas e repositórios. Toda alteração grava a auditoria junto.
   ui/           Telas em Jetpack Compose, tema e navegação.

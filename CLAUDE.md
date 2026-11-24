@@ -1,4 +1,4 @@
-# NK Pay — instruções para o Claude Code
+# NKote (antes NK Pay) — instruções para o Claude Code
 
 App Android de finanças pessoais (Kotlin + Compose + Room), 100% offline, de uso pessoal. **O app está em uso com dados financeiros reais: preservar os dados é prioridade absoluta.**
 
@@ -8,7 +8,7 @@ App Android de finanças pessoais (Kotlin + Compose + Room), 100% offline, de us
 - Fluxo: branch → PR → CI verde → merge → tag `vX.Y.Z` (o `release.yml` assina e publica). A `main` sempre compila.
 - Decisões secundárias: escolha a opção mais simples e reversível e registre em `docs/decisoes/`. Pergunte ao dono só o que é difícil de desfazer (estrutura do banco, applicationId, assinatura).
 - Banco: toda mudança de esquema tem uma `Migration` explícita e um teste de migração. **Nunca** use `fallbackToDestructiveMigration`. Os esquemas ficam em `app/schemas/`.
-- Nenhum dado real (planilhas, bancos, backups `.nkpay`) entra no repositório. Os testes usam só valores fictícios.
+- Nenhum dado real (planilhas, bancos, backups `.nkote`/`.nkpay`) entra no repositório. Os testes usam só valores fictícios.
 - Material de planejamento e qualquer arquivo pessoal do dono ficam fora do repositório: nunca copie nada de lá para cá.
 
 ## Ambiente (Windows)
