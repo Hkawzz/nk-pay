@@ -175,7 +175,22 @@ val MIGRACAO_5_6 = object : Migration(5, 6) {
     }
 }
 
-val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5, MIGRACAO_5_6)
+/**
+ * 6 → 7 (v0.8, ADR 0033): `objetivo.contaCaixinhaId` vazia (os objetivos da v0.7 ganham a
+ * caixinha na conversão V3, fora da migração) e a tabela `configuracao_backup`. Nenhuma
+ * linha existente é reescrita. SQL copiado do esquema 7 exportado pelo Room.
+ */
+val MIGRACAO_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `objetivo` ADD COLUMN `contaCaixinhaId` TEXT")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `configuracao_backup` (`id` TEXT NOT NULL, `pastaUri` TEXT, `frequencia` TEXT NOT NULL, " +
+                "`ultimoEm` INTEGER, `ultimoResultado` TEXT, `ultimaMensagem` TEXT, `atualizadoEm` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        )
+    }
+}
+
+val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5, MIGRACAO_5_6, MIGRACAO_6_7)
 
 /**
  * Rede de segurança: ANTES de o Room migrar, copia o arquivo do banco (e os arquivos

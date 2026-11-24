@@ -71,6 +71,7 @@ object AparenciaSugerida {
             TipoBeneficio.VR -> Aparencia("talheres", 0xFFFB923C)
             else -> Aparencia("presente", 0xFFF472B6)
         }
+        Natureza.CAIXINHA -> Aparencia("estrela", 0xFFB39DFF)
         Natureza.CARTAO -> Aparencia("cartao", 0xFFC084FC)
         Natureza.CREDIARIO -> Aparencia("recibo", 0xFF60A5FA)
         Natureza.EMPRESTIMO_RECEBIDO -> Aparencia("banco", 0xFFFB923C)

@@ -27,6 +27,8 @@ import androidx.room.RoomDatabase
         PendenciaLevadaEntidade::class,
         // Versão 6 (v0.7): objetivos e movimentos de reserva; só tabelas novas (ADR 0028).
         ObjetivoEntidade::class, MovimentoReservaEntidade::class,
+        // Versão 7 (v0.8): objetivo ganha contaCaixinhaId; configuração do backup automático (ADR 0033).
+        ConfiguracaoBackupEntidade::class,
     ],
     version = NkPayBanco.VERSAO,
     exportSchema = true,
@@ -47,10 +49,11 @@ abstract class NkPayBanco : RoomDatabase() {
     abstract fun pendenciaLevadaDao(): PendenciaLevadaDao
     abstract fun objetivoDao(): ObjetivoDao
     abstract fun movimentoReservaDao(): MovimentoReservaDao
+    abstract fun configuracaoBackupDao(): ConfiguracaoBackupDao
 
     companion object {
         /** Versão do esquema. Também vai no manifesto de cada backup. */
-        const val VERSAO = 6
+        const val VERSAO = 7
         const val NOME_ARQUIVO = "nk-pay.db"
 
         fun criar(context: Context): NkPayBanco {

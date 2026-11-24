@@ -26,6 +26,8 @@ data class ObjetivoEntidade(
     val criadoEm: Long,
     val atualizadoEm: Long,
     val excluidoEm: Long?,
+    /** v0.8 (banco v7, ADR 0032): a conta CAIXINHA do objetivo. Vazia = objetivo da v0.7 ainda sem caixinha. */
+    val contaCaixinhaId: String? = null,
 )
 
 /**
