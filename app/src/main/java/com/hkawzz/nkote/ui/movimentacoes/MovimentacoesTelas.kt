@@ -173,7 +173,12 @@ private fun Filtros(vm: MovimentacoesViewModel, v: VisaoFinanceira) {
 
 /** Formulário de movimentação. Os campos mudam conforme o tipo escolhido. */
 @Composable
-fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Unit) {
+fun MovimentacaoFormTela(
+    id: String?,
+    contaInicial: String?,
+    aoVoltar: () -> Unit,
+    aoAbrirProtegida: (com.hkawzz.nkote.dados.DestinoProtegido) -> Unit = {},
+) {
     val container = LocalContainer.current
     val vm = nkViewModel(chave = "mov-form-$id-$contaInicial") { MovimentacaoFormViewModel(it, id, contaInicial) }
     val visao by container.visao.collectAsState()
@@ -315,7 +320,18 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
         }
     }
 
-    if (confirmarExclusao) {
+    val protecao = vm.protecao
+    if (confirmarExclusao && protecao != null) {
+        // v0.8 (D1, regra 6G.4): explica o motivo e leva à tela que resolve.
+        val destino = protecao.destino
+        DialogoConfirmacao(
+            titulo = "Não dá para excluir por aqui",
+            texto = protecao.mensagem,
+            textoConfirmar = destino?.rotuloBotao ?: "Entendi",
+            aoConfirmar = { confirmarExclusao = false; if (destino != null) aoAbrirProtegida(destino) },
+            aoCancelar = { confirmarExclusao = false },
+        )
+    } else if (confirmarExclusao) {
         DialogoConfirmacao(
             titulo = "Excluir movimentação?",
             texto = "Ela some das listas e dos saldos. O registro fica guardado no Registro de alterações.",

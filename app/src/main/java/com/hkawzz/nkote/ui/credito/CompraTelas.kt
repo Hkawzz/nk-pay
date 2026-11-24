@@ -288,6 +288,9 @@ fun CompraTela(id: String, aoVoltar: () -> Unit, aoAbrirParcela: (String) -> Uni
     val escopo = androidx.compose.runtime.rememberCoroutineScope()
     var confirmar by rememberSaveable { mutableStateOf(false) }
     var erro by rememberSaveable { mutableStateOf<String?>(null) }
+    // v0.8 (D2): o que trava a exclusão, cada um com o atalho para desfazer.
+    var travas by androidx.compose.runtime.remember { mutableStateOf<List<com.hkawzz.nkote.dados.TravaDaCompra>>(emptyList()) }
+    fun atualizarTravas() = escopo.launch { travas = container.compras.travasDaExclusao(id); if (travas.isEmpty()) erro = null }
     val compra = credito?.compra(id)
     Subtela(titulo = compra?.descricao ?: "Compra", aoVoltar = aoVoltar) { modifier ->
         val vc = credito ?: return@Subtela
@@ -327,7 +330,16 @@ fun CompraTela(id: String, aoVoltar: () -> Unit, aoAbrirParcela: (String) -> Uni
             }
             item {
                 Column(Modifier.padding(Espaco.l), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
-                    erro?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    erro?.let { Text(if (travas.isEmpty()) it else "Esta compra tem pagamentos. Desfaça antes de excluir:", color = MaterialTheme.colorScheme.error) }
+                    for (t in travas) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(t.descricao, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        androidx.compose.material3.TextButton(onClick = {
+                            escopo.launch {
+                                (container.pagamentosCredito.desfazer(t.movimentacaoId) as? Resultado.Falha)?.let { erro = it.mensagem }
+                                atualizarTravas()
+                            }
+                        }) { Text("Desfazer") }
+                    }
                     NkBotaoSecundario("Excluir compra", { confirmar = true })
                     NkTextoAjuda("Para corrigir valor ou parcelas, exclua e cadastre de novo. Só é possível enquanto nenhuma parcela foi paga.", Modifier.fillMaxWidth())
                 }
@@ -345,7 +357,7 @@ fun CompraTela(id: String, aoVoltar: () -> Unit, aoAbrirParcela: (String) -> Uni
                 escopo.launch {
                     when (val r = container.compras.excluir(id)) {
                         is Resultado.Sucesso -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { aoVoltar() }
-                        is Resultado.Falha -> erro = r.mensagem
+                        is Resultado.Falha -> { erro = r.mensagem; atualizarTravas() }
                     }
                 }
             },

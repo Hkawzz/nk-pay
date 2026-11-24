@@ -139,6 +139,7 @@ class AceiteTest {
         regra.onNodeWithText("Lançar").performScrollTo().performClick()
 
         regra.waitUntil(10_000) { saldos()[pix] == 116_000L }
+        esperarTexto("Transferências e ajustes não entram nesses totais.") // v0.8: idem
         assertEquals(34_000L, saldos()[din])
         // O Disponível não muda.
         regra.onNodeWithText("Início").performClick()
@@ -156,6 +157,8 @@ class AceiteTest {
         regra.onNodeWithText("Lançar").performScrollTo().performClick()
 
         regra.waitUntil(10_000) { saldos()[va] == 22_500L }
+        // v0.8: espera o formulário voltar para a lista antes de trocar de aba (salvar ficou mais lento com a R1).
+        esperarTexto("Transferências e ajustes não entram nesses totais.")
         // Disponível igual; a despesa entra no total do mês.
         regra.onNodeWithText("Início").performClick()
         esperarTexto("R$ 1.500,00")

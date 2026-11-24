@@ -379,6 +379,35 @@ class MovimentacaoRepositorio(
     /** True se a movimentação só muda pela operação que a criou (pagamento ou compra). */
     suspend fun ehPagamentoDeConta(id: String): Boolean = mensagemSeProtegida(id) != null
 
+    /**
+     * v0.8 (D1, regra 6G.4): por que a movimentação é protegida e qual tela a resolve.
+     * Null se ela pode ser editada e excluída pela aba Movimentações.
+     */
+    suspend fun protecao(id: String): Protecao? {
+        val mensagem = mensagemSeProtegida(id) ?: return null
+        val b = banco.backupDao()
+        b.compras().firstOrNull { it.excluidoEm == null && it.movimentacaoId == id }?.let { return Protecao(mensagem, DestinoProtegido.Cartao(it.contaCreditoId)) }
+        b.emprestimos().firstOrNull { it.excluidoEm == null && (it.movimentacaoContratacaoId == id || it.movimentacaoJurosId == id) }?.let { return Protecao(mensagem, DestinoProtegido.Emprestimo(it.id)) }
+        pagamentoFaturaDao.daMovimentacao(id).firstOrNull()?.let { return Protecao(mensagem, DestinoProtegido.Cartao(it.contaCreditoId)) }
+        val obrigacaoId = pagamentoDao.daMovimentacao(id).firstOrNull()?.obrigacaoId ?: ajusteDao.daMovimentacao(id).firstOrNull()?.obrigacaoId
+        if (obrigacaoId != null) {
+            val o = banco.obrigacaoDao().buscar(obrigacaoId)
+            val destino = when {
+                o == null -> null
+                o.emprestimoId != null -> DestinoProtegido.Emprestimo(o.emprestimoId)
+                o.contaCreditoId != null -> DestinoProtegido.Cartao(o.contaCreditoId)
+                else -> DestinoProtegido.ContaAPagar(o.id)
+            }
+            return Protecao(mensagem, destino)
+        }
+        val m = dao.buscar(id)
+        val caixinha = listOfNotNull(m?.contaId, m?.contaDestinoId).firstOrNull { contaDao.buscar(it)?.natureza == Natureza.CAIXINHA.name }
+        if (caixinha != null) {
+            b.objetivos().firstOrNull { it.contaCaixinhaId == caixinha }?.let { return Protecao(mensagem, DestinoProtegido.Caixinha(it.id)) }
+        }
+        return Protecao(mensagem, null)
+    }
+
     /** Movimentações não excluídas, da mais recente para a mais antiga. */
     fun observar(): Flow<List<Movimentacao>> = dao.observarTodas().map { lista -> lista.map { it.paraDominio() } }
 
@@ -486,6 +515,18 @@ class MovimentacaoRepositorio(
         )
         Resultado.Sucesso(Unit)
     }
+}
+
+/** v0.8 (D1): o motivo de uma movimentação protegida e a tela que a resolve. */
+data class Protecao(val mensagem: String, val destino: DestinoProtegido?)
+
+/** v0.8 (D1): para onde o botão "Abrir ..." leva. */
+sealed interface DestinoProtegido {
+    val rotuloBotao: String
+    data class Cartao(val contaId: String) : DestinoProtegido { override val rotuloBotao = "Abrir cartão ou crediário" }
+    data class Emprestimo(val emprestimoId: String) : DestinoProtegido { override val rotuloBotao = "Abrir empréstimo" }
+    data class Caixinha(val objetivoId: String) : DestinoProtegido { override val rotuloBotao = "Abrir caixinha" }
+    data class ContaAPagar(val obrigacaoId: String) : DestinoProtegido { override val rotuloBotao = "Abrir conta a pagar" }
 }
 
 /** Mensagem para quem tenta mexer numa movimentação criada pelo botão Pagar. */

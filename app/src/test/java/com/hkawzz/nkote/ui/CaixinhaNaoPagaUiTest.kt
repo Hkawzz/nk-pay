@@ -86,7 +86,7 @@ class CaixinhaNaoPagaUiTest {
         assertEquals(0, regra.onAllNodes(hasText("Cofrinho Viagem", substring = true)).fetchSemanticsNodes().size)
     }
 
-    @Test fun despesaNaoMostraCaixinha() = confereLista("Conta") { com.hkawzz.nkote.ui.movimentacoes.MovimentacaoFormTela(null, null) {} }
+    @Test fun despesaNaoMostraCaixinha() = confereLista("Conta") { com.hkawzz.nkote.ui.movimentacoes.MovimentacaoFormTela(null, null, aoVoltar = {}) }
     @Test fun pagarContaNaoMostraCaixinha() = confereLista("Pagar com") { com.hkawzz.nkote.ui.apagar.PagarTela(obrigacao) {} }
     @Test fun faturaNaoMostraCaixinha() = confereLista("Pagar com") { com.hkawzz.nkote.ui.credito.FaturaTela(cartao, YearMonth.of(2026, 12), {}, {}) }
     @Test fun crediarioNaoMostraCaixinha() = confereLista("Pagar com") { com.hkawzz.nkote.ui.credito.ParcelaTela(parcelaLoja) {} }
