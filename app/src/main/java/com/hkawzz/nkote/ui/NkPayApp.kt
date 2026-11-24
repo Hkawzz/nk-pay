@@ -144,6 +144,25 @@ fun NkPayApp() {
                     aoCadastrarConta = { navController.navigate(Rotas.contaForm()) },
                     aoAbrirConta = { navController.navigate(Rotas.conta(it)) },
                     aoFazerBackup = { navController.navigate(Rotas.BACKUP) },
+                    // v0.8 (V1): atalhos dos blocos.
+                    aoAbrirVencimento = { d ->
+                        navController.navigate(
+                            when (d) {
+                                is com.hkawzz.nkote.dominio.DestinoVencimento.ContaAPagar -> Rotas.pagar(d.obrigacaoId)
+                                is com.hkawzz.nkote.dominio.DestinoVencimento.Fatura -> Rotas.fatura(d.contaId, d.mes)
+                                is com.hkawzz.nkote.dominio.DestinoVencimento.ParcelaEmprestimo -> "parcela-emprestimo/${d.obrigacaoId}"
+                            },
+                        )
+                    },
+                    aoAbrirCartao = { navController.navigate(Rotas.cartao(it)) },
+                    aoAbrirObjetivo = { navController.navigate(Rotas.objetivo(it)) },
+                    aoVerObjetivos = {
+                        navController.navigate(Rotas.OBJETIVOS) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     aoVerMovimentacoes = {
                         navController.navigate(Rotas.MOVIMENTACOES) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
