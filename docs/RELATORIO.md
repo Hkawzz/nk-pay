@@ -36,6 +36,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#69](https://github.com/Hkawzz/nkote/pull/69) | Caixinhas: telas | Textos de ajuda "?" no modelo de caixinhas; rendimentos nas Análises; teste de interface de que despesa, Pagar, fatura, crediário e empréstimo nunca listam caixinhas | ✅ |
 | [#70](https://github.com/Hkawzz/nkote/pull/70) | Conversão V3 | Objetivos da v0.7 ganham caixinha zerada ao abrir o app e depois de restaurar um backup; nenhum saldo de conta muda; histórico antigo só para leitura; mensagem de uma vez só na Início e em Objetivos | ✅ |
 | [#71](https://github.com/Hkawzz/nkote/pull/71) | D1 e D2 | Excluir pela aba Movimentações um lançamento protegido mostra o motivo e "Abrir cartão/empréstimo/caixinha/conta a pagar"; a recusa de excluir uma compra lista cada pagamento ou abatimento (data, valor, fatura) com "Desfazer" | ✅ |
+| [#72](https://github.com/Hkawzz/nkote/pull/72) | Início completa (V1) | Abaixo do card principal, só com conteúdo: Próximos vencimentos (7 dias + atrasados, com atalho para pagar), Cartões (devido e próxima fatura), Caixinhas (até 3, "Ver todas") e A receber | ✅ |
 
 **Decisões tomadas sozinho**
 - **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.
@@ -47,11 +48,13 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Excluir um objetivo arquiva a caixinha** (zerada) em vez de excluí-la: as transferências antigas continuam sendo entre contas suas, e o fluxo do passado não muda.
 - **O PR das caixinhas já adaptou a tela do objetivo** (escolher a conta, rendimento no lugar de ajustar, histórico por transferências), porque a interface antiga não compilaria com o serviço novo. O PR das telas fica com a Início, os textos de ajuda e os testes de interface.
 - **A mensagem da V3 aparece na Início e em Objetivos** enquanto houver histórico antigo e você não tocar em "Entendi" (a marca fica nas preferências do app, não no banco nem no backup).
+- **Início completa:** a janela é de hoje até 7 dias à frente, mais os atrasados. As faturas entram nos vencimentos só quando vencem nessa janela; o bloco Cartões mostra sempre o devido e a próxima fatura em aberto. As caixinhas vêm das com mais dinheiro.
 - **Os nomes das classes (`NkPayBanco`, `NkPayTema`...) ficam:** a renomeação troca só o necessário (nome visível, identificador, pacotes, extensão e repositório).
 
 **Pendências:** nenhuma até aqui.
 
 **Problemas encontrados:**
+- Início completa (#72): o `InicioV05Test` (v0.5) conferia que o texto "R$ 400,00" aparecia uma vez só; agora o devido do cartão aparece também no bloco Cartões. Mudança mínima: conferir que o texto existe (1 linha).
 - D1 e D2 (#71): o `AceiteTest` (v0.1) falhou no CI. Depois de "Lançar", o teste esperava o saldo no banco e já tocava em "Início"; com a R1, salvar ficou um pouco mais lento, e a volta do formulário acontecia depois do toque, tirando a Início da tela. Correção só no teste: esperar a lista de Movimentações antes de trocar de aba (2 linhas). Nenhuma regra testada mudou.
 - Caixinhas (#68): pela R2, os testes de objetivos da v0.7 mudaram de propósito: `ObjetivosTest` e `ObjetivoServicoTest` foram reescritos para caixinhas (tabela da 6G.2, R1 no guardar, "não é meio de pagamento" em cada serviço, desfazer, O3); `InicioGuardadoUiTest` e `AnalisesObjetivosUiTest` passaram a informar a conta e trocaram o aviso O2 (que saiu) pela recusa da R1. No `SaldosTest` (v0.1), o teste "reservado é descontado do disponível" agora guarda numa caixinha, com os mesmos números (Saldo total R$ 1.500,00, disponível R$ 1.100,00).
 - Banco v7 (#67): 4 linhas do `MigracaoV6Test` (da v0.7) mudaram, sem como evitar, porque fixavam a versão 6 do banco (versão atual, nome da cópia e versão do manifesto) e a forma exata da tabela `objetivo` (agora com `contaCaixinhaId`). Nenhuma regra testada mudou.

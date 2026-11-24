@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.room.Room
@@ -79,7 +80,8 @@ class InicioV05Test {
         esperar("R$ 3.600,00")
         // Saídas = mercado (200) + fatura (200). A compra no cartão (600) e o almoço no VA (25) não saem.
         regra.onNodeWithText("Saídas").assertExists()
-        regra.onNodeWithText("R$ 400,00").assertExists()
+        // v0.8 (V1): o devido do cartão também aparece no bloco Cartões da Início completa.
+        regra.onAllNodes(hasText("R$ 400,00")).onFirst().assertExists()
         regra.onNodeWithText("2 movimentações").assertExists()
         // Saldo das movimentações = 3.000 − 400.
         regra.onNodeWithText("+ R$ 2.600,00").assertExists()

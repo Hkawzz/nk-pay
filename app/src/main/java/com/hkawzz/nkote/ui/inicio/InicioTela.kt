@@ -98,9 +98,17 @@ fun InicioTela(
     aoVerMovimentacoes: () -> Unit,
     aoAbrirConta: (String) -> Unit,
     aoFazerBackup: () -> Unit,
+    // v0.8 (V1): atalhos dos blocos da Início completa.
+    aoAbrirVencimento: (com.hkawzz.nkote.dominio.DestinoVencimento) -> Unit = {},
+    aoAbrirCartao: (String) -> Unit = {},
+    aoAbrirObjetivo: (String) -> Unit = {},
+    aoVerObjetivos: () -> Unit = {},
 ) {
     val container = LocalContainer.current
     val visao by container.visao.collectAsState()
+    val aPagar by container.visaoAPagar.collectAsState()
+    val credito by container.visaoCredito.collectAsState()
+    val emprestimos by container.visaoEmprestimos.collectAsState()
     val ultimoBackup by container.backup.registro.ultimo.collectAsState()
     val hoje = container.relogio.hoje()
     var mesResumo by rememberSaveable { mutableStateOf(YearMonth.from(hoje).toString()) }
@@ -140,6 +148,9 @@ fun InicioTela(
 
             // --- v0.8 (V3): objetivos da v0.7 viraram caixinhas zeradas (mensagem de uma vez só) ---
             com.hkawzz.nkote.ui.objetivos.AvisoCaixinhas()
+
+            // --- v0.8 (V1, regra 6G.5): blocos que só aparecem com conteúdo, nesta ordem ---
+            BlocosDaInicio(v, aPagar, credito, emprestimos, hoje, aoAbrirVencimento, aoAbrirCartao, aoAbrirObjetivo, aoVerObjetivos)
 
             // --- Aviso de backup: nunca feito, ou feito há 7 dias ou mais ---
             val dias = diasDesde(ultimoBackup, container.relogio.agora())
@@ -386,3 +397,72 @@ private fun Passo(numero: Int, texto: String) {
     }
 }
 
+/** v0.8 (V1): próximos vencimentos, cartões, caixinhas e a receber. Cada um só aparece com conteúdo. */
+@Composable
+private fun BlocosDaInicio(
+    v: com.hkawzz.nkote.dominio.VisaoFinanceira,
+    aPagar: com.hkawzz.nkote.dominio.VisaoAPagar?,
+    credito: com.hkawzz.nkote.dominio.VisaoCredito?,
+    emprestimos: com.hkawzz.nkote.dominio.VisaoEmprestimos?,
+    hoje: java.time.LocalDate,
+    aoAbrirVencimento: (com.hkawzz.nkote.dominio.DestinoVencimento) -> Unit,
+    aoAbrirCartao: (String) -> Unit,
+    aoAbrirObjetivo: (String) -> Unit,
+    aoVerObjetivos: () -> Unit,
+) {
+    val I = com.hkawzz.nkote.dominio.InicioCompleta
+    @Composable
+    fun ListaDeVencimentos(titulo: String, itens: List<com.hkawzz.nkote.dominio.Vencimento>) {
+        if (itens.isEmpty()) return
+        com.hkawzz.nkote.ui.componentes.NkCabecalhoSecao(titulo)
+        NkCard {
+            itens.forEachIndexed { i, x ->
+                if (i > 0) com.hkawzz.nkote.ui.componentes.NkDivisor()
+                NkListItem(
+                    titulo = x.titulo,
+                    subtitulo = if (x.atrasado) "Atrasada · venceu ${com.hkawzz.nkote.ui.Formatos.data(x.vencimento)}" else "Vence ${com.hkawzz.nkote.ui.Formatos.data(x.vencimento)}",
+                    corSubtitulo = if (x.atrasado) RosaDespesa else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fim = { com.hkawzz.nkote.ui.componentes.NkValor(x.valor) },
+                    aoClicar = { aoAbrirVencimento(x.destino) },
+                )
+            }
+        }
+    }
+    // 1. Próximos vencimentos (7 dias + atrasados), com atalho para pagar.
+    ListaDeVencimentos("Próximos vencimentos", I.proximosVencimentos(aPagar, credito, emprestimos, hoje))
+    // 2. Cartões: o devido e a próxima fatura de cada um.
+    val cartoes = I.cartoes(credito, hoje)
+    if (cartoes.isNotEmpty()) {
+        com.hkawzz.nkote.ui.componentes.NkCabecalhoSecao("Cartões")
+        NkCard {
+            cartoes.forEachIndexed { i, c ->
+                if (i > 0) com.hkawzz.nkote.ui.componentes.NkDivisor()
+                val f = c.proximaFatura
+                NkListItem(
+                    titulo = c.conta.nome,
+                    subtitulo = if (f != null) "Próxima fatura ${com.hkawzz.nkote.dominio.Dinheiro.formatar(f.restante)}" + (f.vencimento?.let { " · vence ${com.hkawzz.nkote.ui.Formatos.data(it)}" } ?: "") else "Sem fatura em aberto",
+                    fim = { com.hkawzz.nkote.ui.componentes.NkValor(c.devido) },
+                    aoClicar = { aoAbrirCartao(c.conta.id) },
+                )
+            }
+        }
+    }
+    // 3. Caixinhas: até 3, com progresso, e "Ver todas".
+    val (caixinhas, temMais) = I.caixinhas(v.objetivos)
+    if (caixinhas.isNotEmpty()) {
+        com.hkawzz.nkote.ui.componentes.NkCabecalhoSecao("Caixinhas") { TextButton(onClick = aoVerObjetivos) { Text(if (temMais) "Ver todas" else "Ver") } }
+        NkCard {
+            caixinhas.forEachIndexed { i, s ->
+                if (i > 0) com.hkawzz.nkote.ui.componentes.NkDivisor()
+                NkListItem(
+                    titulo = s.objetivo.nome,
+                    subtitulo = s.objetivo.meta?.let { "${s.progresso}% de ${com.hkawzz.nkote.dominio.Dinheiro.formatar(it)}" } ?: "Sem meta",
+                    fim = { com.hkawzz.nkote.ui.componentes.NkValor(s.guardado) },
+                    aoClicar = { aoAbrirObjetivo(s.objetivo.id) },
+                )
+            }
+        }
+    }
+    // 4. A receber (empréstimos concedidos).
+    ListaDeVencimentos("A receber", I.aReceber(emprestimos, hoje))
+}
