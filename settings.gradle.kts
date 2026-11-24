@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "nk-pay"
+rootProject.name = "nkote"
 include(":app")

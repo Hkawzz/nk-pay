@@ -29,6 +29,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | # | Etapa | O que entrou | Estado |
 |---|---|---|---|
 | [#64](https://github.com/Hkawzz/nk-pay/pull/64) | Docs | Regra 6G (R1, caixinhas, V3, D1/D2, Início, backup automático) e decisões 0030 a 0034. Sem código | ✅ |
+| [#65](https://github.com/Hkawzz/nkote/pull/65) | Renomeação para NKote (sozinho) | Nome visível "NKote"/"NKote debug"; `applicationId` e pacotes `com.hkawzz.nkote`; esquemas 1 a 6 movidos para a pasta nova; backups novos `.nkote` (restauração aceita `.nkpay`); repositório `Hkawzz/nkote`; APK da Release `nkote-vX.Y.Z.apk`; teste novo restaurando um `.nkpay` da v0.7 | ✅ |
 
 **Decisões tomadas sozinho**
 - **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.
@@ -40,7 +41,9 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 **Pendências:** nenhuma até aqui.
 
-**Problemas encontrados:** nenhum até aqui.
+**Problemas encontrados:**
+- Renomeação (#65): o `ObjetivosUiTest` (da v0.7) falhou na suíte completa, aqui e no CI. Causa: depois de "Criar objetivo", ele esperava o texto "Fone", que também está no campo do formulário; numa máquina lenta, o toque seguinte ia para o campo, antes de a tela voltar para a lista. Correção só no teste: esperar a seção "Ativos" antes de tocar (uma linha). Fora isso, nenhum teste mudou além dos pacotes e do caminho dos esquemas.
+
 ---
 
 ## v0.7.0 (em validação) - Objetivos e reservas

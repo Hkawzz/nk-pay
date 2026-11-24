@@ -1,6 +1,6 @@
 # Release: ao criar uma tag v* (ex.: v0.1.0), compila o APK de release,
 # assina com a keystore guardada nos GitHub Secrets e publica uma GitHub Release
-# com o arquivo nk-pay-vX.Y.Z.apk e as notas tiradas do CHANGELOG.md.
+# com o arquivo nkote-vX.Y.Z.apk e as notas tiradas do CHANGELOG.md.
 #
 # Segurança: este workflow FALHA se a keystore não estiver configurada.
 # Ele nunca publica um APK sem assinatura ou assinado com a chave de debug,
@@ -113,15 +113,15 @@ jobs:
             echo "::error::A impressão digital do certificado não é a da keystore oficial. Abortando."
             exit 1
           fi
-          mv "$APK" "nk-pay-v$VERSAO.apk"
+          mv "$APK" "nkote-v$VERSAO.apk"
 
       - name: Criar a GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSAO: ${{ steps.versao.outputs.versao }}
         run: >
-          gh release create "$GITHUB_REF_NAME" "nk-pay-v$VERSAO.apk"
-          --title "NK Pay v$VERSAO"
+          gh release create "$GITHUB_REF_NAME" "nkote-v$VERSAO.apk"
+          --title "NKote v$VERSAO"
           --notes-file notas.md
 
       - name: Apagar a keystore temporária
