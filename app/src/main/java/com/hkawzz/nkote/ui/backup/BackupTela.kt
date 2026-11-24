@@ -170,6 +170,9 @@ fun BackupTela(aoVoltar: () -> Unit) {
                 }
             }
 
+            // v0.8 (V2): backup automático numa pasta escolhida.
+            SecaoBackupAutomatico()
+
             NkCabecalhoSecao("Restaurar")
             NkCard {
                 Column(Modifier.padding(Espaco.l), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {

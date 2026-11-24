@@ -19,8 +19,11 @@ robolectric = "4.18.1"
 androidxTestCore = "1.7.0"
 androidxTestJunit = "1.3.0"
 roborazzi = "1.79.0"
+# v0.8: backup automático (V2, ADR 0034).
+work = "2.11.2"
 
 [libraries]
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

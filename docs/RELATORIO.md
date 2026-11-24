@@ -37,6 +37,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#70](https://github.com/Hkawzz/nkote/pull/70) | Conversão V3 | Objetivos da v0.7 ganham caixinha zerada ao abrir o app e depois de restaurar um backup; nenhum saldo de conta muda; histórico antigo só para leitura; mensagem de uma vez só na Início e em Objetivos | ✅ |
 | [#71](https://github.com/Hkawzz/nkote/pull/71) | D1 e D2 | Excluir pela aba Movimentações um lançamento protegido mostra o motivo e "Abrir cartão/empréstimo/caixinha/conta a pagar"; a recusa de excluir uma compra lista cada pagamento ou abatimento (data, valor, fatura) com "Desfazer" | ✅ |
 | [#72](https://github.com/Hkawzz/nkote/pull/72) | Início completa (V1) | Abaixo do card principal, só com conteúdo: Próximos vencimentos (7 dias + atrasados, com atalho para pagar), Cartões (devido e próxima fatura), Caixinhas (até 3, "Ver todas") e A receber | ✅ |
+| [#73](https://github.com/Hkawzz/nkote/pull/73) | Backup automático (V2) | Mais → Backup: escolher a pasta (Drive permitido), Diário (padrão)/Semanal/Mensal, último resultado, "Fazer agora" e orientação de bateria Samsung; guarda os 7 últimos da série `nkote-auto-`, nunca apaga os manuais; falha avisada na Início | ✅ |
 
 **Decisões tomadas sozinho**
 - **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.
@@ -49,6 +50,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **O PR das caixinhas já adaptou a tela do objetivo** (escolher a conta, rendimento no lugar de ajustar, histórico por transferências), porque a interface antiga não compilaria com o serviço novo. O PR das telas fica com a Início, os textos de ajuda e os testes de interface.
 - **A mensagem da V3 aparece na Início e em Objetivos** enquanto houver histórico antigo e você não tocar em "Entendi" (a marca fica nas preferências do app, não no banco nem no backup).
 - **Início completa:** a janela é de hoje até 7 dias à frente, mais os atrasados. As faturas entram nos vencimentos só quando vencem nessa janela; o bloco Cartões mostra sempre o devido e a próxima fatura em aberto. As caixinhas vêm das com mais dinheiro.
+- **Backup automático pelo WorkManager** (2.11.2). Ele acrescenta ao manifesto só permissões de agendamento (`WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE`, `ACCESS_NETWORK_STATE`); **não** acrescenta `INTERNET`: o app continua sem acesso à rede, e gravar no Drive é feito pelo próprio app do Drive através do seletor. A tarefa sempre termina como "sucesso" para o sistema, para não sair do agendamento; o resultado real (e a mensagem de falha) fica registrado e aparece na Início. "Fazer agora" roda na hora, sem passar pelo agendador. Só os arquivos `nkote-auto-…` entram na conta dos 7.
 - **Os nomes das classes (`NkPayBanco`, `NkPayTema`...) ficam:** a renomeação troca só o necessário (nome visível, identificador, pacotes, extensão e repositório).
 
 **Pendências:** nenhuma até aqui.

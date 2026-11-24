@@ -149,6 +149,21 @@ fun InicioTela(
             // --- v0.8 (V3): objetivos da v0.7 viraram caixinhas zeradas (mensagem de uma vez só) ---
             com.hkawzz.nkote.ui.objetivos.AvisoCaixinhas()
 
+            // --- v0.8 (V2): uma falha do backup automático é avisada aqui ---
+            val configBackup by container.backupAutomatico.observar().collectAsState(initial = null)
+            configBackup?.takeIf { it.falhou }?.let { c ->
+                NkCard(estilo = EstiloCard.ELEVADO, aoClicar = aoFazerBackup) {
+                    NkListItem(
+                        titulo = "O backup automático falhou",
+                        subtitulo = c.ultimaMensagem ?: "Abra Mais → Backup para conferir.",
+                        corTitulo = RosaDespesa,
+                        linhas = 3,
+                        inicio = { NkIconeRedondo(Icons.Rounded.Lock, RosaDespesa) },
+                        fim = { TextButton(onClick = aoFazerBackup) { Text("Abrir") } },
+                    )
+                }
+            }
+
             // --- v0.8 (V1, regra 6G.5): blocos que só aparecem com conteúdo, nesta ordem ---
             BlocosDaInicio(v, aPagar, credito, emprestimos, hoje, aoAbrirVencimento, aoAbrirCartao, aoAbrirObjetivo, aoVerObjetivos)
 
