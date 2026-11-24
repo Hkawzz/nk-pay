@@ -47,6 +47,8 @@ data class ContaEntidade(
     val criadoEm: Long,
     val atualizadoEm: Long,
     val excluidoEm: Long?,
+    /** v0.9 (item 5, ADR 0035): posição escolhida pelo usuário. Empate = ordem alfabética. */
+    @ColumnInfo(defaultValue = "0") val ordem: Long = 0,
 )
 
 @Serializable

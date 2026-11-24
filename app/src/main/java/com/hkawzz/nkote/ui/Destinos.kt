@@ -58,6 +58,8 @@ object Rotas {
     fun pessoa(id: String) = "mais/pessoa/$id"
     const val REGISTRO = "mais/registro"
     const val SOBRE = "mais/sobre"
+    /** v0.9 (item 5): "Editar ordem" das contas. */
+    const val ORDEM_CONTAS = "mais/ordem-contas"
     const val BACKUP = "mais/backup"
     const val CONTAS_FIXAS = "mais/contas-fixas"
     const val CONTA_FIXA_FORM = "mais/conta-fixa-form?id={id}"

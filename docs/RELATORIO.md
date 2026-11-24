@@ -20,6 +20,31 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
+## v0.9.0 (em andamento) - Achados do teste da v0.8
+
+**Objetivo:** os 10 itens do teste da v0.8 feito pelo dono em 24/11/2026 (exceção aprovada à regra "nada novo antes da v1.0"). Fonte: `planejamento/briefing-v0.9-autonomo.md`.
+
+**Como foi feito:** de forma autônoma, na ordem de PRs do briefing. Cada PR termina com o CI verde e esta seção atualizada.
+
+**PRs**
+
+| # | Etapa | O que entrou | Estado |
+|---|---|---|---|
+| [#77](https://github.com/Hkawzz/nkote/pull/77) | Início (itens 1, 2, 3 e 5) | Cartões e Caixinhas saíram da Início; grades adaptativas (contas até 2 por linha, benefícios até 3, a linha que sobra ocupa a largura toda); "Editar ordem" das contas e dos benefícios (arrastar ou setas), com `conta.ordem` (banco 8), auditoria e backup | ✅ |
+
+**Decisões tomadas sozinho**
+- **Arrastar sem biblioteca** (ADR 0035): alça com o gesto do próprio Compose, mais setas de subir e descer. Evita uma dependência nova para uma lista curta, e as setas servem para acessibilidade e testes.
+- **Ordem 0 = "ainda não reordenada"**: a migração não reescreve nenhuma linha (todas ficam 0, e o desempate pelo nome mantém a ordem de hoje). Depois que você salva uma ordem, conta nova entra no fim; antes disso, continua na posição alfabética. O teste antigo `InicioV2Test` mostrou que mandar sempre para o fim mudaria a ordem de quem nunca reordenou.
+- **Contas e benefícios se reordenam na mesma tela**, cada grupo separado (era trivial reaproveitar).
+- **O limite de cards antes de "Ver todas" continua** (4 contas, 3 benefícios); a grade adaptativa vale para o que está visível.
+
+**Pendências:** nenhuma até aqui.
+
+**Problemas encontrados:**
+- Início (#77): os testes de migração antigos (`MigracaoTest`, `MigracaoV3Test` a `MigracaoV7Test`) comparam as linhas do banco antigo com o banco migrado até a versão atual, e a coluna nova `conta.ordem` aparecia na comparação. Mudança mínima: a foto das linhas ignora as colunas acrescentadas depois (`COLUNAS_NOVAS`, conferidas no `MigracaoV8Test`); no `MigracaoV7Test`, 4 linhas trocaram a versão fixa 7 por `NkPayBanco.VERSAO`. Nenhuma regra testada mudou. No `InicioCompletaUiTest` (v0.8), 2 linhas que esperavam os blocos Cartões e Caixinhas agora conferem que eles **não** aparecem (item 1).
+
+---
+
 ## v0.8.1 - Logo novo
 
 **Objetivo:** aplicar o logo aprovado (opção 3A), seguindo `planejamento/logo/LEIA-ME-logo.md`. Só isso: nenhuma regra, tela ou dado mudou além do ícone e do topo do Sobre.

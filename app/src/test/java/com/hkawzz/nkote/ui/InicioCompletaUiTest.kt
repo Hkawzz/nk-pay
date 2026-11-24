@@ -93,9 +93,9 @@ class InicioCompletaUiTest {
             ok(container.emprestimos.registrar(NovoEmprestimo(TipoEmprestimo.CONCEDIDO, null, "Tonho", "Ajuda", null, 20_000, hoje, pix, listOf(hoje.plusDays(5) to 20_000))))
         }
         esperar("Próximos vencimentos")
-        esperar("Cartões")
-        esperar("Caixinhas")
         esperar("A receber")
+        // v0.9 (item 1): Cartões e Caixinhas saíram da Início, mesmo com conteúdo.
+        for (b in listOf("Cartões", "Caixinhas")) assertEquals("bloco $b", 0, quantos(b))
         regra.onRoot().captureRoboImage("build/outputs/roborazzi/v08-inicio-completa.png")
 
         val va = container.visaoAPagar.value

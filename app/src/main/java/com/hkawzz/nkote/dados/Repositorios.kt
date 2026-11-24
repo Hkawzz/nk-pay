@@ -11,6 +11,7 @@ import com.hkawzz.nkote.dominio.Natureza
 import com.hkawzz.nkote.dominio.TipoMovimentacao
 import com.hkawzz.nkote.dominio.Validacao
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /** Resultado de uma operação que pode ser recusada por uma regra. */
@@ -56,14 +57,42 @@ class ContaRepositorio(
             criadoEm = agora, atualizadoEm = agora, excluidoEm = null,
         )
         banco.withTransaction {
-            dao.inserir(nova)
+            // v0.9 (item 5): sem ordem escolhida (todas 0), a lista continua alfabética; depois de
+            // reordenar (posições a partir de 1), a conta nova entra no fim.
+            val maior = dao.maiorOrdem()
+            val comOrdem = nova.copy(ordem = if (maior > 0) maior + 1 else 0)
+            dao.inserir(comOrdem)
             auditor.registrar(
-                relogio.novoId(), Operacao.CRIACAO, Auditor.CONTA, nova.id,
-                "Conta “${nova.nome}” criada (saldo inicial ${Dinheiro.formatar(nova.saldoInicialCentavos)})",
-                ContaEntidade.serializer(), null, nova,
+                relogio.novoId(), Operacao.CRIACAO, Auditor.CONTA, comOrdem.id,
+                "Conta “${comOrdem.nome}” criada (saldo inicial ${Dinheiro.formatar(comOrdem.saldoInicialCentavos)})",
+                ContaEntidade.serializer(), null, comOrdem,
             )
         }
         return Resultado.Sucesso(nova.id)
+    }
+
+    /**
+     * v0.9 (item 5, ADR 0035): grava a nova ordem. [ids] são as contas na ordem desejada; as
+     * que não estão na lista vêm depois, na ordem de hoje. Só as que mudaram de posição são
+     * gravadas, e a mudança fica na auditoria (um grupo só).
+     */
+    suspend fun reordenar(ids: List<String>): Resultado<Unit> = banco.withTransaction {
+        val atuais = dao.observarTodas().first()
+        val porId = atuais.associateBy { it.id }
+        val novaOrdem = ids.distinct().mapNotNull { porId[it] } + atuais.filter { it.id !in ids }
+        val grupo = relogio.novoId()
+        val agora = relogio.agora()
+        // Posições a partir de 1 (0 fica para "ainda não reordenada").
+        novaOrdem.forEachIndexed { i, antes ->
+            if (antes.ordem == i + 1L) return@forEachIndexed
+            val depois = antes.copy(ordem = i + 1L, atualizadoEm = agora)
+            dao.atualizar(depois)
+            auditor.registrar(
+                grupo, Operacao.EDICAO, Auditor.CONTA, antes.id,
+                "Ordem das contas: “${antes.nome}” na posição ${i + 1}", ContaEntidade.serializer(), antes, depois,
+            )
+        }
+        Resultado.Sucesso(Unit)
     }
 
     /** Edita nome, natureza, benefício, saldo inicial, data, ícone e cor. */

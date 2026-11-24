@@ -113,7 +113,7 @@ class MigracaoTest {
         val linhas = mutableListOf<String>()
         consulta("SELECT * FROM $tabela ORDER BY id").use { c ->
             while (c.moveToNext()) {
-                linhas += (0 until c.columnCount).joinToString("|") { i -> "${c.getColumnName(i)}=${if (c.isNull(i)) "NULL" else c.getString(i)}" }
+                linhas += (0 until c.columnCount).filter { c.getColumnName(it) !in COLUNAS_NOVAS }.joinToString("|") { i -> "${c.getColumnName(i)}=${if (c.isNull(i)) "NULL" else c.getString(i)}" }
             }
         }
         return linhas

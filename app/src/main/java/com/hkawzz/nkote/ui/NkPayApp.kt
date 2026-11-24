@@ -144,6 +144,7 @@ fun NkPayApp() {
                     aoCadastrarConta = { navController.navigate(Rotas.contaForm()) },
                     aoAbrirConta = { navController.navigate(Rotas.conta(it)) },
                     aoFazerBackup = { navController.navigate(Rotas.BACKUP) },
+                    aoEditarOrdem = { navController.navigate(Rotas.ORDEM_CONTAS) },
                     // v0.8 (V1): atalhos dos blocos.
                     aoAbrirVencimento = { d ->
                         navController.navigate(
@@ -374,6 +375,7 @@ fun NkPayApp() {
                     RegistroDetalheTela(id = entrada.arguments?.getString("id").orEmpty(), aoVoltar = { navController.popBackStack() })
                 }
                 composable(Rotas.SOBRE) { SobreTela(aoVoltar = { navController.popBackStack() }) }
+                composable(Rotas.ORDEM_CONTAS) { com.hkawzz.nkote.ui.contas.OrdemDasContasTela(aoVoltar = { navController.popBackStack() }) }
                 composable(Rotas.BACKUP) { BackupTela(aoVoltar = { navController.popBackStack() }) }
                 composable(Rotas.CONTAS_FIXAS) {
                     ContasFixasTela(

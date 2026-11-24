@@ -12,8 +12,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ContaDao {
-    @Query("SELECT * FROM conta WHERE excluidoEm IS NULL ORDER BY arquivadaEm IS NOT NULL, nome COLLATE NOCASE")
+    @Query("SELECT * FROM conta WHERE excluidoEm IS NULL ORDER BY arquivadaEm IS NOT NULL, ordem, nome COLLATE NOCASE")
     fun observarTodas(): Flow<List<ContaEntidade>>
+
+    /** v0.9 (item 5): a maior posição usada (-1 sem contas). Conta nova vai para o fim. */
+    @Query("SELECT COALESCE(MAX(ordem), -1) FROM conta")
+    suspend fun maiorOrdem(): Long
 
     @Query("SELECT * FROM conta WHERE id = :id")
     suspend fun buscar(id: String): ContaEntidade?
