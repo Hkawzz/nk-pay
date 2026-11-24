@@ -3,6 +3,7 @@ package com.hkawzz.nkote.ui
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.hkawzz.nkote.ui.telas.Contato
@@ -24,7 +25,7 @@ class SobreUiTest {
     @Test
     fun `sobre mostra privacidade e suporte e nao tem apoiar`() {
         regra.setContent { NkPayTema { SobreTela(aoVoltar = {}) } }
-        regra.onNodeWithText("NKote").assertExists()
+        regra.onNodeWithContentDescription("NKote").assertExists() // v0.8.1: a assinatura do logo
         regra.onNodeWithText("Política de privacidade").assertExists()
         regra.onNodeWithText(Contato.TEXTO_PROVISORIO_PRIVACIDADE).assertExists()
         regra.onNodeWithText("hkawzzsuporte@gmail.com").assertExists()

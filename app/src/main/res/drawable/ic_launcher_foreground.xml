@@ -1,19 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ícone: um "N" lilás com um ponto, sobre o roxo da marca.
-     Desenhado dentro da área segura (66dp centrais) do ícone adaptativo. -->
+<!-- Logo NKote (opção 3A): bloco de notas inclinado com o monograma NK. Fonte: planejamento/logo/android-ic_launcher_foreground.svg. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:pathData="M38,71 L38,37 L66,71 L66,37"
-        android:strokeColor="#FFA78BFA"
-        android:strokeWidth="8"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000" />
-    <path
-        android:pathData="M76,71 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0"
-        android:fillColor="#FFFAFAFA" />
+    <!-- O desenho original tem 120 unidades; 0,55 x 120 = 66 dp, a zona segura do ícone adaptável. -->
+    <group android:translateX="21" android:translateY="21" android:scaleX="0.55" android:scaleY="0.55">
+        <group android:pivotX="60" android:pivotY="62" android:rotation="-8">
+            <path
+                android:pathData="M26,30 H84 L96,42 V98 H26 Z"
+            android:fillColor="#FF18181B"
+                android:strokeColor="#FFFAFAFA"
+                android:strokeWidth="5"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M84,30 V42 H96 Z"
+                android:fillColor="#FFA78BFA" />
+            <path
+                android:pathData="M40,22 V36 M54,22 V36 M68,22 V36"
+                android:strokeColor="#FFA78BFA"
+                android:strokeWidth="6"
+                android:strokeLineCap="round" />
+            <path
+                android:pathData="M38,80 V52 L52,74 V52"
+                android:strokeColor="#FFFAFAFA"
+                android:strokeWidth="8"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M62,52 V80 M80,52 L64,66 L82,80"
+                android:strokeColor="#FFA78BFA"
+                android:strokeWidth="8"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M38,90 H70"
+                android:strokeColor="#FFA78BFA"
+                android:strokeWidth="5"
+                android:strokeLineCap="round" />
+        </group>    </group>
 </vector>

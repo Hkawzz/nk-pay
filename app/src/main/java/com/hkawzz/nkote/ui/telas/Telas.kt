@@ -109,7 +109,12 @@ fun SobreTela(aoVoltar: () -> Unit) {
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(Espaco.s),
         ) {
-            Text("NKote", style = MaterialTheme.typography.headlineSmall)
+            // v0.8.1: a assinatura do logo (versão para fundo escuro) no lugar do título.
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(com.hkawzz.nkote.R.drawable.nkote_assinatura),
+                contentDescription = "NKote",
+                modifier = Modifier.height(64.dp),
+            )
             Text(
                 "Versão ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                 style = MaterialTheme.typography.bodyLarge,

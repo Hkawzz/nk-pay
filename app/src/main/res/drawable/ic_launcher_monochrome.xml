@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Camada monocromática (ícones temáticos do Android 13+). Fonte: android-ic_launcher_monochrome.svg. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- O desenho original tem 120 unidades; 0,55 x 120 = 66 dp, a zona segura do ícone adaptável. -->
+    <group android:translateX="21" android:translateY="21" android:scaleX="0.55" android:scaleY="0.55">
+        <group android:pivotX="60" android:pivotY="62" android:rotation="-8">
+            <path
+                android:pathData="M26,30 H84 L96,42 V98 H26 Z"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="5"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M84,30 V42 H96 Z"
+                android:fillColor="#FF000000" />
+            <path
+                android:pathData="M40,22 V36 M54,22 V36 M68,22 V36"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="6"
+                android:strokeLineCap="round" />
+            <path
+                android:pathData="M38,80 V52 L52,74 V52"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="8"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M62,52 V80 M80,52 L64,66 L82,80"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="8"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M38,90 H70"
+                android:strokeColor="#FF000000"
+                android:strokeWidth="5"
+                android:strokeLineCap="round" />
+        </group>    </group>
+</vector>

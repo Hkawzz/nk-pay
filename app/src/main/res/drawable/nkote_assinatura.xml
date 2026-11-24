@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Assinatura NKote (ícone + nome, Inter Bold em caminhos) para fundo escuro, sem o retângulo de fundo
+     (o fundo da tela já é #09090B). Fonte: planejamento/logo/nkote-assinatura-fundo-escuro.svg. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="183dp"
+    android:height="65dp"
+    android:viewportWidth="366"
+    android:viewportHeight="130">
+    <group android:translateX="10" android:translateY="10" android:scaleX="0.9167" android:scaleY="0.9167">
+        <path
+            android:pathData="M28,0 H92 A28,28 0 0 1 120,28 V92 A28,28 0 0 1 92,120 H28 A28,28 0 0 1 0,92 V28 A28,28 0 0 1 28,0 Z"
+            android:fillColor="#FF4C1D95" />
+        <group android:pivotX="60" android:pivotY="62" android:rotation="-8">
+            <path android:pathData="M26,30 H84 L96,42 V98 H26 Z" android:fillColor="#FF18181B" android:strokeColor="#FFFAFAFA" android:strokeWidth="5" android:strokeLineJoin="round" />
+            <path android:pathData="M84,30 V42 H96 Z" android:fillColor="#FFA78BFA" />
+            <path android:pathData="M40,22 V36 M54,22 V36 M68,22 V36" android:strokeColor="#FFA78BFA" android:strokeWidth="6" android:strokeLineCap="round" />
+            <path android:pathData="M38,80 V52 L52,74 V52" android:strokeColor="#FFFAFAFA" android:strokeWidth="8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+            <path android:pathData="M62,52 V80 M80,52 L64,66 L82,80" android:strokeColor="#FFA78BFA" android:strokeWidth="8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+            <path android:pathData="M38,90 H70" android:strokeColor="#FFA78BFA" android:strokeWidth="5" android:strokeLineCap="round" />
+        </group>
+    </group>
+    <group android:translateX="150.00" android:translateY="92" android:scaleX="0.03125" android:scaleY="-0.03125">
+        <path
+            android:pathData="M135 0H447V685C447 773 438 933 427 1113C519 927 574 818 657 684L1085 0H1426V1490H1114V775C1114 677 1122 517 1133 371C1068 526 1005 639 946 736L475 1490H135Z"
+            android:fillColor="#FFFAFAFA" />
+    </group>
+    <group android:translateX="198.78" android:translateY="92" android:scaleX="0.03125" android:scaleY="-0.03125">
+        <path
+            android:pathData="M135 0H440V426L638 644L1061 0H1422L849 845L1406 1490H1033L668 1062C569 942 500 848 435 744L440 1083V1490H135Z"
+            android:fillColor="#FFFAFAFA" />
+    </group>
+    <group android:translateX="244.81" android:translateY="92" android:scaleX="0.03125" android:scaleY="-0.03125">
+        <path
+            android:pathData="M628 -22C964 -22 1175 210 1175 554C1175 900 964 1132 628 1132C291 1132 81 900 81 554C81 210 291 -22 628 -22ZM628 214C468 214 387 360 387 555C387 753 468 896 628 896C788 896 870 752 870 555C870 360 788 214 628 214Z"
+            android:fillColor="#FFA78BFA" />
+    </group>
+    <group android:translateX="284.06" android:translateY="92" android:scaleX="0.03125" android:scaleY="-0.03125">
+        <path
+            android:pathData="M683 1118H474V1384H174V1118H20V889H174V301C174 96 296 -16 520 -16C580 -16 647 -9 714 11L671 236C649 230 599 223 576 223C503 223 474 256 474 327V889H683Z"
+            android:fillColor="#FFA78BFA" />
+    </group>
+    <group android:translateX="307.50" android:translateY="92" android:scaleX="0.03125" android:scaleY="-0.03125">
+        <path
+            android:pathData="M633 -22C893 -22 1071 99 1126 285L854 336C822 250 743 204 638 204C487 204 385 298 378 481H1143V565C1143 947 910 1132 618 1132C291 1132 81 898 81 553C81 200 291 -22 633 -22ZM380 669C392 807 478 906 621 906C760 906 839 815 854 669Z"
+            android:fillColor="#FFA78BFA" />
+    </group>
+</vector>

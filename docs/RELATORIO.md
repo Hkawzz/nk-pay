@@ -6,6 +6,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 | Versão | Data | Em uma frase | Release |
 |---|---|---|---|
+| v0.8.1 | 24/11/2026 | Logo novo (opção 3A): ícone adaptável, selo DEBUG no app de teste e assinatura no Sobre | [link](https://github.com/Hkawzz/nkote/releases/tag/v0.8.1) |
 | v0.8.0 | 24/11/2026 | NKote: saldo sem cheque especial, caixinhas, Início completa, backup automático e AAB (em validação no app de debug) | [link](https://github.com/Hkawzz/nkote/releases/tag/v0.8.0) |
 | v0.7.0 | 23/11/2026 | Objetivos e reservas, Guardado real no Saldo disponível e roteiro do teste profundo (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.7.0) |
 | v0.6.0 | 23/11/2026 | Compras com juros, parcelas antecipadas, excluir e arquivar, e o assistente Preparar próximo mês (em validação no app de debug) | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.6.0) |
@@ -16,6 +17,21 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | v0.1.1 | 22/11/2026 | Valor estilo app de banco, transições e saldo por conta na Início | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.1.1) |
 | v0.1.0 | 22/11/2026 | Primeira versão de uso real: contas, categorias, movimentações, Início e auditoria | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.1.0) |
 | v0.0.1 | 21/11/2026 | Esqueleto instalável para validar o caminho até o celular | [link](https://github.com/Hkawzz/nk-pay/releases/tag/v0.0.1) |
+
+---
+
+## v0.8.1 - Logo novo
+
+**Objetivo:** aplicar o logo aprovado (opção 3A), seguindo `planejamento/logo/LEIA-ME-logo.md`. Só isso: nenhuma regra, tela ou dado mudou além do ícone e do topo do Sobre.
+
+**PR:** [#76](https://github.com/Hkawzz/nkote/pull/76).
+- As três camadas viraram VectorDrawable em `res/drawable/` (frente, fundo #4C1D95 e monocromática), montadas em `mipmap-anydpi-v26/ic_launcher.xml` e `ic_launcher_round.xml`. O desenho de 120 unidades é reduzido a 66 dp, a zona segura.
+- PNG legados em `mipmap-*` (48 a 192 px) gerados a partir de `nkote-icone.png`. Como o mínimo é o Android 8, o sistema usa o ícone adaptável; os PNG ficam só como reserva.
+- **App de debug:** o mesmo logo com uma pílula âmbar escrita "DEBUG" na parte de baixo (também na camada monocromática), em `src/debug/res/`. O app principal não muda.
+- **Mais → Sobre:** a assinatura (ícone + "NKote") no lugar do título em texto. Usei a versão para fundo escuro sem o retângulo de fundo, porque o fundo da tela já é o mesmo #09090B.
+- `docs/loja/nkote-play-512.png` para a página da Play.
+
+**Testes:** `IconeAdaptavelTest` (novo) desenha a frente e a monocromática e confere que nenhum pixel sai do círculo de 66 dp, e grava capturas nas máscaras de círculo, quadrado arredondado e "squircle" (conferidas: nada é cortado). O `SobreUiTest` (v0.8.0) mudou 1 linha: procura o nome pela descrição da imagem, já que o título virou a assinatura.
 
 ---
 
