@@ -97,6 +97,8 @@ class BackupServico(
     /** Pasta interna do app onde ficam as cópias automáticas feitas antes de restaurar. */
     private val pastaCopias: File,
     val registro: RegistroDeBackup,
+    /** v0.8: roda depois de restaurar (ex.: a conversão V3 dos objetivos de um backup da v0.7). */
+    private val aposRestaurar: suspend () -> Unit = {},
 ) {
     private val dao = banco.backupDao()
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
@@ -296,6 +298,7 @@ class BackupServico(
                 ),
             )
         }
+        aposRestaurar()
         return copia
     }
 

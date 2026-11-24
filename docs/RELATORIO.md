@@ -33,6 +33,8 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#66](https://github.com/Hkawzz/nkote/pull/66) | R1 (sozinho) | Saída sem saldo recusada num ponto só da camada de dados (`transacaoConferida`): despesa, transferência, Pagar, fatura, parcelas, emprestar, excluir/editar entrada, ajuste para baixo e desfazer recebimento; contas já negativas só aceitam o que não as piora. Nenhum teste antigo mudou | ✅ |
 | [#67](https://github.com/Hkawzz/nkote/pull/67) | Banco v7 | Migração 6 → 7: `objetivo.contaCaixinhaId` vazia e tabela `configuracao_backup`; natureza `CAIXINHA`; banco v6 fiel com objetivos, saldos de conta idênticos; backup da v0.7 restaura, a v0.7 recusa a v0.8 | ✅ |
 | [#68](https://github.com/Hkawzz/nkote/pull/68) | Caixinhas: domínio e validação | Cada objetivo tem uma conta `CAIXINHA`: guardar, retirar, mover e rendimento viram transferências e entrada; Saldo total = próprias + caixinhas, Guardado = Σ caixinhas; a caixinha não é meio de pagamento (lançamento avulso, Pagar, fatura, empréstimo, conta padrão e tela de contas recusam); a tela do objetivo já pede a conta | ✅ |
+| [#69](https://github.com/Hkawzz/nkote/pull/69) | Caixinhas: telas | Textos de ajuda "?" no modelo de caixinhas; rendimentos nas Análises; teste de interface de que despesa, Pagar, fatura, crediário e empréstimo nunca listam caixinhas | ✅ |
+| [#70](https://github.com/Hkawzz/nkote/pull/70) | Conversão V3 | Objetivos da v0.7 ganham caixinha zerada ao abrir o app e depois de restaurar um backup; nenhum saldo de conta muda; histórico antigo só para leitura; mensagem de uma vez só na Início e em Objetivos | ✅ |
 
 **Decisões tomadas sozinho**
 - **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.
@@ -43,6 +45,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Guardar e retirar só com conta própria** (benefício não se guarda, como na v0.7). Rendimento pode entrar também em objetivo concluído ou arquivado.
 - **Excluir um objetivo arquiva a caixinha** (zerada) em vez de excluí-la: as transferências antigas continuam sendo entre contas suas, e o fluxo do passado não muda.
 - **O PR das caixinhas já adaptou a tela do objetivo** (escolher a conta, rendimento no lugar de ajustar, histórico por transferências), porque a interface antiga não compilaria com o serviço novo. O PR das telas fica com a Início, os textos de ajuda e os testes de interface.
+- **A mensagem da V3 aparece na Início e em Objetivos** enquanto houver histórico antigo e você não tocar em "Entendi" (a marca fica nas preferências do app, não no banco nem no backup).
 - **Os nomes das classes (`NkPayBanco`, `NkPayTema`...) ficam:** a renomeação troca só o necessário (nome visível, identificador, pacotes, extensão e repositório).
 
 **Pendências:** nenhuma até aqui.

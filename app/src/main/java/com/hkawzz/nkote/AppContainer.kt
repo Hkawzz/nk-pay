@@ -50,6 +50,8 @@ class AppContainer(
     escopo: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     pastaCopias: File = File(System.getProperty("java.io.tmpdir"), "nkpay-copias"),
     registroBackup: RegistroDeBackup = RegistroDeBackupEmMemoria(),
+    /** v0.8: avisos de uma vez só (ex.: a mensagem da conversão V3). Não é dado financeiro. */
+    val avisos: AvisosDoApp = AvisosEmMemoria(),
 ) {
     private val auditor = Auditor(banco.auditoriaDao(), relogio)
 
@@ -57,7 +59,8 @@ class AppContainer(
     val categorias = CategoriaRepositorio(banco, auditor, relogio)
     val movimentacoes = MovimentacaoRepositorio(banco, auditor, relogio)
     val auditoria = AuditoriaRepositorio(banco)
-    val backup = BackupServico(banco, relogio, BuildConfig.VERSION_NAME, pastaCopias, registroBackup)
+    // v0.8 (V3): restaurar um backup da v0.7 dá caixinhas zeradas aos objetivos antigos.
+    val backup = BackupServico(banco, relogio, BuildConfig.VERSION_NAME, pastaCopias, registroBackup) { objetivos.converterObjetivosAntigos() }
 
     /**
      * Contas + categorias + movimentações, sempre atualizadas. Qualquer alteração no
@@ -134,6 +137,26 @@ class RegistroDeBackupNasPreferencias(context: Context) : RegistroDeBackup {
     }
 }
 
+/** v0.8: avisos que aparecem uma vez só (guardados nas preferências; não é dado financeiro). */
+interface AvisosDoApp {
+    val conversaoV3Vista: kotlinx.coroutines.flow.StateFlow<Boolean>
+    fun marcarConversaoV3Vista()
+}
+
+class AvisosEmMemoria(inicial: Boolean = false) : AvisosDoApp {
+    override val conversaoV3Vista = MutableStateFlow(inicial)
+    override fun marcarConversaoV3Vista() { conversaoV3Vista.value = true }
+}
+
+class AvisosNasPreferencias(context: Context) : AvisosDoApp {
+    private val prefs = context.getSharedPreferences("avisos", Context.MODE_PRIVATE)
+    override val conversaoV3Vista = MutableStateFlow(prefs.getBoolean("conversao_v3", false))
+    override fun marcarConversaoV3Vista() {
+        prefs.edit().putBoolean("conversao_v3", true).apply()
+        conversaoV3Vista.value = true
+    }
+}
+
 class NkPayAplicacao : Application() {
     lateinit var container: AppContainer
         private set
@@ -146,6 +169,7 @@ class NkPayAplicacao : Application() {
             banco = NkPayBanco.criar(this),
             pastaCopias = File(filesDir, "copias-de-seguranca"),
             registroBackup = RegistroDeBackupNasPreferencias(this),
+            avisos = AvisosNasPreferencias(this),
         )
         // Primeira abertura: cria as categorias sugeridas (só age se faltarem).
         // v0.4: categorias que vieram da v0.3 sem ícone recebem a aparência sugerida (auditada).
@@ -153,6 +177,7 @@ class NkPayAplicacao : Application() {
             container.categorias.garantirCategoriasIniciais()
             container.categorias.aplicarAparenciaSugerida()
             container.categorias.garantirJurosRecebidos() // v0.5
+            container.objetivos.converterObjetivosAntigos() // v0.8 (V3): caixinhas zeradas, nenhum saldo muda
         }
     }
 }
