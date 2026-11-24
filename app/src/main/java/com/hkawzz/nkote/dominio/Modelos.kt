@@ -25,7 +25,16 @@ enum class Natureza(val rotulo: String) {
 
     /** v0.5: pessoa a quem emprestei (me deve). */
     EMPRESTIMO_CONCEDIDO("Empréstimo concedido"),
+
+    /**
+     * v0.8 (R2, ADR 0032): a conta interna de um objetivo. Dinheiro seu, guardado: entra no
+     * Saldo total e no Guardado, nunca no Saldo disponível. NÃO é meio de pagamento.
+     */
+    CAIXINHA("Caixinha"),
     ;
+
+    /** v0.8: dinheiro seu (contas próprias e caixinhas): Saldo total e fluxo. */
+    val ehDinheiroProprio: Boolean get() = this == PROPRIO || this == CAIXINHA
 
     /** Só cartão e crediário (telas de cartões, faturas e Análises de crédito). */
     val ehCredito: Boolean get() = this == CARTAO || this == CREDIARIO

@@ -43,7 +43,7 @@ fun CompraEntidade.paraDominio() = com.hkawzz.nkote.dominio.Compra(
 )
 
 fun ObjetivoEntidade.paraDominio() = com.hkawzz.nkote.dominio.Objetivo(
-    id, nome, icone, cor, metaCentavos, prazo?.let { java.time.LocalDate.parse(it) }, concluidoEm, arquivado,
+    id, nome, icone, cor, metaCentavos, prazo?.let { java.time.LocalDate.parse(it) }, concluidoEm, arquivado, contaCaixinhaId,
 )
 
 fun MovimentoReservaEntidade.paraDominio() = com.hkawzz.nkote.dominio.MovimentoReserva(

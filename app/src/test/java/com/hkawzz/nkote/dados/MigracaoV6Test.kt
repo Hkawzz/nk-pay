@@ -108,14 +108,15 @@ class MigracaoV6Test {
         val banco = abrirComoOApp()
         try {
             val db = banco.openHelper.writableDatabase
-            assertEquals(6, db.version)
+            assertEquals(NkPayBanco.VERSAO, db.version) // v0.8: o caminho 5 → 6 → 7 termina na versão atual (ADR 0033)
             for (t in tabelasV5) assertEquals("tabela $t mudou", antes.getValue(t), foto({ db.query(it) }, consultaDe(t)))
             for (t in listOf("objetivo", "movimento_reserva")) db.query("SELECT COUNT(*) FROM $t").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
             // O SQL das tabelas novas é idêntico ao do esquema 6 exportado pelo Room.
             for (o in esquema(6).getValue("entities").jsonArray.map { it.jsonObject }.filter { it.getValue("tableName").jsonPrimitive.content in setOf("objetivo", "movimento_reserva") }) {
                 val t = o.getValue("tableName").jsonPrimitive.content
                 val sql = o.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", t).replace("CREATE TABLE IF NOT EXISTS", "CREATE TABLE")
-                db.query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(t)).use { c -> assertTrue(c.moveToFirst()); assertEquals(sql, c.getString(0)) }
+                // v0.8: a migração 6 → 7 acrescenta contaCaixinhaId ao objetivo (ADR 0033).
+                db.query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(t)).use { c -> assertTrue(c.moveToFirst()); assertEquals(sql, c.getString(0).replace("`contaCaixinhaId` TEXT, ", "")) }
             }
             // A compra com juros continua com juros; saldos iguais.
             val compra = runBlocking { banco.compraDao().buscar("c1") }!!.paraDominio()
@@ -135,7 +136,7 @@ class MigracaoV6Test {
     @Test
     fun `copia antes de migrar e backup da v0_6 restaura na v0_7 com objetivos ida e volta e a v0_6 recusa a v0_7`() {
         criarBancoV5()
-        assertTrue(copiarAntesDeMigrar(arquivo, pasta.newFolder("c"), NkPayBanco.VERSAO, 1000)!!.name.startsWith("banco-v5-antes-da-v6"))
+        assertTrue(copiarAntesDeMigrar(arquivo, pasta.newFolder("c"), NkPayBanco.VERSAO, 1000)!!.name.startsWith("banco-v5-antes-da-v${NkPayBanco.VERSAO}")) // v0.8: a versão atual é a 7
         val banco = abrirComoOApp()
         try {
             val servico = BackupServico(banco, RelogioFalso(), "teste", pasta.newFolder("copias"), RegistroDeBackupEmMemoria())
@@ -169,7 +170,7 @@ class MigracaoV6Test {
             val v7 = ByteArrayOutputStream().also { runBlocking { servico.exportar(it) } }.toByteArray()
             runBlocking { banco.objetivoDao().inserir(ObjetivoEntidade("o3", "Depois", null, null, null, null, null, false, 9, 9, null)) }
             val lido = servico.ler(ByteArrayInputStream(v7))
-            assertEquals(6, lido.manifesto.versaoBanco)
+            assertEquals(NkPayBanco.VERSAO, lido.manifesto.versaoBanco) // v0.8: a versão atual é a 7
             assertEquals(2, lido.manifesto.objetivos)
             runBlocking { servico.restaurar(lido) }
             assertEquals(tudo, runBlocking { banco.backupDao().let { listOf(it.objetivos(), it.movimentosReserva(), it.contas(), it.movimentacoes()) } })

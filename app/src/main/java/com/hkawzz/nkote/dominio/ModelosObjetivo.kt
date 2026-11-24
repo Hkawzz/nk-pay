@@ -21,6 +21,8 @@ data class Objetivo(
     val prazo: LocalDate? = null,
     val concluidoEm: Long? = null,
     val arquivado: Boolean = false,
+    /** v0.8: a conta CAIXINHA (null = objetivo da v0.7 ainda sem caixinha). */
+    val contaCaixinhaId: String? = null,
 ) {
     val concluido: Boolean get() = concluidoEm != null
     /** Ativo = nem concluído nem arquivado. Só se guarda em objetivo ativo. */
