@@ -80,11 +80,14 @@ object Saldos {
      * Contas arquivadas continuam contando: arquivar só esconde a conta das novas
      * escolhas, e o dinheiro dela não deixa de existir.
      */
-    fun resumo(contas: List<Conta>, movimentacoes: List<Movimentacao>, reservado: Long = 0): Resumo {
+    // v0.8 (R2, regra 6G.2): Saldo total = próprias + caixinhas; Guardado = Σ caixinhas;
+    // Saldo disponível = Saldo total − Guardado (= só as contas próprias). O "carimbo" deixou de existir.
+    fun resumo(contas: List<Conta>, movimentacoes: List<Movimentacao>): Resumo {
         val saldos = saldosPorConta(contas, movimentacoes)
         val dinheiroProprio = contas
-            .filter { it.natureza == Natureza.PROPRIO }
+            .filter { it.natureza.ehDinheiroProprio }
             .sumOf { saldos.getValue(it.id) }
+        val reservado = contas.filter { it.natureza == Natureza.CAIXINHA }.sumOf { saldos.getValue(it.id) }
         val beneficios = contas
             .filter { it.natureza == Natureza.BENEFICIO }
             .map { SaldoDeConta(it, saldos.getValue(it.id)) }

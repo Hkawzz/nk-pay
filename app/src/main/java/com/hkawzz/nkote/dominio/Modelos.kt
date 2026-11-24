@@ -36,6 +36,9 @@ enum class Natureza(val rotulo: String) {
     /** v0.8: dinheiro seu (contas próprias e caixinhas): Saldo total e fluxo. */
     val ehDinheiroProprio: Boolean get() = this == PROPRIO || this == CAIXINHA
 
+    /** v0.8 (R2): as únicas contas que pagam, recebem e aparecem nas listas de "pagar com" e "conta". */
+    val ehMeioDePagamento: Boolean get() = this == PROPRIO || this == BENEFICIO
+
     /** Só cartão e crediário (telas de cartões, faturas e Análises de crédito). */
     val ehCredito: Boolean get() = this == CARTAO || this == CREDIARIO
 
@@ -86,6 +89,8 @@ data class Conta(
 ) {
     val ehCredito: Boolean get() = natureza.ehCredito
     val ehContaDeTerceiros: Boolean get() = natureza.ehContaDeTerceiros
+    /** v0.8 (R2): conta própria ou de benefício (nunca caixinha nem conta de terceiros). */
+    val ehMeioDePagamento: Boolean get() = natureza.ehMeioDePagamento
 }
 
 data class Categoria(
@@ -127,4 +132,6 @@ object CategoriasDoSistema {
     const val ENCARGOS_FINANCEIROS = "ENCARGOS_FINANCEIROS"
     /** v0.5: receita dos juros de empréstimos concedidos (regra 6E.5). */
     const val JUROS_RECEBIDOS = "JUROS_RECEBIDOS"
+    /** v0.8 (R2): receita dos rendimentos das caixinhas (regra 6G.2). */
+    const val RENDIMENTOS = "RENDIMENTOS"
 }

@@ -12,6 +12,8 @@ import java.time.LocalDate
 object Validacao {
 
     fun conta(conta: Conta): String? = when {
+        // v0.8 (R2): a caixinha é criada e mantida pelo objetivo, nunca pela tela de contas.
+        conta.natureza == Natureza.CAIXINHA -> MENSAGEM_CAIXINHA
         conta.nome.isBlank() -> "Dê um nome para a conta."
         conta.nome.length > 60 -> "O nome pode ter no máximo 60 caracteres."
         conta.natureza == Natureza.BENEFICIO && conta.tipoBeneficio == null ->
@@ -30,7 +32,12 @@ object Validacao {
     }
 
     /** Regra 6B.7 / ADR 0017: contas de crédito não aceitam lançamentos avulsos. */
-    fun aceitaLancamentoAvulso(natureza: Natureza): Boolean = !natureza.ehContaDeTerceiros
+    // v0.8 (R2, ADR 0032): caixinhas também não (não são meio de pagamento).
+    fun aceitaLancamentoAvulso(natureza: Natureza): Boolean = natureza.ehMeioDePagamento
+
+    /** v0.8 (R2): a caixinha só muda pela aba Objetivos. */
+    const val MENSAGEM_CAIXINHA =
+        "Caixinhas não são meio de pagamento: elas só mudam por Guardar, Retirar, Mover e Rendimento, na aba Objetivos. Para usar o dinheiro, retire para uma conta e pague por ela."
 
     const val MENSAGEM_CONTA_DE_CREDITO =
         "Cartões, crediários e empréstimos só mudam pelas telas deles (compras, pagamentos e recebimentos)."

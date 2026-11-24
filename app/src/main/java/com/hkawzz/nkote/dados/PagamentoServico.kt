@@ -61,7 +61,8 @@ class PagamentoServico(
             ?: return@transacaoConferida Resultado.Falha("Conta a pagar não encontrada.")
         // v0.4: parcelas de cartão/crediário são pagas por transferência, na tela do cartão (ADR 0015).
         if (obrig.contaCreditoId != null) return@transacaoConferida Resultado.Falha("Esta é uma parcela de cartão ou crediário. Pague pela tela do cartão.")
-        val conta = contaDao.buscar(contaId)?.takeIf { it.excluidoEm == null }
+        // v0.8 (R2): só conta própria ou de benefício paga (nunca caixinha nem conta de terceiros).
+        val conta = contaDao.buscar(contaId)?.takeIf { it.excluidoEm == null && com.hkawzz.nkote.dominio.Natureza.valueOf(it.natureza).ehMeioDePagamento }
             ?: return@transacaoConferida Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
 
         val plano = when (val r = Pagamentos.planejar(restante(obrigacaoId), valorPago, classificacao)) {

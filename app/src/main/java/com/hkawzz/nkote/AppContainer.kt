@@ -71,7 +71,8 @@ class AppContainer(
             banco.objetivoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
             banco.movimentoReservaDao().observarValidos().map { l -> l.map { it.paraDominio() } },
         ) { c, cat, m, obj, mov ->
-            VisaoFinanceira(c, cat, m, com.hkawzz.nkote.dominio.VisaoObjetivos(obj, mov))
+            // v0.8: as caixinhas vêm das contas; os movimentos de reserva da v0.7 ficam só para leitura.
+            VisaoFinanceira(c, cat, m, com.hkawzz.nkote.dominio.VisaoObjetivos(obj, mov, c, m))
         }.catch { semBanco(it) }.stateIn(escopo, SharingStarted.Eagerly, null)
 
     // --- Contas a pagar (v0.3) ---

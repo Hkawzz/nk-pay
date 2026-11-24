@@ -25,9 +25,14 @@ class ContaFixaRepositorio(
 
     suspend fun buscar(id: String): ContaFixa? = dao.buscar(id)?.takeIf { it.excluidoEm == null }?.paraDominio()
 
+    /** v0.8 (R2): a conta padrão de uma conta fixa precisa ser meio de pagamento (nunca caixinha nem terceiros). */
+    private suspend fun contaPadraoInvalida(id: String?): Boolean =
+        id != null && banco.contaDao().buscar(id)?.let { com.hkawzz.nkote.dominio.Natureza.valueOf(it.natureza).ehMeioDePagamento } != true
+
     suspend fun criar(f: ContaFixa): Resultado<String> {
         val limpa = f.copy(nome = f.nome.trim())
         Validacao.contaFixa(limpa)?.let { return Resultado.Falha(it) }
+        if (contaPadraoInvalida(limpa.contaPadraoId)) return Resultado.Falha("Escolha uma conta própria ou de benefício como conta padrão.")
         val agora = relogio.agora()
         val nova = ContaFixaEntidade(
             id = relogio.novoId(), nome = limpa.nome, valorPadraoCentavos = limpa.valorPadrao,
@@ -49,6 +54,7 @@ class ContaFixaRepositorio(
     suspend fun editar(f: ContaFixa): Resultado<Unit> {
         val limpa = f.copy(nome = f.nome.trim())
         Validacao.contaFixa(limpa)?.let { return Resultado.Falha(it) }
+        if (contaPadraoInvalida(limpa.contaPadraoId)) return Resultado.Falha("Escolha uma conta própria ou de benefício como conta padrão.")
         return banco.withTransaction {
             val antes = dao.buscar(f.id)?.takeIf { it.excluidoEm == null }
                 ?: return@withTransaction Resultado.Falha("Conta fixa não encontrada.")

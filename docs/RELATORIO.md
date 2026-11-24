@@ -32,6 +32,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#65](https://github.com/Hkawzz/nkote/pull/65) | Renomeação para NKote (sozinho) | Nome visível "NKote"/"NKote debug"; `applicationId` e pacotes `com.hkawzz.nkote`; esquemas 1 a 6 movidos para a pasta nova; backups novos `.nkote` (restauração aceita `.nkpay`); repositório `Hkawzz/nkote`; APK da Release `nkote-vX.Y.Z.apk`; teste novo restaurando um `.nkpay` da v0.7 | ✅ |
 | [#66](https://github.com/Hkawzz/nkote/pull/66) | R1 (sozinho) | Saída sem saldo recusada num ponto só da camada de dados (`transacaoConferida`): despesa, transferência, Pagar, fatura, parcelas, emprestar, excluir/editar entrada, ajuste para baixo e desfazer recebimento; contas já negativas só aceitam o que não as piora. Nenhum teste antigo mudou | ✅ |
 | [#67](https://github.com/Hkawzz/nkote/pull/67) | Banco v7 | Migração 6 → 7: `objetivo.contaCaixinhaId` vazia e tabela `configuracao_backup`; natureza `CAIXINHA`; banco v6 fiel com objetivos, saldos de conta idênticos; backup da v0.7 restaura, a v0.7 recusa a v0.8 | ✅ |
+| [#68](https://github.com/Hkawzz/nkote/pull/68) | Caixinhas: domínio e validação | Cada objetivo tem uma conta `CAIXINHA`: guardar, retirar, mover e rendimento viram transferências e entrada; Saldo total = próprias + caixinhas, Guardado = Σ caixinhas; a caixinha não é meio de pagamento (lançamento avulso, Pagar, fatura, empréstimo, conta padrão e tela de contas recusam); a tela do objetivo já pede a conta | ✅ |
 
 **Decisões tomadas sozinho**
 - **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.
@@ -39,11 +40,15 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **O ajuste manual do guardado deixa de existir:** com caixinhas de verdade, o saldo é o que entrou e saiu dela (rendimento é uma entrada; correções são desfazer e lançar de novo).
 - **A categoria "Rendimentos" é criada pelo app** quando falta, com auditoria, como "Juros recebidos"; a migração mexe só no esquema.
 - **A configuração do backup automático não vai no `.nkote`:** a pasta escolhida é uma permissão deste celular.
+- **Guardar e retirar só com conta própria** (benefício não se guarda, como na v0.7). Rendimento pode entrar também em objetivo concluído ou arquivado.
+- **Excluir um objetivo arquiva a caixinha** (zerada) em vez de excluí-la: as transferências antigas continuam sendo entre contas suas, e o fluxo do passado não muda.
+- **O PR das caixinhas já adaptou a tela do objetivo** (escolher a conta, rendimento no lugar de ajustar, histórico por transferências), porque a interface antiga não compilaria com o serviço novo. O PR das telas fica com a Início, os textos de ajuda e os testes de interface.
 - **Os nomes das classes (`NkPayBanco`, `NkPayTema`...) ficam:** a renomeação troca só o necessário (nome visível, identificador, pacotes, extensão e repositório).
 
 **Pendências:** nenhuma até aqui.
 
 **Problemas encontrados:**
+- Caixinhas (#68): pela R2, os testes de objetivos da v0.7 mudaram de propósito: `ObjetivosTest` e `ObjetivoServicoTest` foram reescritos para caixinhas (tabela da 6G.2, R1 no guardar, "não é meio de pagamento" em cada serviço, desfazer, O3); `InicioGuardadoUiTest` e `AnalisesObjetivosUiTest` passaram a informar a conta e trocaram o aviso O2 (que saiu) pela recusa da R1. No `SaldosTest` (v0.1), o teste "reservado é descontado do disponível" agora guarda numa caixinha, com os mesmos números (Saldo total R$ 1.500,00, disponível R$ 1.100,00).
 - Banco v7 (#67): 4 linhas do `MigracaoV6Test` (da v0.7) mudaram, sem como evitar, porque fixavam a versão 6 do banco (versão atual, nome da cópia e versão do manifesto) e a forma exata da tabela `objetivo` (agora com `contaCaixinhaId`). Nenhuma regra testada mudou.
 - Renomeação (#65): o `ObjetivosUiTest` (da v0.7) falhou na suíte completa, aqui e no CI. Causa: depois de "Criar objetivo", ele esperava o texto "Fone", que também está no campo do formulário; numa máquina lenta, o toque seguinte ia para o campo, antes de a tela voltar para a lista. Correção só no teste: esperar a seção "Ativos" antes de tocar (uma linha). Fora isso, nenhum teste mudou além dos pacotes e do caminho dos esquemas.
 

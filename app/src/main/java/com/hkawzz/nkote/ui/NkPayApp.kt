@@ -237,7 +237,7 @@ fun NkPayApp() {
             ) { entrada ->
                 com.hkawzz.nkote.ui.objetivos.OperacaoObjetivoTela(
                     id = entrada.arguments?.getString("id").orEmpty(),
-                    tipo = com.hkawzz.nkote.dominio.TipoMovimentoReserva.valueOf(entrada.arguments?.getString("tipo") ?: "GUARDAR"),
+                    tipo = com.hkawzz.nkote.ui.objetivos.OperacaoCaixinha.valueOf(entrada.arguments?.getString("tipo") ?: "GUARDAR"),
                     aoVoltar = { navController.popBackStack() },
                 )
             }

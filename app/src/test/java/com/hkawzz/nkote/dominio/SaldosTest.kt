@@ -107,7 +107,11 @@ class SaldosTest {
 
     @Test
     fun `reservado e descontado do disponivel`() {
-        val r = Saldos.resumo(contas, emptyList(), reservado = 40_000)
+        // v0.8 (R2): o guardado é o saldo das caixinhas; os R$ 400,00 saem do Pix para uma caixinha.
+        val caixinha = Conta("cx", "Viagem", Natureza.CAIXINHA, null, 0, java.time.LocalDate.of(2026, 12, 1))
+        val guardar = Movimentacao("g", TipoMovimentacao.TRANSFERENCIA, java.time.LocalDate.of(2026, 12, 1), 40_000, "pix", "cx")
+        val r = Saldos.resumo(contas + caixinha, listOf(guardar))
+        assertEquals(40_000, r.reservado)
         assertEquals(150_000, r.dinheiroProprio)
         assertEquals(110_000, r.disponivel)
     }

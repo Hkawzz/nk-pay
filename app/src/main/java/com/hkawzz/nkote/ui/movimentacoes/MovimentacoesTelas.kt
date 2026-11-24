@@ -163,7 +163,7 @@ private fun Filtros(vm: MovimentacoesViewModel, v: VisaoFinanceira) {
         Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             CampoEscolha(
                 rotulo = "Conta",
-                opcoes = listOf(Opcao<String?>(null, "Todas as contas")) + v.contas.filter { !it.ehContaDeTerceiros }.map { Opcao<String?>(it.id, it.nome) },
+                opcoes = listOf(Opcao<String?>(null, "Todas as contas")) + v.contas.filter { it.ehMeioDePagamento }.map { Opcao<String?>(it.id, it.nome) },
                 selecionado = vm.filtroConta,
                 aoEscolher = { vm.filtroConta = it },
             )
@@ -205,7 +205,7 @@ fun MovimentacaoFormTela(id: String?, contaInicial: String?, aoVoltar: () -> Uni
         // Contas e categorias arquivadas não aparecem nas escolhas, exceto a que já está selecionada.
         // Contas de crédito não aceitam lançamentos avulsos (ADR 0017).
         fun opcoesDeConta(selecionada: String?) = v.contas
-            .filter { (!it.arquivada && !it.ehContaDeTerceiros) || it.id == selecionada }
+            .filter { (!it.arquivada && it.ehMeioDePagamento) || it.id == selecionada }
             .map { c ->
                 val natureza = if (c.natureza == Natureza.BENEFICIO) "Benefício · " else ""
                 Opcao(c.id, c.nome, natureza + "Saldo " + Dinheiro.formatar(v.saldo(c.id)))

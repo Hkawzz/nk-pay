@@ -73,6 +73,8 @@ class ContaRepositorio(
         return banco.transacaoConferida {
             val antes = dao.buscar(conta.id)?.takeIf { it.excluidoEm == null }
                 ?: return@transacaoConferida Resultado.Falha("Conta não encontrada.")
+            // v0.8 (R2): a caixinha só muda pela aba Objetivos.
+            if (antes.natureza == Natureza.CAIXINHA.name) return@transacaoConferida Resultado.Falha(Validacao.MENSAGEM_CAIXINHA)
             // Uma conta com lançamentos não vira de crédito (nem deixa de ser): o devido deixaria de bater.
             if (Natureza.valueOf(antes.natureza).ehContaDeTerceiros != normalizada.natureza.ehContaDeTerceiros && dao.contarMovimentacoes(antes.id) > 0) {
                 return@transacaoConferida Resultado.Falha("Esta conta já tem lançamentos: ela não pode virar cartão ou crediário (nem o contrário).")
@@ -103,6 +105,7 @@ class ContaRepositorio(
     suspend fun arquivar(id: String, arquivar: Boolean = true): Resultado<Unit> = banco.withTransaction {
         val antes = dao.buscar(id)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction Resultado.Falha("Conta não encontrada.")
+        if (antes.natureza == Natureza.CAIXINHA.name) return@withTransaction Resultado.Falha(Validacao.MENSAGEM_CAIXINHA)
         if ((antes.arquivadaEm != null) == arquivar) return@withTransaction Resultado.Sucesso(Unit)
         // v0.6 (A3, A5, ADR 0027): cartão, crediário ou pessoa com algo em aberto não some das telas.
         if (arquivar && Natureza.valueOf(antes.natureza).ehContaDeTerceiros) {
@@ -169,6 +172,7 @@ class ContaRepositorio(
     suspend fun excluir(id: String): ResultadoExclusao = banco.withTransaction {
         val antes = dao.buscar(id)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction ResultadoExclusao.NaoEncontrada
+        if (antes.natureza == Natureza.CAIXINHA.name) return@withTransaction ResultadoExclusao.TemVinculos(Validacao.MENSAGEM_CAIXINHA)
         if (Natureza.valueOf(antes.natureza).ehContaDeTerceiros) {
             vinculos(id)?.let { return@withTransaction ResultadoExclusao.TemVinculos(it) }
         }
@@ -362,7 +366,14 @@ class MovimentacaoRepositorio(
     private suspend fun mensagemSeProtegida(id: String): String? = when {
         ehDeCompra(id) -> MENSAGEM_COMPRA
         ehDePagamento(id) -> MENSAGEM_PAGAMENTO
+        ehDeCaixinha(id) -> Validacao.MENSAGEM_CAIXINHA
         else -> null
+    }
+
+    /** v0.8 (R2): movimentação que entra ou sai de uma caixinha (só muda pela aba Objetivos). */
+    private suspend fun ehDeCaixinha(id: String): Boolean {
+        val m = dao.buscar(id) ?: return false
+        return listOfNotNull(m.contaId, m.contaDestinoId).any { contaDao.buscar(it)?.natureza == Natureza.CAIXINHA.name }
     }
 
     /** True se a movimentação só muda pela operação que a criou (pagamento ou compra). */
@@ -377,12 +388,17 @@ class MovimentacaoRepositorio(
     private suspend fun validar(m: Movimentacao): String? {
         val contasValidas = mutableMapOf<String, Boolean>()
         var temCredito = false
+        var temCaixinha = false
         for (id in listOfNotNull(m.contaId, m.contaDestinoId)) {
             val conta = contaDao.buscar(id)
             contasValidas[id] = conta != null && conta.excluidoEm == null
-            if (conta != null && !Validacao.aceitaLancamentoAvulso(Natureza.valueOf(conta.natureza))) temCredito = true
+            if (conta != null && !Validacao.aceitaLancamentoAvulso(Natureza.valueOf(conta.natureza))) {
+                if (conta.natureza == Natureza.CAIXINHA.name) temCaixinha = true else temCredito = true
+            }
         }
         Validacao.movimentacao(m) { contasValidas[it] == true }?.let { return it }
+        // v0.8 (R2): a caixinha não é meio de pagamento, aqui na camada de dados.
+        if (temCaixinha) return Validacao.MENSAGEM_CAIXINHA
         // Regra 6B.7 (ADR 0017): aqui, na camada de dados, e não só na tela.
         if (temCredito) return Validacao.MENSAGEM_CONTA_DE_CREDITO
         if (m.categoriaId != null) {
@@ -433,8 +449,8 @@ class MovimentacaoRepositorio(
             mensagemSeProtegida(m.id)?.let { return@transacaoConferida Resultado.Falha(it) }
             validar(limpa)?.let { return@transacaoConferida Resultado.Falha(it) }
             // Uma movimentação de conta de crédito (feita por compra/pagamento) também não muda por aqui.
-            if (contaDao.buscar(antes.contaId)?.let { Natureza.valueOf(it.natureza).ehContaDeTerceiros } == true ||
-                antes.contaDestinoId?.let { contaDao.buscar(it) }?.let { Natureza.valueOf(it.natureza).ehContaDeTerceiros } == true
+            if (contaDao.buscar(antes.contaId)?.let { !Natureza.valueOf(it.natureza).ehMeioDePagamento } == true ||
+                antes.contaDestinoId?.let { contaDao.buscar(it) }?.let { !Natureza.valueOf(it.natureza).ehMeioDePagamento } == true
             ) return@transacaoConferida Resultado.Falha(Validacao.MENSAGEM_CONTA_DE_CREDITO)
             val depois = antes.copy(
                 tipo = limpa.tipo.name,

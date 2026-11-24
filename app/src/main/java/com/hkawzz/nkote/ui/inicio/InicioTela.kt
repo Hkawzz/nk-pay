@@ -127,14 +127,6 @@ fun InicioTela(
                         alinhamento = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    // v0.7 (6F.4, O2 = a): guardado maior que o saldo é permitido, com aviso; nada é reduzido sozinho.
-                    if (r.reservado > 0 && r.disponivel < 0) {
-                        Spacer(Modifier.height(Espaco.xs))
-                        Text(
-                            AVISO_GUARDADO_MAIOR,
-                            style = MaterialTheme.typography.bodySmall, color = RosaDespesa, textAlign = TextAlign.Center,
-                        )
-                    }
                     // v0.5 (regra 6E.3): Saldo total e Guardado só aparecem quando há algo guardado (objetivos, v0.7).
                     if (r.reservado > 0) {
                         Spacer(Modifier.height(Espaco.m))
@@ -391,5 +383,3 @@ private fun Passo(numero: Int, texto: String) {
     }
 }
 
-/** v0.7 (6F.4): o aviso do Saldo disponível negativo por causa do Guardado. */
-const val AVISO_GUARDADO_MAIOR = "Seu guardado é maior que o seu saldo. Retire de um objetivo ou registre uma entrada."
