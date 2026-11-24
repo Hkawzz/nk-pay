@@ -206,12 +206,12 @@ class CompraServico(
         val compra = compraDao.buscar(compraId)?.takeIf { it.excluidoEm == null }
             ?: return@withTransaction Resultado.Falha("Compra não encontrada.")
         val parcelas = obrigacaoDao.daCompra(compraId)
-        if (parcelas.any { pagamentoDao.validosDa(it.id).isNotEmpty() }) {
-            return@withTransaction Resultado.Falha("Esta compra já tem parcela paga. Desfaça os pagamentos antes de excluir.")
-        }
-        val meses = parcelas.mapNotNull { it.mesReferencia }.toSet()
-        if (faturaDao.validosDaConta(compra.contaCreditoId).any { it.mesReferencia in meses }) {
-            return@withTransaction Resultado.Falha("Uma fatura desta compra já recebeu pagamento. Desfaça esse pagamento antes de excluir.")
+        // v0.8 (D2, regra 6G.4): a recusa diz exatamente o que trava (data, valor e fatura).
+        val travas = travas(compra, parcelas)
+        if (travas.isNotEmpty()) {
+            return@withTransaction Resultado.Falha(
+                "Esta compra tem pagamentos. Desfaça antes de excluir:\n" + travas.joinToString("\n") { "• " + it.descricao },
+            )
         }
         val grupo = relogio.novoId()
         val agora = relogio.agora()
@@ -237,6 +237,30 @@ class CompraServico(
         compraDao.atualizar(d)
         auditor.registrar(grupo, Operacao.EXCLUSAO, Auditor.COMPRA, compra.id, "Compra “${compra.descricao}” excluída", CompraEntidade.serializer(), compra, d)
         Resultado.Sucesso(Unit)
+    }
+
+    /** v0.8 (D2): o que impede excluir a compra: pagamentos de parcelas e abatimentos gerais das faturas dela. */
+    suspend fun travasDaExclusao(compraId: String): List<TravaDaCompra> {
+        val compra = compraDao.buscar(compraId)?.takeIf { it.excluidoEm == null } ?: return emptyList()
+        return travas(compra, obrigacaoDao.daCompra(compraId))
+    }
+
+    private suspend fun travas(compra: CompraEntidade, parcelas: List<ObrigacaoEntidade>): List<TravaDaCompra> {
+        val fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        fun mes(m: String?) = m?.let { YearMonth.parse(it) }?.let { "%02d/%d".format(it.monthValue, it.year) } ?: ""
+        val resultado = mutableListOf<TravaDaCompra>()
+        for (p in parcelas) for (pg in pagamentoDao.validosDa(p.id)) {
+            if (resultado.any { it.movimentacaoId == pg.movimentacaoId }) continue
+            val mov = movDao.buscar(pg.movimentacaoId) ?: continue
+            resultado += TravaDaCompra("Pagamento de ${Dinheiro.formatar(mov.valorCentavos)} em ${LocalDate.parse(mov.data).format(fmt)} na fatura de ${mes(p.mesReferencia)}", mov.id)
+        }
+        val meses = parcelas.mapNotNull { it.mesReferencia }.toSet()
+        for (g in faturaDao.validosDaConta(compra.contaCreditoId).filter { it.mesReferencia in meses }) {
+            if (resultado.any { it.movimentacaoId == g.movimentacaoId }) continue
+            val mov = movDao.buscar(g.movimentacaoId) ?: continue
+            resultado += TravaDaCompra("Abatimento de ${Dinheiro.formatar(g.valorCentavos)} em ${LocalDate.parse(mov.data).format(fmt)} na fatura de ${mes(g.mesReferencia)}", mov.id)
+        }
+        return resultado
     }
 
     /**
@@ -266,3 +290,6 @@ class CompraServico(
         return achados.take(5)
     }
 }
+
+/** v0.8 (D2): um pagamento ou abatimento que impede excluir a compra; desfazer pela transferência. */
+data class TravaDaCompra(val descricao: String, val movimentacaoId: String)

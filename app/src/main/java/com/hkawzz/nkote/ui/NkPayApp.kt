@@ -382,6 +382,17 @@ fun NkPayApp() {
                     id = entrada.arguments?.getString("id"),
                     contaInicial = entrada.arguments?.getString("conta"),
                     aoVoltar = { navController.popBackStack() },
+                    // v0.8 (D1): "Abrir ..." leva à tela que resolve o lançamento protegido.
+                    aoAbrirProtegida = { destino ->
+                        navController.navigate(
+                            when (destino) {
+                                is com.hkawzz.nkote.dados.DestinoProtegido.Cartao -> Rotas.cartao(destino.contaId)
+                                is com.hkawzz.nkote.dados.DestinoProtegido.Emprestimo -> Rotas.emprestimo(destino.emprestimoId)
+                                is com.hkawzz.nkote.dados.DestinoProtegido.Caixinha -> Rotas.objetivo(destino.objetivoId)
+                                is com.hkawzz.nkote.dados.DestinoProtegido.ContaAPagar -> Rotas.obrigacaoForm(id = destino.obrigacaoId)
+                            },
+                        )
+                    },
                 )
             }
         }

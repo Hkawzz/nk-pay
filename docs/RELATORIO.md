@@ -35,6 +35,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 | [#68](https://github.com/Hkawzz/nkote/pull/68) | Caixinhas: domínio e validação | Cada objetivo tem uma conta `CAIXINHA`: guardar, retirar, mover e rendimento viram transferências e entrada; Saldo total = próprias + caixinhas, Guardado = Σ caixinhas; a caixinha não é meio de pagamento (lançamento avulso, Pagar, fatura, empréstimo, conta padrão e tela de contas recusam); a tela do objetivo já pede a conta | ✅ |
 | [#69](https://github.com/Hkawzz/nkote/pull/69) | Caixinhas: telas | Textos de ajuda "?" no modelo de caixinhas; rendimentos nas Análises; teste de interface de que despesa, Pagar, fatura, crediário e empréstimo nunca listam caixinhas | ✅ |
 | [#70](https://github.com/Hkawzz/nkote/pull/70) | Conversão V3 | Objetivos da v0.7 ganham caixinha zerada ao abrir o app e depois de restaurar um backup; nenhum saldo de conta muda; histórico antigo só para leitura; mensagem de uma vez só na Início e em Objetivos | ✅ |
+| [#71](https://github.com/Hkawzz/nkote/pull/71) | D1 e D2 | Excluir pela aba Movimentações um lançamento protegido mostra o motivo e "Abrir cartão/empréstimo/caixinha/conta a pagar"; a recusa de excluir uma compra lista cada pagamento ou abatimento (data, valor, fatura) com "Desfazer" | ✅ |
 
 **Decisões tomadas sozinho**
 - **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.

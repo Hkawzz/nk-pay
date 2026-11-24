@@ -63,6 +63,8 @@ class MovimentacaoFormViewModel(
     var salvando by mutableStateOf(false); private set
     /** True se esta movimentação foi criada pelo botão Pagar (só muda pelo pagamento). */
     var ehPagamentoDeConta by mutableStateOf(false); private set
+    /** v0.8 (D1): por que esta movimentação é protegida e qual tela a resolve. */
+    var protecao by mutableStateOf<com.hkawzz.nkote.dados.Protecao?>(null); private set
 
     /** A movimentação como estava no banco (na edição). */
     private var original: Movimentacao? = null
@@ -72,6 +74,7 @@ class MovimentacaoFormViewModel(
         if (id != null) {
             viewModelScope.launch {
                 ehPagamentoDeConta = container.movimentacoes.ehPagamentoDeConta(id)
+                protecao = container.movimentacoes.protecao(id)
                 container.movimentacoes.buscar(id)?.let { m ->
                     original = m
                     tipo = m.tipo
@@ -156,8 +159,11 @@ class MovimentacaoFormViewModel(
     fun excluir(aoTerminar: () -> Unit) {
         val alvo = id ?: return
         viewModelScope.launch {
-            container.movimentacoes.excluir(alvo)
-            aoTerminar()
+            // v0.8 (D1): uma recusa nunca fica sem resposta.
+            when (val r = container.movimentacoes.excluir(alvo)) {
+                is Resultado.Sucesso -> aoTerminar()
+                is Resultado.Falha -> erroGeral = r.mensagem
+            }
         }
     }
 }
