@@ -32,4 +32,9 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0026](0026-preparar-mes.md) | Preparar próximo mês | Aceita |
 | [0027](0027-excluir-e-arquivar-terceiros.md) | Excluir e arquivar cartões, crediários e pessoas | Aceita |
 | [0028](0028-banco-v6.md) | Banco versão 6: objetivos e movimentos de reserva | Aceita |
-| [0029](0029-objetivos.md) | Objetivos: reservas virtuais sobre o dinheiro próprio (O1 b, O2 a, O3 a) | Aceita |
+| [0029](0029-objetivos.md) | Objetivos: reservas virtuais sobre o dinheiro próprio (O1 b, O2 a, O3 a) | Substituída em parte pela 0032 |
+| [0030](0030-renomeacao-nkote.md) | Renomeação para NKote | Aceita |
+| [0031](0031-saida-sem-saldo.md) | Saída sem saldo é recusada (R1) | Aceita |
+| [0032](0032-caixinhas.md) | Objetivos como caixinhas de verdade (R2 e V3) | Aceita |
+| [0033](0033-banco-v7.md) | Banco versão 7: caixinhas e backup automático | Aceita |
+| [0034](0034-backup-automatico-e-inicio.md) | Backup automático, Início completa e preparação para a Play | Aceita |

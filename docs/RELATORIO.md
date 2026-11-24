@@ -18,6 +18,31 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 
 ---
 
+## v0.8.0 (em andamento) - NKote: saldo sem cheque especial, caixinhas, Início completa e backup automático
+
+**Objetivo:** a versão do teste profundo e do teste fechado na Play. Novo nome, **NKote**; saída sem saldo recusada (R1); objetivos como caixinhas de verdade (R2), com a conversão dos objetivos da v0.7 (V3); exclusões protegidas que sempre respondem (D1, D2); Início completa (V1); backup automático (V2); AAB e Mais → Sobre para a Play (G). Fontes: `planejamento/briefing-v0.8-autonomo.md` (prevalece), `proposta-execucao-v0.8.md`, `achados-teste-v0.7.md` e `logo/LEIA-ME-logo.md`.
+
+**Como foi feito:** de forma autônoma, na ordem de PRs do briefing. A renomeação foi sozinha, logo depois dos docs; a R1 também. Cada PR termina com o CI verde e esta seção atualizada.
+
+**PRs**
+
+| # | Etapa | O que entrou | Estado |
+|---|---|---|---|
+| [#64](https://github.com/Hkawzz/nk-pay/pull/64) | Docs | Regra 6G (R1, caixinhas, V3, D1/D2, Início, backup automático) e decisões 0030 a 0034. Sem código | ✅ |
+
+**Decisões tomadas sozinho**
+- **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.
+- **A R1 é conferida num ponto só da camada de dados:** a transação compara os saldos de antes e de depois e desfaz tudo se uma conta própria, de benefício ou de caixinha ficar negativa e menor do que estava. Assim excluir, editar e desfazer também passam pela regra.
+- **O ajuste manual do guardado deixa de existir:** com caixinhas de verdade, o saldo é o que entrou e saiu dela (rendimento é uma entrada; correções são desfazer e lançar de novo).
+- **A categoria "Rendimentos" é criada pelo app** quando falta, com auditoria, como "Juros recebidos"; a migração mexe só no esquema.
+- **A configuração do backup automático não vai no `.nkote`:** a pasta escolhida é uma permissão deste celular.
+- **Os nomes das classes (`NkPayBanco`, `NkPayTema`...) ficam:** a renomeação troca só o necessário (nome visível, identificador, pacotes, extensão e repositório).
+
+**Pendências:** nenhuma até aqui.
+
+**Problemas encontrados:** nenhum até aqui.
+---
+
 ## v0.7.0 (em validação) - Objetivos e reservas
 
 **Objetivo:** a aba Objetivos (reservas virtuais sobre o dinheiro próprio), o Guardado de verdade no Saldo disponível, a seção Objetivos nas Análises, e a preparação do teste profundo (roteiro e registro de problemas). Fontes: `planejamento/briefing-v0.7-autonomo.md` (prevalece) e `planejamento/proposta-execucao-v0.7.md`.

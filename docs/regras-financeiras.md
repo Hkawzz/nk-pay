@@ -104,7 +104,7 @@ As **entradas do mês** e as **despesas do mês** consideram só `ENTRADA` e `DE
 
 ```
 Dinheiro próprio = Σ saldos das contas PROPRIO
-Reservado        = Σ reservas dos objetivos        (Guardado; R$ 0,00 até a v0.6, ver 6F na v0.7)
+Reservado        = Σ reservas dos objetivos        (Guardado; R$ 0,00 até a v0.6, ver 6F na v0.7; na v0.8, Σ caixinhas, ver 6G)
 Disponível       = Dinheiro próprio − Reservado
 ```
 
@@ -441,7 +441,7 @@ Uma parcela com vencimento antes de hoje e restante > 0 fica **Atrasada**: "venc
 
 ---
 
-## 6F. Objetivos e reservas ✅ v0.7
+## 6F. Objetivos e reservas ✅ v0.7 (substituída pela 6G na v0.8)
 
 Aprovadas no briefing da v0.7 (decisões O1 = b, O2 = a, O3 = a). Ver [0028](decisoes/0028-banco-v6.md) e [0029](decisoes/0029-objetivos.md).
 
@@ -502,6 +502,66 @@ Seção **Objetivos**: guardado atual, progresso de cada objetivo, **guardado no
 
 ### 6F.7 Fora da v0.7
 - Guardar dentro do Preparar mês e cards de objetivos na Início (ficam para a v0.8, se fizerem falta).
+
+---
+
+## 6G. Saldo sem cheque especial e caixinhas ✅ v0.8
+
+Aprovadas no briefing da v0.8 (R1, R2, V1 a V3). **A seção 6G substitui a 6F** no que é diferente: o "carimbo" deixa de existir. Ver [0031](decisoes/0031-saida-sem-saldo.md), [0032](decisoes/0032-caixinhas.md) e [0033](decisoes/0033-banco-v7.md).
+
+### 6G.1 Saída sem saldo é recusada (R1)
+- Toda operação que **diminui** o saldo de uma conta **própria, de benefício ou de caixinha** é recusada se deixar essa conta **negativa**: despesa, transferência (origem), pagar conta a pagar, fatura, parcela de crediário ou de empréstimo, emprestar, guardar em caixinha, e também **excluir ou editar uma entrada**, **ajuste para baixo** e **desfazer um recebimento**.
+- O que conta é o **saldo atual da conta depois da operação** (todos os lançamentos, qualquer que seja a data). Uma despesa com data antiga que deixe o saldo de hoje negativo é recusada; se o saldo de hoje continuar positivo, é aceita.
+- **Sem cheque especial.** Contas que já estão negativas **não mudam** e só aceitam operações que não as deixem **mais** negativas.
+- Mensagem: *"Saldo insuficiente no Pix (R$ 40,00). Registre a entrada antes ou escolha outra conta."* (o saldo é o de antes da operação).
+- Cartões, crediários e empréstimos (contas de terceiros) seguem as regras próprias.
+
+> **Exemplo.** Pix com R$ 40,00. Despesa de R$ 50,00 no Pix: **recusada**. Despesa de R$ 40,00: aceita (Pix R$ 0,00). Excluir a entrada de R$ 30,00 que formou o saldo, com o Pix em R$ 20,00: **recusada** (ficaria −R$ 10,00).
+
+### 6G.2 Caixinhas (R2)
+Cada objetivo tem uma **caixinha**: uma conta interna (natureza `CAIXINHA`) que guarda dinheiro de verdade. **Ela começa zerada.**
+
+| Operação (Pix com R$ 1.000,00) | O que é gravado | Pix | Caixinha Viagem | Saldo total | Guardado | Saldo disponível |
+|---|---|---|---|---|---|---|
+| Guardar R$ 300,00 (de: Pix) | Transferência Pix → caixinha | 700,00 | 300,00 | 1.000,00 | 300,00 | **700,00** |
+| Rendimento de R$ 2,00 | **Entrada** na caixinha, categoria "Rendimentos" | 700,00 | 302,00 | 1.002,00 | 302,00 | 700,00 |
+| Retirar R$ 100,00 (para: Pix) | Transferência caixinha → Pix | 800,00 | 202,00 | 1.002,00 | 202,00 | 800,00 |
+
+```
+Saldo total      = Σ contas PROPRIO + Σ caixinhas
+Guardado         = Σ caixinhas
+Saldo disponível = Saldo total − Guardado        (= Σ contas PROPRIO)
+```
+
+- **Guardar** pergunta de qual conta própria sai o dinheiro (R1 vale: sem saldo, recusado). **Retirar** pergunta para qual conta volta. **Mover** = transferência caixinha → caixinha.
+- Guardar, retirar e mover **não** são entrada, despesa nem fluxo (são transferências entre contas suas). O **rendimento é entrada** (receita): aparece nas entradas do mês, no fluxo e nas Análises.
+- **A caixinha não é meio de pagamento:** ela nunca aparece como conta em despesa, transferência avulsa, Pagar, fatura, empréstimo nem em nenhuma lista de "pagar com". Essa regra fica na camada de dados. Para gastar: retire para uma conta e pague por ela (O1 b continua).
+- Continuam valendo: excluir só com a caixinha **zerada** (O3 a), concluir e arquivar (o dinheiro continua na caixinha), meta, prazo, "guardar R$ X/mês" e progresso (= saldo da caixinha ÷ meta).
+- **O aviso "guardado maior que o saldo" (O2) deixa de existir**: a despesa sem saldo é recusada pela R1.
+- **Desfazer** um guardar, retirar, mover ou rendimento exclui a transferência (ou a entrada), com a R1 conferindo as duas contas.
+
+### 6G.3 Objetivos que já existiam na v0.7 (V3 = b)
+- Viram **caixinhas zeradas**, mantendo nome, ícone, cor, meta, prazo e o **histórico antigo**, que fica **só para leitura**, marcado como "antes das caixinhas".
+- **Nenhuma transferência é criada e nenhum saldo de conta muda.** O guardado antigo deixa de contar, então o Saldo disponível pode **subir**: é o correto, porque o dinheiro nunca saiu das contas.
+- Na primeira abertura, uma mensagem explica isso e convida a guardar de novo.
+
+> **Exemplo.** Na v0.7: Pix R$ 1.000,00, "Fone" com R$ 300,00 guardados (disponível R$ 700,00). Na v0.8: Pix R$ 1.000,00 (igual), caixinha "Fone" R$ 0,00, **Saldo disponível R$ 1.000,00**. Para separar o dinheiro de novo: Guardar R$ 300,00 do Pix.
+
+### 6G.4 Movimentações protegidas (D1 e D2)
+- Excluir, pela aba Movimentações, um lançamento criado por uma compra, um pagamento de crédito, um empréstimo ou uma caixinha **explica o motivo** e oferece **"Abrir [cartão/empréstimo/caixinha]"**. Nenhuma ação fica sem resposta.
+- A recusa de excluir uma compra lista **o que trava** (data, valor e fatura de cada pagamento ou abatimento), com um atalho para **Desfazer**.
+
+### 6G.5 Início completa (V1)
+A estrutura continua igual. Abaixo do card principal, blocos que **só aparecem se tiverem conteúdo**, nesta ordem:
+1. **Próximos vencimentos:** contas a pagar, faturas, parcelas de crediário e de empréstimo que vencem nos próximos 7 dias ou estão atrasadas, com atalho para pagar.
+2. **Cartões:** o total devido e a próxima fatura em aberto de cada cartão (valor e vencimento).
+3. **Caixinhas:** até 3, com progresso, e "Ver todas".
+4. **A receber:** parcelas de empréstimos concedidos que vencem nos próximos 7 dias ou estão atrasadas.
+
+### 6G.6 Backup automático (V2)
+- O usuário escolhe **uma pasta** uma vez (seletor do Android; o Drive é permitido). Frequência: **Diário (padrão)**, Semanal ou Mensal. Não há opção de desligar.
+- Guarda os **últimos 7** backups da série automática; **nunca** apaga backups manuais.
+- Uma falha é avisada na Início. Mais → Backup mostra a data e o resultado do último, com "Fazer agora", e orienta a liberar o app da otimização de bateria.
 
 ---
 
