@@ -97,6 +97,9 @@ class AppContainer(
     // --- Cartões e crediários (v0.4) ---
     val compras = com.hkawzz.nkote.dados.CompraServico(banco, auditor, relogio)
     val pagamentosCredito = com.hkawzz.nkote.dados.PagamentoCreditoServico(banco, auditor, relogio)
+    /** v0.8 (V2): backup automático (a regra; o WorkManager fica no pacote backup). */
+    val backupAutomatico = com.hkawzz.nkote.dados.BackupAutomaticoServico(banco, relogio, backup)
+
     /** v0.7: objetivos e reservas (regra 6F). */
     val objetivos = com.hkawzz.nkote.dados.ObjetivoServico(banco, auditor, relogio)
     /** v0.6: Preparar próximo mês (regra 7.6). */
@@ -178,6 +181,10 @@ class NkPayAplicacao : Application() {
             container.categorias.aplicarAparenciaSugerida()
             container.categorias.garantirJurosRecebidos() // v0.5
             container.objetivos.converterObjetivosAntigos() // v0.8 (V3): caixinhas zeradas, nenhum saldo muda
+            // v0.8 (V2): mantém a série automática agendada, se a pasta já foi escolhida.
+            container.backupAutomatico.atual().takeIf { it.pastaUri != null }?.let {
+                com.hkawzz.nkote.backup.AgendadorDeBackup.agendar(this@NkPayAplicacao, it.frequencia)
+            }
         }
     }
 }
