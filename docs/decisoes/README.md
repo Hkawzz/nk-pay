@@ -38,3 +38,4 @@ Cada arquivo registra **uma** decisão: o contexto (o problema), a decisão toma
 | [0032](0032-caixinhas.md) | Objetivos como caixinhas de verdade (R2 e V3) | Aceita |
 | [0033](0033-banco-v7.md) | Banco versão 7: caixinhas e backup automático | Aceita |
 | [0034](0034-backup-automatico-e-inicio.md) | Backup automático, Início completa e preparação para a Play | Aceita |
+| [0035](0035-inicio-v09-e-ordem-das-contas.md) | Início da v0.9 e ordem das contas | Aceita |

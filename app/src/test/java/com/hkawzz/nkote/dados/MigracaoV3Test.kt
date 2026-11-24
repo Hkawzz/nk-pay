@@ -109,7 +109,7 @@ class MigracaoV3Test {
     private fun foto(consulta: (String) -> Cursor, sql: String): List<String> {
         val linhas = mutableListOf<String>()
         consulta(sql).use { c ->
-            while (c.moveToNext()) linhas += (0 until c.columnCount).joinToString("|") { i -> "${c.getColumnName(i)}=${if (c.isNull(i)) "NULL" else c.getString(i)}" }
+            while (c.moveToNext()) linhas += (0 until c.columnCount).filter { c.getColumnName(it) !in COLUNAS_NOVAS }.joinToString("|") { i -> "${c.getColumnName(i)}=${if (c.isNull(i)) "NULL" else c.getString(i)}" }
         }
         return linhas
     }

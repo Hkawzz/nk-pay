@@ -190,7 +190,18 @@ val MIGRACAO_6_7 = object : Migration(6, 7) {
     }
 }
 
-val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5, MIGRACAO_5_6, MIGRACAO_6_7)
+/**
+ * 7 → 8 (v0.9, item 5, ADR 0035): `conta.ordem`, vazia (0) em todas as contas. Ordem 0 =
+ * "ainda não reordenada": a lista desempata pelo nome, então cada conta fica exatamente na
+ * posição em que aparece hoje. Nenhuma linha é reescrita.
+ */
+val MIGRACAO_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `conta` ADD COLUMN `ordem` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5, MIGRACAO_5_6, MIGRACAO_6_7, MIGRACAO_7_8)
 
 /**
  * Rede de segurança: ANTES de o Room migrar, copia o arquivo do banco (e os arquivos

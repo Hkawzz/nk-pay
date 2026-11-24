@@ -103,6 +103,8 @@ fun InicioTela(
     aoAbrirCartao: (String) -> Unit = {},
     aoAbrirObjetivo: (String) -> Unit = {},
     aoVerObjetivos: () -> Unit = {},
+    // v0.9 (item 5): abre "Editar ordem" das contas.
+    aoEditarOrdem: () -> Unit = {},
 ) {
     val container = LocalContainer.current
     val visao by container.visao.collectAsState()
@@ -198,7 +200,13 @@ fun InicioTela(
             // --- 2. Minhas contas (as que formam o Disponível) ---
             val proprias = v.contas.filter { it.natureza == Natureza.PROPRIO && !it.arquivada }
             if (proprias.isNotEmpty()) {
-                GradeDeContas("Minhas contas", proprias, v, colunas = 2, visiveis = CONTAS_VISIVEIS, textoVerTodas = "Ver todas as contas", aoAbrir = aoAbrirConta)
+                GradeDeContas(
+                    "Minhas contas", proprias, v, colunas = 2, visiveis = CONTAS_VISIVEIS, textoVerTodas = "Ver todas as contas", aoAbrir = aoAbrirConta,
+                    // v0.9 (item 5): reordenar as contas arrastando.
+                    complemento = if (proprias.size + beneficiosAtivos(v).size > 1) {
+                        { TextButton(onClick = aoEditarOrdem) { Text("Editar ordem") } }
+                    } else null,
+                )
             }
 
             // --- 3. Benefícios (nunca somados ao Disponível) ---
@@ -250,6 +258,11 @@ private fun CabecalhoInicio(texto: String, complemento: (@Composable () -> Unit)
     }
 }
 
+private fun beneficiosAtivos(v: VisaoFinanceira) = v.resumo.beneficios.map { it.conta }.filter { !it.arquivada }
+
+/** v0.9 (itens 2 e 3): as linhas da grade adaptativa, com até [maxPorLinha] itens cada. */
+fun <T> linhasDaGrade(itens: List<T>, maxPorLinha: Int): List<List<T>> = itens.chunked(maxPorLinha.coerceAtLeast(1))
+
 /**
  * Grade de contas: [colunas] por linha, [visiveis] cards de início. Se houver mais, a seta
  * "Ver todas" mostra o resto e vira "Recolher". O estado aberto não é salvo (adendo).
@@ -272,14 +285,14 @@ private fun GradeDeContas(
         Modifier.fillMaxWidth().padding(horizontal = Espaco.m).animateContentSize(),
         verticalArrangement = Arrangement.spacedBy(Espaco.xs),
     ) {
-        for (linha in mostradas.chunked(colunas)) {
+        // v0.9 (itens 2 e 3): grade adaptativa. Até [colunas] por linha; a linha que sobra
+        // divide a largura toda entre os seus cards (3 contas = 2 + 1 inteira).
+        for (linha in linhasDaGrade(mostradas, colunas)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Espaco.xs)) {
                 for (c in linha) {
                     val (icone, cor) = aparenciaDaConta(c)
-                    NkCardConta(c.nome, v.saldo(c.id), icone, cor, Modifier.weight(1f), compacto = colunas > 2) { aoAbrir(c.id) }
+                    NkCardConta(c.nome, v.saldo(c.id), icone, cor, Modifier.weight(1f), compacto = linha.size > 2) { aoAbrir(c.id) }
                 }
-                // Completa a linha para os cards manterem a mesma largura.
-                repeat(colunas - linha.size) { Spacer(Modifier.weight(1f)) }
             }
         }
         if (contas.size > visiveis) {
@@ -445,39 +458,7 @@ private fun BlocosDaInicio(
     }
     // 1. Próximos vencimentos (7 dias + atrasados), com atalho para pagar.
     ListaDeVencimentos("Próximos vencimentos", I.proximosVencimentos(aPagar, credito, emprestimos, hoje))
-    // 2. Cartões: o devido e a próxima fatura de cada um.
-    val cartoes = I.cartoes(credito, hoje)
-    if (cartoes.isNotEmpty()) {
-        com.hkawzz.nkote.ui.componentes.NkCabecalhoSecao("Cartões")
-        NkCard {
-            cartoes.forEachIndexed { i, c ->
-                if (i > 0) com.hkawzz.nkote.ui.componentes.NkDivisor()
-                val f = c.proximaFatura
-                NkListItem(
-                    titulo = c.conta.nome,
-                    subtitulo = if (f != null) "Próxima fatura ${com.hkawzz.nkote.dominio.Dinheiro.formatar(f.restante)}" + (f.vencimento?.let { " · vence ${com.hkawzz.nkote.ui.Formatos.data(it)}" } ?: "") else "Sem fatura em aberto",
-                    fim = { com.hkawzz.nkote.ui.componentes.NkValor(c.devido) },
-                    aoClicar = { aoAbrirCartao(c.conta.id) },
-                )
-            }
-        }
-    }
-    // 3. Caixinhas: até 3, com progresso, e "Ver todas".
-    val (caixinhas, temMais) = I.caixinhas(v.objetivos)
-    if (caixinhas.isNotEmpty()) {
-        com.hkawzz.nkote.ui.componentes.NkCabecalhoSecao("Caixinhas") { TextButton(onClick = aoVerObjetivos) { Text(if (temMais) "Ver todas" else "Ver") } }
-        NkCard {
-            caixinhas.forEachIndexed { i, s ->
-                if (i > 0) com.hkawzz.nkote.ui.componentes.NkDivisor()
-                NkListItem(
-                    titulo = s.objetivo.nome,
-                    subtitulo = s.objetivo.meta?.let { "${s.progresso}% de ${com.hkawzz.nkote.dominio.Dinheiro.formatar(it)}" } ?: "Sem meta",
-                    fim = { com.hkawzz.nkote.ui.componentes.NkValor(s.guardado) },
-                    aoClicar = { aoAbrirObjetivo(s.objetivo.id) },
-                )
-            }
-        }
-    }
-    // 4. A receber (empréstimos concedidos).
+    // v0.9 (item 1): os blocos Cartões e Caixinhas saíram da Início (continuam nas telas próprias).
+    // 2. A receber (empréstimos concedidos).
     ListaDeVencimentos("A receber", I.aReceber(emprestimos, hoje))
 }

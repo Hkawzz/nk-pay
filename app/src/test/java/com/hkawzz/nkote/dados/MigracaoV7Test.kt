@@ -110,9 +110,9 @@ class MigracaoV7Test {
         val banco = abrirComoOApp()
         try {
             val db = banco.openHelper.writableDatabase
-            assertEquals(7, db.version)
+            assertEquals(NkPayBanco.VERSAO, db.version) // v0.9: o banco atual é o 8
             // O objetivo ganhou contaCaixinhaId no fim, que nasce vazia; o resto é igual campo a campo.
-            for (t in tabelasV6) assertEquals("tabela $t mudou", antes.getValue(t), foto({ db.query(it) }, consultaDe(t)).map { it.removeSuffix("|contaCaixinhaId=NULL") })
+            for (t in tabelasV6) assertEquals("tabela $t mudou", antes.getValue(t), foto({ db.query(it) }, consultaDe(t)).map { it.removeSuffix("|contaCaixinhaId=NULL").replace(Regex("\\|ordem=\\d+$"), "") }) // v0.9: conta.ordem
             db.query("SELECT COUNT(*) FROM configuracao_backup").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
             for (o in esquema(7).getValue("entities").jsonArray.map { it.jsonObject }.filter { it.getValue("tableName").jsonPrimitive.content == "configuracao_backup" }) {
                 val sql = o.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", "configuracao_backup").replace("CREATE TABLE IF NOT EXISTS", "CREATE TABLE")
@@ -133,7 +133,7 @@ class MigracaoV7Test {
     @Test
     fun `backup da v0_7 restaura na v0_8 e a v0_7 recusa a v0_8`() {
         criarBancoV6()
-        assertTrue(copiarAntesDeMigrar(arquivo, pasta.newFolder("c"), NkPayBanco.VERSAO, 1000)!!.name.startsWith("banco-v6-antes-da-v7"))
+        assertTrue(copiarAntesDeMigrar(arquivo, pasta.newFolder("c"), NkPayBanco.VERSAO, 1000)!!.name.startsWith("banco-v6-antes-da-v${NkPayBanco.VERSAO}"))
         val banco = abrirComoOApp()
         try {
             val servico = BackupServico(banco, RelogioFalso(), "teste", pasta.newFolder("copias"), RegistroDeBackupEmMemoria())
@@ -155,7 +155,7 @@ class MigracaoV7Test {
             runBlocking { servico.restaurar(servico.ler(ByteArrayInputStream(zip))) }
             assertEquals(antes, runBlocking { banco.backupDao().let { listOf(it.contas(), it.movimentacoes(), it.objetivos(), it.movimentosReserva(), it.compras(), it.emprestimos()) } })
             // O backup da v0.8 tem versão 7: a v0.7 (banco 6) recusa versões maiores que a dela.
-            assertEquals(7, servico.ler(ByteArrayInputStream(bytes)).manifesto.versaoBanco)
+            assertEquals(NkPayBanco.VERSAO, servico.ler(ByteArrayInputStream(bytes)).manifesto.versaoBanco)
             assertNotNull(runBlocking { banco.objetivoDao().buscar("o1") })
         } finally {
             banco.close()

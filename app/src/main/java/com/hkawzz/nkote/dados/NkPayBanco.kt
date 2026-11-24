@@ -53,7 +53,7 @@ abstract class NkPayBanco : RoomDatabase() {
 
     companion object {
         /** Versão do esquema. Também vai no manifesto de cada backup. */
-        const val VERSAO = 7
+        const val VERSAO = 8
         const val NOME_ARQUIVO = "nk-pay.db"
 
         fun criar(context: Context): NkPayBanco {
