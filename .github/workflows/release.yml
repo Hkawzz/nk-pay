@@ -1,6 +1,7 @@
 # Release: ao criar uma tag v* (ex.: v0.1.0), compila o APK de release,
 # assina com a keystore guardada nos GitHub Secrets e publica uma GitHub Release
-# com o arquivo nkote-vX.Y.Z.apk e as notas tiradas do CHANGELOG.md.
+# com o arquivo nkote-vX.Y.Z.apk, o nkote-vX.Y.Z.aab (para a Play, mesma assinatura)
+# e as notas tiradas do CHANGELOG.md.
 #
 # Segurança: este workflow FALHA se a keystore não estiver configurada.
 # Ele nunca publica um APK sem assinatura ou assinado com a chave de debug,
@@ -88,7 +89,7 @@ jobs:
           NKPAY_KEY_ALIAS: ${{ secrets.NKPAY_KEY_ALIAS }}
           NKPAY_KEY_PASSWORD: ${{ secrets.NKPAY_KEY_PASSWORD }}
         run: >
-          ./gradlew testDebugUnitTest assembleRelease --console=plain
+          ./gradlew testDebugUnitTest assembleRelease bundleRelease --console=plain
           -PnkpayVersion=${{ steps.versao.outputs.versao }}
 
       - name: Verificar a assinatura e renomear o APK
@@ -115,12 +116,32 @@ jobs:
           fi
           mv "$APK" "nkote-v$VERSAO.apk"
 
+      - name: Verificar a assinatura e renomear o AAB (para a Play)
+        env:
+          VERSAO: ${{ steps.versao.outputs.versao }}
+        run: |
+          AAB="app/build/outputs/bundle/release/app-release.aab"
+          test -f "$AAB" || { echo "::error::AAB assinado não encontrado (assinatura falhou?)"; exit 1; }
+          keytool -printcert -jarfile "$AAB" | tee assinatura-aab.txt
+          if grep -qi "CN=Android Debug" assinatura-aab.txt; then
+            echo "::error::O AAB foi assinado com a chave de DEBUG. Abortando."
+            exit 1
+          fi
+          # Mesma impressão digital do APK (o keytool mostra em hexadecimal com ":").
+          ESPERADA="e408563d272ef960f75617f92da848c9948bebedb66b9371143a299fe9b2fc64"
+          OBTIDA=$(grep -i "SHA256:" assinatura-aab.txt | head -n 1 | sed 's/.*SHA256: *//' | tr -d ': ' | tr 'A-F' 'a-f')
+          if [ "$OBTIDA" != "$ESPERADA" ]; then
+            echo "::error::A impressão digital do AAB não é a da keystore oficial. Abortando."
+            exit 1
+          fi
+          mv "$AAB" "nkote-v$VERSAO.aab"
+
       - name: Criar a GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSAO: ${{ steps.versao.outputs.versao }}
         run: >
-          gh release create "$GITHUB_REF_NAME" "nkote-v$VERSAO.apk"
+          gh release create "$GITHUB_REF_NAME" "nkote-v$VERSAO.apk" "nkote-v$VERSAO.aab"
           --title "NKote v$VERSAO"
           --notes-file notas.md
 

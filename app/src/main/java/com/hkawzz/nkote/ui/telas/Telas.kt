@@ -121,6 +121,34 @@ fun SobreTela(aoVoltar: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            val context = androidx.compose.ui.platform.LocalContext.current
+            Text("Política de privacidade", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = Espaco.s))
+            if (Contato.POLITICA_DE_PRIVACIDADE.isBlank()) {
+                Text(Contato.TEXTO_PROVISORIO_PRIVACIDADE, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                Text(
+                    Contato.POLITICA_DE_PRIVACIDADE, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(Contato.POLITICA_DE_PRIVACIDADE))) }
+                    },
+                )
+            }
+            Text("Suporte", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = Espaco.s))
+            Text(
+                Contato.EMAIL_DE_SUPORTE, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable {
+                    runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:${Contato.EMAIL_DE_SUPORTE}"))) }
+                },
+            )
         }
     }
+}
+
+/** v0.8 (G, ADR 0030): contatos mostrados em Mais → Sobre. Troque o link aqui quando ele existir. */
+object Contato {
+    /** Endereço da política de privacidade. Vazio = mostra [TEXTO_PROVISORIO_PRIVACIDADE]. */
+    const val POLITICA_DE_PRIVACIDADE = ""
+    const val TEXTO_PROVISORIO_PRIVACIDADE =
+        "O link da política de privacidade chega antes da publicação na Play. Em resumo: o NKote não coleta, não envia e não compartilha nenhum dado."
+    const val EMAIL_DE_SUPORTE = "hkawzzsuporte@gmail.com"
 }
