@@ -1,18 +1,24 @@
 package com.hkawzz.nkote.dados
 
 import androidx.room.withTransaction
+import com.hkawzz.nkote.dominio.AparenciaSugerida
+import com.hkawzz.nkote.dominio.CategoriasDoSistema
 import com.hkawzz.nkote.dominio.Dinheiro
+import com.hkawzz.nkote.dominio.Natureza
 import com.hkawzz.nkote.dominio.Objetivo
-import com.hkawzz.nkote.dominio.Objetivos
 import com.hkawzz.nkote.dominio.Saldos
-import com.hkawzz.nkote.dominio.TipoMovimentoReserva
+import com.hkawzz.nkote.dominio.TipoMovimentacao
 import java.time.LocalDate
 
 /**
- * Objetivos e reservas (v0.7, regra 6F, ADR 0029). Tudo numa transação, com auditoria.
- * Guardar, retirar, mover e ajustar NÃO criam movimentação de dinheiro: só movimentos
- * de reserva, que mudam o Guardado e, por ele, o Saldo disponível. Um objetivo nunca
- * fica com guardado negativo. As regras ficam aqui, e não só na tela.
+ * Objetivos como CAIXINHAS (v0.8, R2, regra 6G.2, ADR 0032). Cada objetivo tem uma conta
+ * interna de natureza CAIXINHA, que começa zerada:
+ * - guardar = transferência conta própria → caixinha (a R1 confere o saldo da conta);
+ * - retirar = transferência caixinha → conta própria;
+ * - mover = transferência caixinha → caixinha;
+ * - rendimento = ENTRADA na caixinha, categoria de sistema "Rendimentos".
+ * Tudo numa transação conferida pela R1, com auditoria. A caixinha nunca é meio de
+ * pagamento (validado em MovimentacaoRepositorio, PagamentoServico, PagamentoCreditoServico...).
  */
 class ObjetivoServico(
     private val banco: NkPayBanco,
@@ -20,7 +26,9 @@ class ObjetivoServico(
     private val relogio: Relogio,
 ) {
     private val dao = banco.objetivoDao()
-    private val movDao = banco.movimentoReservaDao()
+    private val contaDao = banco.contaDao()
+    private val movDao = banco.movimentacaoDao()
+    private val categoriaDao = banco.categoriaDao()
 
     companion object {
         fun validar(o: Objetivo): String? = when {
@@ -32,146 +40,176 @@ class ObjetivoServico(
         }
     }
 
-    // ---------------------------------------------------------------- leitura dentro da transação
-
-    private suspend fun guardado(objetivoId: String): Long = movDao.validos().filter { it.objetivoId == objetivoId }.sumOf { it.valorCentavos }
-
-    /** Saldo disponível = Saldo total (dinheiro próprio) − Guardado (regra 4 e 6F). */
-    private suspend fun disponivel(): Long {
-        val b = banco.backupDao()
-        val contas = b.contas().filter { it.excluidoEm == null }.map { it.paraDominio() }
-        val movs = b.movimentacoes().filter { it.excluidoEm == null }.map { it.paraDominio() }
-        return Saldos.resumo(contas, movs, movDao.validos().sumOf { it.valorCentavos }).disponivel
-    }
+    // ---------------------------------------------------------------- apoio (dentro da transação)
 
     private suspend fun valido(id: String): ObjetivoEntidade? = dao.buscar(id)?.takeIf { it.excluidoEm == null }
 
-    private suspend fun movimento(grupo: String, objetivo: ObjetivoEntidade, data: LocalDate, valor: Long, tipo: TipoMovimentoReserva, resumo: String) {
-        val agora = relogio.agora()
-        val m = MovimentoReservaEntidade(relogio.novoId(), objetivo.id, data.toString(), valor, tipo.name, grupo, agora, agora, null)
-        movDao.inserir(m)
-        auditor.registrar(grupo, Operacao.CRIACAO, Auditor.MOVIMENTO_RESERVA, m.id, resumo, MovimentoReservaEntidade.serializer(), null, m)
+    private suspend fun saldo(contaId: String): Long {
+        val conta = contaDao.buscar(contaId) ?: return 0
+        val movs = banco.backupDao().movimentacoes().filter { it.excluidoEm == null && (it.contaId == contaId || it.contaDestinoId == contaId) }.map { it.paraDominio() }
+        return Saldos.saldoDaConta(conta.paraDominio(), movs)
     }
 
-    private fun semDisponivel(valor: Long, disponivel: Long) =
-        Resultado.Falha("Não há disponível suficiente: você quer guardar ${Dinheiro.formatar(valor)}, mas o disponível é ${Dinheiro.formatar(maxOf(0, disponivel))}.")
+    /** A conta CAIXINHA do objetivo; cria (zerada) se ainda não existir (objetivos da v0.7, V3). */
+    private suspend fun caixinha(o: ObjetivoEntidade, grupo: String): ContaEntidade {
+        o.contaCaixinhaId?.let { id -> contaDao.buscar(id)?.let { return it } }
+        val agora = relogio.agora()
+        val c = ContaEntidade(
+            id = relogio.novoId(), nome = o.nome, natureza = Natureza.CAIXINHA.name, tipoBeneficio = null,
+            saldoInicialCentavos = 0, dataSaldoInicial = relogio.hoje().toString(), icone = o.icone, cor = o.cor,
+            instituicao = null, limiteCentavos = null, diaFechamento = null, diaVencimento = null,
+            arquivadaEm = null, criadoEm = agora, atualizadoEm = agora, excluidoEm = null,
+        )
+        contaDao.inserir(c)
+        auditor.registrar(grupo, Operacao.CRIACAO, Auditor.CONTA, c.id, "Caixinha “${c.nome}” criada (zerada)", ContaEntidade.serializer(), null, c)
+        val depois = o.copy(contaCaixinhaId = c.id, atualizadoEm = agora)
+        dao.atualizar(depois)
+        auditor.registrar(grupo, Operacao.EDICAO, Auditor.OBJETIVO, o.id, "Objetivo “${o.nome}” ligado à caixinha", ObjetivoEntidade.serializer(), o, depois)
+        return c
+    }
+
+    /** Conta própria (nunca benefício, caixinha nem terceiros) para guardar e retirar. */
+    private suspend fun contaPropria(id: String): ContaEntidade? =
+        contaDao.buscar(id)?.takeIf { it.excluidoEm == null && it.natureza == Natureza.PROPRIO.name }
+
+    private suspend fun transferencia(grupo: String, de: ContaEntidade, para: ContaEntidade, valor: Long, data: LocalDate, descricao: String, resumo: String): MovimentacaoEntidade {
+        val agora = relogio.agora()
+        val m = MovimentacaoEntidade(relogio.novoId(), TipoMovimentacao.TRANSFERENCIA.name, data.toString(), valor, de.id, para.id, null, descricao, agora, agora, null)
+        movDao.inserir(m)
+        auditor.registrar(grupo, Operacao.CRIACAO, Auditor.MOVIMENTACAO, m.id, resumo, MovimentacaoEntidade.serializer(), null, m)
+        return m
+    }
+
+    /** A categoria de sistema "Rendimentos": existe ou é criada aqui, com auditoria. */
+    private suspend fun categoriaRendimentos(grupo: String): String =
+        categoriaDao.buscarPorCodigo(CategoriasDoSistema.RENDIMENTOS)?.id ?: run {
+            val agora = relogio.agora()
+            val a = AparenciaSugerida.ouNeutra("Rendimentos")
+            val c = CategoriaEntidade(relogio.novoId(), "Rendimentos", CategoriasDoSistema.RENDIMENTOS, null, agora, agora, null, a.icone, a.cor)
+            categoriaDao.inserir(c)
+            auditor.registrar(grupo, Operacao.CRIACAO, Auditor.CATEGORIA, c.id, "Categoria de sistema “Rendimentos” criada", CategoriaEntidade.serializer(), null, c)
+            c.id
+        }
+
+    private fun valorInvalido(valor: Long) = if (valor <= 0) Resultado.Falha("O valor precisa ser maior que zero.") else null
 
     // ---------------------------------------------------------------- cadastro
 
+    /** Cria o objetivo e a caixinha dele, zerada. */
     suspend fun criar(o: Objetivo): Resultado<String> {
         val limpo = o.copy(nome = o.nome.trim())
         validar(limpo)?.let { return Resultado.Falha(it) }
         val agora = relogio.agora()
-        val e = ObjetivoEntidade(relogio.novoId(), limpo.nome, limpo.icone, limpo.cor, limpo.meta, limpo.prazo?.toString(), null, false, agora, agora, null)
+        val e = ObjetivoEntidade(relogio.novoId(), limpo.nome, limpo.icone, limpo.cor, limpo.meta, limpo.prazo?.toString(), null, false, agora, agora, null, null)
         banco.withTransaction {
+            val grupo = relogio.novoId()
             dao.inserir(e)
-            auditor.registrar(relogio.novoId(), Operacao.CRIACAO, Auditor.OBJETIVO, e.id,
+            auditor.registrar(grupo, Operacao.CRIACAO, Auditor.OBJETIVO, e.id,
                 "Objetivo “${e.nome}” criado" + (e.metaCentavos?.let { " (meta ${Dinheiro.formatar(it)})" } ?: " (sem meta)"), ObjetivoEntidade.serializer(), null, e)
+            caixinha(e, grupo)
         }
         return Resultado.Sucesso(e.id)
     }
 
-    /** Edita nome, ícone, cor, meta e prazo. O guardado não muda aqui (só por movimentos). */
+    /** Edita nome, ícone, cor, meta e prazo; a caixinha acompanha o nome, o ícone e a cor. */
     suspend fun editar(o: Objetivo): Resultado<Unit> {
         val limpo = o.copy(nome = o.nome.trim())
         validar(limpo)?.let { return Resultado.Falha(it) }
         return banco.withTransaction {
             val antes = valido(o.id) ?: return@withTransaction Resultado.Falha("Objetivo não encontrado.")
-            val depois = antes.copy(nome = limpo.nome, icone = limpo.icone, cor = limpo.cor, metaCentavos = limpo.meta, prazo = limpo.prazo?.toString(), atualizadoEm = relogio.agora())
+            val agora = relogio.agora()
+            val depois = antes.copy(nome = limpo.nome, icone = limpo.icone, cor = limpo.cor, metaCentavos = limpo.meta, prazo = limpo.prazo?.toString(), atualizadoEm = agora)
             if (depois.copy(atualizadoEm = antes.atualizadoEm) == antes) return@withTransaction Resultado.Sucesso(Unit)
+            val grupo = relogio.novoId()
             dao.atualizar(depois)
-            auditor.registrar(relogio.novoId(), Operacao.EDICAO, Auditor.OBJETIVO, antes.id, "Objetivo “${depois.nome}” editado", ObjetivoEntidade.serializer(), antes, depois)
+            auditor.registrar(grupo, Operacao.EDICAO, Auditor.OBJETIVO, antes.id, "Objetivo “${depois.nome}” editado", ObjetivoEntidade.serializer(), antes, depois)
+            antes.contaCaixinhaId?.let { contaDao.buscar(it) }?.let { c ->
+                val d = c.copy(nome = depois.nome, icone = depois.icone, cor = depois.cor, atualizadoEm = agora)
+                if (d != c) { contaDao.atualizar(d); auditor.registrar(grupo, Operacao.EDICAO, Auditor.CONTA, c.id, "Caixinha “${d.nome}” renomeada", ContaEntidade.serializer(), c, d) }
+            }
             Resultado.Sucesso(Unit)
         }
     }
 
-    // ---------------------------------------------------------------- operações (6F.2)
+    // ---------------------------------------------------------------- operações (6G.2)
 
-    /** Guardar: bloqueado se passar do disponível; só em objetivo ativo. @return o grupo do movimento. */
-    suspend fun guardar(id: String, valor: Long, data: LocalDate): Resultado<String> {
-        if (valor <= 0) return Resultado.Falha("O valor precisa ser maior que zero.")
-        return banco.withTransaction {
-            val o = valido(id) ?: return@withTransaction Resultado.Falha("Objetivo não encontrado.")
-            if (o.concluidoEm != null || o.arquivado) return@withTransaction Resultado.Falha("Só dá para guardar em objetivo ativo. Reabra o objetivo antes.")
-            val d = disponivel()
-            if (valor > d) return@withTransaction semDisponivel(valor, d)
+    /** Guardar: transferência conta própria → caixinha. Só em objetivo ativo. @return a movimentação. */
+    suspend fun guardar(id: String, contaOrigemId: String, valor: Long, data: LocalDate): Resultado<String> {
+        valorInvalido(valor)?.let { return it }
+        return banco.transacaoConferida {
+            val o = valido(id) ?: return@transacaoConferida Resultado.Falha("Objetivo não encontrado.")
+            if (o.concluidoEm != null || o.arquivado) return@transacaoConferida Resultado.Falha("Só dá para guardar em objetivo ativo. Reabra o objetivo antes.")
+            val origem = contaPropria(contaOrigemId) ?: return@transacaoConferida Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
             val grupo = relogio.novoId()
-            movimento(grupo, o, data, valor, TipoMovimentoReserva.GUARDAR, "${Dinheiro.formatar(valor)} guardados em “${o.nome}”")
-            Resultado.Sucesso(grupo)
+            val cx = caixinha(o, grupo)
+            val m = transferencia(grupo, origem, cx, valor, data, "Guardar: ${o.nome}", "${Dinheiro.formatar(valor)} guardados em “${o.nome}” (de ${origem.nome})")
+            Resultado.Sucesso(m.id)
         }
     }
 
-    /** Retirar: até o guardado do objetivo. Não é despesa. */
-    suspend fun retirar(id: String, valor: Long, data: LocalDate): Resultado<String> {
-        if (valor <= 0) return Resultado.Falha("O valor precisa ser maior que zero.")
-        return banco.withTransaction {
-            val o = valido(id) ?: return@withTransaction Resultado.Falha("Objetivo não encontrado.")
-            val g = guardado(o.id)
-            if (valor > g) return@withTransaction Resultado.Falha("Só há ${Dinheiro.formatar(g)} guardados em “${o.nome}”.")
+    /** Retirar: transferência caixinha → conta própria. Não é despesa. */
+    suspend fun retirar(id: String, contaDestinoId: String, valor: Long, data: LocalDate): Resultado<String> {
+        valorInvalido(valor)?.let { return it }
+        return banco.transacaoConferida {
+            val o = valido(id) ?: return@transacaoConferida Resultado.Falha("Objetivo não encontrado.")
+            val destino = contaPropria(contaDestinoId) ?: return@transacaoConferida Resultado.Falha("Escolha a conta para onde o dinheiro volta.")
             val grupo = relogio.novoId()
-            movimento(grupo, o, data, -valor, TipoMovimentoReserva.RETIRAR, "${Dinheiro.formatar(valor)} retirados de “${o.nome}”")
-            Resultado.Sucesso(grupo)
+            val cx = caixinha(o, grupo)
+            val g = saldo(cx.id)
+            if (valor > g) return@transacaoConferida Resultado.Falha("Só há ${Dinheiro.formatar(g)} na caixinha “${o.nome}”.")
+            val m = transferencia(grupo, cx, destino, valor, data, "Retirar: ${o.nome}", "${Dinheiro.formatar(valor)} retirados de “${o.nome}” (para ${destino.nome})")
+            Resultado.Sucesso(m.id)
         }
     }
 
-    /** Mover de um objetivo para outro (ativo): duas linhas com o mesmo grupo; o disponível não muda. */
+    /** Mover: transferência caixinha → caixinha (o destino precisa estar ativo). */
     suspend fun mover(deId: String, paraId: String, valor: Long, data: LocalDate): Resultado<String> {
-        if (valor <= 0) return Resultado.Falha("O valor precisa ser maior que zero.")
+        valorInvalido(valor)?.let { return it }
         if (deId == paraId) return Resultado.Falha("Escolha outro objetivo de destino.")
-        return banco.withTransaction {
-            val de = valido(deId) ?: return@withTransaction Resultado.Falha("Objetivo não encontrado.")
-            val para = valido(paraId) ?: return@withTransaction Resultado.Falha("Objetivo de destino não encontrado.")
-            if (para.concluidoEm != null || para.arquivado) return@withTransaction Resultado.Falha("O destino precisa ser um objetivo ativo.")
-            val g = guardado(de.id)
-            if (valor > g) return@withTransaction Resultado.Falha("Só há ${Dinheiro.formatar(g)} guardados em “${de.nome}”.")
+        return banco.transacaoConferida {
+            val de = valido(deId) ?: return@transacaoConferida Resultado.Falha("Objetivo não encontrado.")
+            val para = valido(paraId) ?: return@transacaoConferida Resultado.Falha("Objetivo de destino não encontrado.")
+            if (para.concluidoEm != null || para.arquivado) return@transacaoConferida Resultado.Falha("O destino precisa ser um objetivo ativo.")
             val grupo = relogio.novoId()
-            movimento(grupo, de, data, -valor, TipoMovimentoReserva.MOVER, "${Dinheiro.formatar(valor)} movidos de “${de.nome}” para “${para.nome}”")
-            movimento(grupo, para, data, valor, TipoMovimentoReserva.MOVER, "${Dinheiro.formatar(valor)} recebidos de “${de.nome}” em “${para.nome}”")
-            Resultado.Sucesso(grupo)
+            val cxDe = caixinha(de, grupo)
+            val cxPara = caixinha(para, grupo)
+            val g = saldo(cxDe.id)
+            if (valor > g) return@transacaoConferida Resultado.Falha("Só há ${Dinheiro.formatar(g)} na caixinha “${de.nome}”.")
+            val m = transferencia(grupo, cxDe, cxPara, valor, data, "Mover: ${de.nome} → ${para.nome}", "${Dinheiro.formatar(valor)} movidos de “${de.nome}” para “${para.nome}”")
+            Resultado.Sucesso(m.id)
         }
     }
 
-    /**
-     * Ajuste manual: grava a DIFERENÇA para [novoGuardado] como movimento "ajuste" (nunca
-     * sobrescreve). Um aumento segue o bloqueio do Guardar. @return o grupo, ou null se nada mudou.
-     */
-    suspend fun ajustar(id: String, novoGuardado: Long, data: LocalDate): Resultado<String?> {
-        if (novoGuardado < 0) return Resultado.Falha("O valor guardado não pode ser negativo.")
-        return banco.withTransaction {
-            val o = valido(id) ?: return@withTransaction Resultado.Falha("Objetivo não encontrado.")
-            val diferenca = novoGuardado - guardado(o.id)
-            if (diferenca == 0L) return@withTransaction Resultado.Sucesso(null)
-            if (diferenca > 0) {
-                if (o.concluidoEm != null || o.arquivado) return@withTransaction Resultado.Falha("Só dá para aumentar o guardado de um objetivo ativo.")
-                val d = disponivel()
-                if (diferenca > d) return@withTransaction semDisponivel(diferenca, d)
-            }
+    /** Rendimento: ENTRADA na caixinha, categoria "Rendimentos" (é receita). */
+    suspend fun rendimento(id: String, valor: Long, data: LocalDate): Resultado<String> {
+        valorInvalido(valor)?.let { return it }
+        return banco.transacaoConferida {
+            val o = valido(id) ?: return@transacaoConferida Resultado.Falha("Objetivo não encontrado.")
             val grupo = relogio.novoId()
-            movimento(grupo, o, data, diferenca, TipoMovimentoReserva.AJUSTE,
-                "Ajuste de ${Dinheiro.formatarComSinal(diferenca)} em “${o.nome}” (guardado passa a ${Dinheiro.formatar(novoGuardado)})")
-            Resultado.Sucesso(grupo)
+            val cx = caixinha(o, grupo)
+            val categoria = categoriaRendimentos(grupo)
+            val agora = relogio.agora()
+            val m = MovimentacaoEntidade(relogio.novoId(), TipoMovimentacao.ENTRADA.name, data.toString(), valor, cx.id, null, categoria, "Rendimento: ${o.nome}", agora, agora, null)
+            movDao.inserir(m)
+            auditor.registrar(grupo, Operacao.CRIACAO, Auditor.MOVIMENTACAO, m.id, "Rendimento de ${Dinheiro.formatar(valor)} em “${o.nome}”", MovimentacaoEntidade.serializer(), null, m)
+            Resultado.Sucesso(m.id)
         }
     }
 
-    /** Desfaz um movimento (o grupo inteiro, num mover), sem deixar objetivo negativo. */
-    suspend fun desfazer(grupoId: String): Resultado<Unit> = banco.withTransaction {
-        val grupo = movDao.doGrupo(grupoId)
-        if (grupo.isEmpty()) return@withTransaction Resultado.Falha("Movimento não encontrado.")
-        val todos = movDao.validos()
-        Objetivos.bloqueioDoDesfazer(grupo.map { it.paraDominio() }, { id -> todos.filter { it.objetivoId == id }.sumOf { it.valorCentavos } }, disponivel())
-            ?.let { return@withTransaction Resultado.Falha(it) }
+    /** Desfaz um guardar, retirar, mover ou rendimento (exclusão lógica), com a R1 nas duas contas. */
+    suspend fun desfazer(movimentacaoId: String): Resultado<Unit> = banco.transacaoConferida {
+        val m = movDao.buscar(movimentacaoId)?.takeIf { it.excluidoEm == null } ?: return@transacaoConferida Resultado.Falha("Movimento não encontrado.")
+        val ehDeCaixinha = listOfNotNull(m.contaId, m.contaDestinoId).any { contaDao.buscar(it)?.natureza == Natureza.CAIXINHA.name }
+        if (!ehDeCaixinha) return@transacaoConferida Resultado.Falha("Esta movimentação não é de uma caixinha.")
         val agora = relogio.agora()
-        val auditoria = relogio.novoId()
-        for (m in grupo) {
-            val d = m.copy(excluidoEm = agora, atualizadoEm = agora)
-            movDao.atualizar(d)
-            auditor.registrar(auditoria, Operacao.EXCLUSAO, Auditor.MOVIMENTO_RESERVA, m.id,
-                "Movimento de ${Dinheiro.formatarComSinal(m.valorCentavos)} desfeito", MovimentoReservaEntidade.serializer(), m, d)
-        }
+        val d = m.copy(excluidoEm = agora, atualizadoEm = agora)
+        movDao.atualizar(d)
+        auditor.registrar(relogio.novoId(), Operacao.EXCLUSAO, Auditor.MOVIMENTACAO, m.id,
+            "Movimento de caixinha de ${Dinheiro.formatar(m.valorCentavos)} “${m.descricao}” desfeito", MovimentacaoEntidade.serializer(), m, d)
         Resultado.Sucesso(Unit)
     }
 
-    // ---------------------------------------------------------------- concluir, arquivar, excluir (6F.5)
+    // ---------------------------------------------------------------- concluir, arquivar, excluir (O3)
 
     suspend fun concluir(id: String, concluir: Boolean = true): Resultado<Unit> = alterar(id) { o ->
         if ((o.concluidoEm != null) == concluir) null
@@ -191,16 +229,39 @@ class ObjetivoServico(
         Resultado.Sucesso(Unit)
     }
 
-    /** Excluir com guardado é recusado (O3 = a). Sem guardado, exclusão lógica e auditada. */
+    /**
+     * Excluir com dinheiro na caixinha é recusado (O3 = a). Sem dinheiro, o objetivo é
+     * excluído (lógico) e a caixinha é ARQUIVADA, não excluída: o histórico das
+     * transferências continua sendo de dinheiro seu (não vira saída no fluxo).
+     */
     suspend fun excluir(id: String): Resultado<Unit> = banco.withTransaction {
         val antes = valido(id) ?: return@withTransaction Resultado.Falha("Objetivo não encontrado.")
-        val g = guardado(id)
-        if (g > 0) return@withTransaction Resultado.Falha("Retire ou mova os ${Dinheiro.formatar(g)} antes de excluir “${antes.nome}”.")
+        val cx = antes.contaCaixinhaId?.let { contaDao.buscar(it) }
+        val g = cx?.let { saldo(it.id) } ?: 0
+        if (g != 0L) return@withTransaction Resultado.Falha("Retire ou mova os ${Dinheiro.formatar(g)} antes de excluir “${antes.nome}”.")
         val agora = relogio.agora()
+        val grupo = relogio.novoId()
         val d = antes.copy(excluidoEm = agora, atualizadoEm = agora)
         dao.atualizar(d)
-        auditor.registrar(relogio.novoId(), Operacao.EXCLUSAO, Auditor.OBJETIVO, id, "Objetivo “${antes.nome}” excluído", ObjetivoEntidade.serializer(), antes, d)
+        auditor.registrar(grupo, Operacao.EXCLUSAO, Auditor.OBJETIVO, id, "Objetivo “${antes.nome}” excluído", ObjetivoEntidade.serializer(), antes, d)
+        if (cx != null && cx.arquivadaEm == null) {
+            val dc = cx.copy(arquivadaEm = agora, atualizadoEm = agora)
+            contaDao.atualizar(dc)
+            auditor.registrar(grupo, Operacao.EDICAO, Auditor.CONTA, cx.id, "Caixinha “${cx.nome}” arquivada", ContaEntidade.serializer(), cx, dc)
+        }
         Resultado.Sucesso(Unit)
     }
 
+    /**
+     * V3 (ADR 0032): dá uma caixinha ZERADA a cada objetivo da v0.7 que ainda não tem.
+     * Nenhuma transferência é criada e nenhum saldo de conta muda. Idempotente.
+     * @return quantos objetivos foram convertidos.
+     */
+    suspend fun converterObjetivosAntigos(): Int = banco.withTransaction {
+        val semCaixinha = dao.validos().filter { it.contaCaixinhaId == null }
+        if (semCaixinha.isEmpty()) return@withTransaction 0
+        val grupo = relogio.novoId()
+        for (o in semCaixinha) caixinha(o, grupo)
+        semCaixinha.size
+    }
 }

@@ -12,7 +12,7 @@ data class VisaoFinanceira(
     val objetivos: VisaoObjetivos = VisaoObjetivos.VAZIA,
 ) {
     val saldos: Map<String, Long> by lazy { Saldos.saldosPorConta(contas, movimentacoes) }
-    val resumo: Resumo by lazy { Saldos.resumo(contas, movimentacoes, objetivos.totalGuardado) }
+    val resumo: Resumo by lazy { Saldos.resumo(contas, movimentacoes) }
     private val contasPorId by lazy { contas.associateBy { it.id } }
     private val categoriasPorId by lazy { categorias.associateBy { it.id } }
 

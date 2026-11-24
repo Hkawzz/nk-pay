@@ -61,7 +61,7 @@ import kotlinx.coroutines.launch
 
 /** Contas que podem pagar crédito: dinheiro próprio e benefícios, sem arquivadas (ADR 0017). */
 fun opcoesPagarCom(v: VisaoFinanceira, selecionada: String?): List<Opcao<String>> =
-    v.contas.filter { !it.ehContaDeTerceiros && (!it.arquivada || it.id == selecionada) }.map { c ->
+    v.contas.filter { it.ehMeioDePagamento && (!it.arquivada || it.id == selecionada) }.map { c ->
         Opcao(c.id, c.nome, (if (c.natureza == Natureza.BENEFICIO) "Benefício · " else "") + "Saldo " + Dinheiro.formatar(v.saldo(c.id)))
     }
 

@@ -379,7 +379,7 @@ fun ContaFixaFormTela(id: String?, aoVoltar: () -> Unit) {
             )
             CampoEscolha(
                 "Conta que costuma pagar (opcional)",
-                listOf(Opcao<String?>(null, "Nenhuma")) + v.contas.filter { !it.arquivada || it.id == vm.contaPadraoId }.map { Opcao<String?>(it.id, it.nome) },
+                listOf(Opcao<String?>(null, "Nenhuma")) + v.contas.filter { it.ehMeioDePagamento && (!it.arquivada || it.id == vm.contaPadraoId) }.map { Opcao<String?>(it.id, it.nome) },
                 vm.contaPadraoId, { vm.contaPadraoId = it }, textoVazio = "Nenhuma",
             )
             vm.erro?.let { Text(it, color = MaterialTheme.colorScheme.error) }

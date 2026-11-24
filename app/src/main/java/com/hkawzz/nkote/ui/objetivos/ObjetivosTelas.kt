@@ -44,7 +44,7 @@ import com.hkawzz.nkote.dominio.AparenciaSugerida
 import com.hkawzz.nkote.dominio.Dinheiro
 import com.hkawzz.nkote.dominio.Objetivo
 import com.hkawzz.nkote.dominio.SituacaoObjetivo
-import com.hkawzz.nkote.dominio.TipoMovimentoReserva
+import com.hkawzz.nkote.dominio.TipoMovimentoCaixinha
 import com.hkawzz.nkote.ui.Formatos
 import com.hkawzz.nkote.ui.LocalContainer
 import com.hkawzz.nkote.ui.ajuda.ChaveAjuda
@@ -72,7 +72,6 @@ import com.hkawzz.nkote.ui.componentes.Opcao
 import com.hkawzz.nkote.ui.componentes.SeletorDeAparencia
 import com.hkawzz.nkote.ui.componentes.Subtela
 import com.hkawzz.nkote.ui.icones.IconesNk
-import com.hkawzz.nkote.ui.inicio.AVISO_GUARDADO_MAIOR
 import com.hkawzz.nkote.ui.nkViewModel
 import com.hkawzz.nkote.ui.theme.Espaco
 import com.hkawzz.nkote.ui.theme.Lilas
@@ -174,9 +173,8 @@ fun ObjetivosTela(aoAbrir: (String) -> Unit, aoNovo: () -> Unit) {
                                 NkValor(v.resumo.disponivel, cor = if (v.resumo.disponivel < 0) RosaDespesa else null)
                             }
                         }
-                        if (v.resumo.disponivel < 0 && vo.totalGuardado > 0) Text(AVISO_GUARDADO_MAIOR, style = MaterialTheme.typography.bodySmall, color = RosaDespesa)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Guardar não tira dinheiro da conta: só separa uma parte do seu saldo.", style = MaterialTheme.typography.bodySmall,
+                            Text("Cada objetivo tem uma caixinha: guardar tira o dinheiro da conta e põe nela.", style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.weight(1f))
                             NkAjuda(ChaveAjuda.OBJETIVO, cor = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
@@ -323,15 +321,15 @@ fun ObjetivoTela(id: String, aoVoltar: () -> Unit, aoEditar: () -> Unit, aoOpera
             item {
                 Column(Modifier.padding(horizontal = Espaco.m, vertical = Espaco.xs), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(Espaco.s)) {
-                        if (o.ativo) NkBotaoPrimario("Guardar", { aoOperar(TipoMovimentoReserva.GUARDAR.name) }, Modifier.weight(1f))
-                        NkBotaoSecundario("Retirar", { aoOperar(TipoMovimentoReserva.RETIRAR.name) }, Modifier.weight(1f), habilitado = s.guardado > 0)
+                        if (o.ativo) NkBotaoPrimario("Guardar", { aoOperar(OperacaoCaixinha.GUARDAR.name) }, Modifier.weight(1f))
+                        NkBotaoSecundario("Retirar", { aoOperar(OperacaoCaixinha.RETIRAR.name) }, Modifier.weight(1f), habilitado = s.guardado > 0)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(Espaco.s)) {
-                        NkBotaoSecundario("Mover", { aoOperar(TipoMovimentoReserva.MOVER.name) }, Modifier.weight(1f), habilitado = s.guardado > 0)
-                        NkBotaoSecundario("Ajustar", { aoOperar(TipoMovimentoReserva.AJUSTE.name) }, Modifier.weight(1f))
+                        NkBotaoSecundario("Mover", { aoOperar(OperacaoCaixinha.MOVER.name) }, Modifier.weight(1f), habilitado = s.guardado > 0)
+                        NkBotaoSecundario("Rendimento", { aoOperar(OperacaoCaixinha.RENDIMENTO.name) }, Modifier.weight(1f))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        NkTextoAjuda("Vai gastar o dinheiro guardado? Retire do objetivo e depois lance a despesa.", Modifier.weight(1f))
+                        NkTextoAjuda("Vai gastar o dinheiro guardado? Retire para uma conta e depois lance a despesa.", Modifier.weight(1f))
                         NkAjuda(ChaveAjuda.OBJETIVO_RETIRAR)
                     }
                     mensagem?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -340,25 +338,44 @@ fun ObjetivoTela(id: String, aoVoltar: () -> Unit, aoEditar: () -> Unit, aoOpera
             item { NkCabecalhoSecao("Histórico") }
             item {
                 NkCard {
-                    if (s.movimentos.isEmpty()) NkTextoAjuda("Nada guardado ainda.", Modifier.padding(Espaco.m))
-                    // Um "mover" aparece uma vez em cada objetivo; desfazer desfaz as duas pontas.
+                    if (s.movimentos.isEmpty()) NkTextoAjuda("A caixinha está zerada. Toque em Guardar para separar dinheiro de uma conta.", Modifier.padding(Espaco.m))
                     s.movimentos.forEachIndexed { i, m ->
                         if (i > 0) NkDivisor()
-                        val outro = if (m.tipo == TipoMovimentoReserva.MOVER) visao?.objetivos?.movimentos
-                            ?.firstOrNull { it.grupoId == m.grupoId && it.objetivoId != m.objetivoId }?.let { visao?.objetivos?.objetivo(it.objetivoId)?.nome } else null
+                        val outraConta = visao?.conta(m.outraContaId)?.nome.orEmpty()
+                        val outroObjetivo = visao?.objetivos?.objetivoDaCaixinha(m.outraContaId)?.nome ?: outraConta
                         NkListItem(
                             titulo = when (m.tipo) {
-                                TipoMovimentoReserva.MOVER -> if (m.valor < 0) "Movido para ${outro.orEmpty()}" else "Recebido de ${outro.orEmpty()}"
-                                else -> m.tipo.rotulo
+                                TipoMovimentoCaixinha.GUARDAR -> "Guardado de $outraConta"
+                                TipoMovimentoCaixinha.RETIRAR -> "Retirado para $outraConta"
+                                TipoMovimentoCaixinha.MOVER_SAIDA -> "Movido para $outroObjetivo"
+                                TipoMovimentoCaixinha.MOVER_ENTRADA -> "Recebido de $outroObjetivo"
+                                TipoMovimentoCaixinha.RENDIMENTO -> "Rendimento"
                             },
                             subtitulo = Formatos.data(m.data),
                             fim = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(Dinheiro.formatarComSinal(m.valor), style = MaterialTheme.typography.bodyLarge, color = if (m.valor >= 0) VerdeEntrada else RosaDespesa)
-                                    TextButton(onClick = { executar({ container.objetivos.desfazer(m.grupoId) }) }) { Text("Desfazer") }
+                                    TextButton(onClick = { executar({ container.objetivos.desfazer(m.movimentacaoId) }) }) { Text("Desfazer") }
                                 }
                             },
                         )
+                    }
+                }
+            }
+            // V3 (ADR 0032): o que foi "carimbado" na v0.7 fica só para leitura e não conta mais.
+            if (s.antigos.isNotEmpty()) {
+                item { NkCabecalhoSecao("Antes das caixinhas (só leitura)") }
+                item {
+                    NkCard {
+                        NkTextoAjuda("Na versão anterior, o objetivo só separava uma parte do saldo, sem tirar o dinheiro da conta. Esses valores não contam mais.", Modifier.padding(Espaco.m))
+                        s.antigos.forEach { a ->
+                            NkDivisor()
+                            NkListItem(
+                                titulo = a.tipo.rotulo,
+                                subtitulo = Formatos.data(a.data),
+                                fim = { Text(Dinheiro.formatarComSinal(a.valor), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            )
+                        }
                     }
                 }
             }
@@ -367,7 +384,7 @@ fun ObjetivoTela(id: String, aoVoltar: () -> Unit, aoEditar: () -> Unit, aoOpera
                     NkBotaoSecundario(if (o.concluido) "Reabrir" else "Concluir", { executar({ container.objetivos.concluir(id, !o.concluido) }) })
                     NkBotaoSecundario(if (o.arquivado) "Desarquivar" else "Arquivar", { executar({ container.objetivos.arquivar(id, !o.arquivado) }) })
                     NkBotaoSecundario("Excluir", { confirmarExcluir = true })
-                    NkTextoAjuda("Concluir e arquivar mantêm o valor guardado. Para excluir, o objetivo precisa estar sem nada guardado.")
+                    NkTextoAjuda("Concluir e arquivar mantêm o dinheiro na caixinha. Para excluir, a caixinha precisa estar zerada.")
                     Spacer(Modifier.height(Espaco.l))
                 }
             }
@@ -385,50 +402,61 @@ fun ObjetivoTela(id: String, aoVoltar: () -> Unit, aoEditar: () -> Unit, aoOpera
 
 // ---------------------------------------------------------------- operações
 
-/** Guardar, retirar, mover ou ajustar, em tela cheia (sem diálogos com listas). */
+/** As operações de uma caixinha (v0.8, regra 6G.2). */
+enum class OperacaoCaixinha { GUARDAR, RETIRAR, MOVER, RENDIMENTO }
+
+/** Guardar, retirar, mover ou lançar rendimento, em tela cheia (sem diálogos com listas). */
 @Composable
-fun OperacaoObjetivoTela(id: String, tipo: TipoMovimentoReserva, aoVoltar: () -> Unit) {
+fun OperacaoObjetivoTela(id: String, tipo: OperacaoCaixinha, aoVoltar: () -> Unit) {
     val container = LocalContainer.current
     val visao by container.visao.collectAsState()
     val escopo = rememberCoroutineScope()
     var valorTexto by rememberSaveable { mutableStateOf("0,00") }
     var data by rememberSaveable { mutableStateOf(container.relogio.hoje().toString()) }
+    var conta by rememberSaveable { mutableStateOf<String?>(null) }
     var destino by rememberSaveable { mutableStateOf<String?>(null) }
     var erro by rememberSaveable { mutableStateOf<String?>(null) }
     var salvando by rememberSaveable { mutableStateOf(false) }
     val s = visao?.objetivos?.situacao(id)
     val titulo = when (tipo) {
-        TipoMovimentoReserva.GUARDAR -> "Guardar"
-        TipoMovimentoReserva.RETIRAR -> "Retirar"
-        TipoMovimentoReserva.MOVER -> "Mover para outro objetivo"
-        TipoMovimentoReserva.AJUSTE -> "Ajustar valor guardado"
+        OperacaoCaixinha.GUARDAR -> "Guardar"
+        OperacaoCaixinha.RETIRAR -> "Retirar"
+        OperacaoCaixinha.MOVER -> "Mover para outro objetivo"
+        OperacaoCaixinha.RENDIMENTO -> "Rendimento"
     }
     Subtela(titulo = titulo, aoVoltar = aoVoltar) { modifier ->
         val v = visao ?: return@Subtela
         if (s == null) return@Subtela
-        LaunchedEffect(Unit) { if (tipo == TipoMovimentoReserva.AJUSTE) valorTexto = Dinheiro.formatarSemSimbolo(s.guardado) }
+        // Só contas próprias: a caixinha nunca é meio de pagamento, e benefício não se guarda.
+        val proprias = v.contas.filter { it.natureza == com.hkawzz.nkote.dominio.Natureza.PROPRIO && !it.arquivada }
+        LaunchedEffect(Unit) { if (conta == null) conta = proprias.firstOrNull()?.id }
         Column(
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Espaco.l, vertical = Espaco.xs),
             verticalArrangement = Arrangement.spacedBy(Espaco.s),
         ) {
-            Text("${s.objetivo.nome} · guardado ${Dinheiro.formatar(s.guardado)} · disponível ${Dinheiro.formatar(v.resumo.disponivel)}",
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("${s.objetivo.nome} · na caixinha ${Dinheiro.formatar(s.guardado)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 when (tipo) {
-                    TipoMovimentoReserva.GUARDAR -> "Separa uma parte do seu saldo para este objetivo. O dinheiro continua na conta; o Saldo disponível diminui."
-                    TipoMovimentoReserva.RETIRAR -> "Devolve ao Saldo disponível. Não é despesa. Se for gastar, lance a despesa depois, normalmente."
-                    TipoMovimentoReserva.MOVER -> "Passa o valor para outro objetivo. O Saldo disponível não muda."
-                    TipoMovimentoReserva.AJUSTE -> "Informe quanto deve ficar guardado. A diferença fica registrada no histórico como ajuste."
+                    OperacaoCaixinha.GUARDAR -> "Transfere da conta escolhida para a caixinha. A conta fica com menos; o Saldo disponível diminui e o Guardado aumenta."
+                    OperacaoCaixinha.RETIRAR -> "Transfere da caixinha para a conta escolhida. Não é despesa. Se for gastar, lance a despesa depois, por essa conta."
+                    OperacaoCaixinha.MOVER -> "Transfere para a caixinha de outro objetivo. O Saldo disponível não muda."
+                    OperacaoCaixinha.RENDIMENTO -> "O que a caixinha rendeu (ex.: o CDI do banco). Entra como receita, na categoria Rendimentos."
                 },
                 style = MaterialTheme.typography.bodySmall,
             )
-            CampoDinheiro(if (tipo == TipoMovimentoReserva.AJUSTE) "Novo valor guardado" else "Valor", valorTexto, { valorTexto = it })
-            if (tipo == TipoMovimentoReserva.MOVER) {
-                CampoEscolha(
+            CampoDinheiro("Valor", valorTexto, { valorTexto = it })
+            when (tipo) {
+                OperacaoCaixinha.GUARDAR, OperacaoCaixinha.RETIRAR -> CampoEscolha(
+                    if (tipo == OperacaoCaixinha.GUARDAR) "De qual conta" else "Para qual conta",
+                    proprias.map { Opcao(it.id, it.nome, "Saldo " + Dinheiro.formatar(v.saldo(it.id))) },
+                    conta, { conta = it },
+                )
+                OperacaoCaixinha.MOVER -> CampoEscolha(
                     "Para",
-                    v.objetivos.ativos.filter { it.objetivo.id != id }.map { Opcao(it.objetivo.id, it.objetivo.nome, "Guardado ${Dinheiro.formatar(it.guardado)}") },
+                    v.objetivos.ativos.filter { it.objetivo.id != id }.map { Opcao(it.objetivo.id, it.objetivo.nome, "Na caixinha ${Dinheiro.formatar(it.guardado)}") },
                     destino, { destino = it },
                 )
+                OperacaoCaixinha.RENDIMENTO -> Unit
             }
             CampoData("Data", LocalDate.parse(data), { data = it.toString() })
             erro?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -438,10 +466,10 @@ fun OperacaoObjetivoTela(id: String, tipo: TipoMovimentoReserva, aoVoltar: () ->
                 salvando = true
                 escopo.launch {
                     val r = when (tipo) {
-                        TipoMovimentoReserva.GUARDAR -> container.objetivos.guardar(id, valor, d)
-                        TipoMovimentoReserva.RETIRAR -> container.objetivos.retirar(id, valor, d)
-                        TipoMovimentoReserva.MOVER -> destino?.let { container.objetivos.mover(id, it, valor, d) } ?: Resultado.Falha("Escolha o objetivo de destino.")
-                        TipoMovimentoReserva.AJUSTE -> container.objetivos.ajustar(id, valor, d)
+                        OperacaoCaixinha.GUARDAR -> conta?.let { container.objetivos.guardar(id, it, valor, d) } ?: Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
+                        OperacaoCaixinha.RETIRAR -> conta?.let { container.objetivos.retirar(id, it, valor, d) } ?: Resultado.Falha("Escolha a conta para onde o dinheiro volta.")
+                        OperacaoCaixinha.MOVER -> destino?.let { container.objetivos.mover(id, it, valor, d) } ?: Resultado.Falha("Escolha o objetivo de destino.")
+                        OperacaoCaixinha.RENDIMENTO -> container.objetivos.rendimento(id, valor, d)
                     }
                     salvando = false
                     when (r) {

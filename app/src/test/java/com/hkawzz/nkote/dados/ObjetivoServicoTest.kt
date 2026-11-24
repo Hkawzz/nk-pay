@@ -5,13 +5,18 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.hkawzz.nkote.dominio.Analises
+import com.hkawzz.nkote.dominio.CategoriasDoSistema
 import com.hkawzz.nkote.dominio.Conta
+import com.hkawzz.nkote.dominio.ContaFixa
 import com.hkawzz.nkote.dominio.Movimentacao
 import com.hkawzz.nkote.dominio.Natureza
 import com.hkawzz.nkote.dominio.Objetivo
+import com.hkawzz.nkote.dominio.Obrigacao
+import com.hkawzz.nkote.dominio.OrigemObrigacao
 import com.hkawzz.nkote.dominio.Periodo
 import com.hkawzz.nkote.dominio.Saldos
 import com.hkawzz.nkote.dominio.TipoBeneficio
+import com.hkawzz.nkote.dominio.TipoEmprestimo
 import com.hkawzz.nkote.dominio.TipoMovimentacao
 import com.hkawzz.nkote.dominio.VisaoFinanceira
 import com.hkawzz.nkote.dominio.VisaoObjetivos
@@ -26,7 +31,10 @@ import org.junit.runner.RunWith
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** v0.7 (regra 6F, ADR 0029): objetivos e reservas no banco. Exemplo da regra 6F.2. Valores fictícios. */
+/**
+ * Objetivos como caixinhas no banco. v0.8 (R2, regra 6G.2, ADR 0032): os testes da v0.7
+ * (carimbo) foram reescritos para o modelo de caixinhas. Valores fictícios.
+ */
 @RunWith(AndroidJUnit4::class)
 class ObjetivoServicoTest {
     private lateinit var banco: NkPayBanco
@@ -35,122 +43,144 @@ class ObjetivoServicoTest {
     private lateinit var movs: MovimentacaoRepositorio
     private lateinit var categorias: CategoriaRepositorio
     private lateinit var servico: ObjetivoServico
+    private lateinit var auditor: Auditor
     private lateinit var pix: String
+    private lateinit var va: String
     private val dia = LocalDate.of(2026, 12, 1)
+    private val dez = YearMonth.of(2026, 12)
 
     @Before
     fun abrir() = runTest {
         banco = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), NkPayBanco::class.java).allowMainThreadQueries().build()
-        val auditor = Auditor(banco.auditoriaDao(), relogio)
+        auditor = Auditor(banco.auditoriaDao(), relogio)
         contas = ContaRepositorio(banco, auditor, relogio)
         movs = MovimentacaoRepositorio(banco, auditor, relogio)
         categorias = CategoriaRepositorio(banco, auditor, relogio)
         categorias.garantirCategoriasIniciais()
         servico = ObjetivoServico(banco, auditor, relogio)
         pix = contas.criar(Conta("", "Pix", Natureza.PROPRIO, null, 100_000, LocalDate.of(2026, 11, 1))).ok()
-        // VA e cartão nunca entram no guardado nem no disponível.
-        contas.criar(Conta("", "VA", Natureza.BENEFICIO, TipoBeneficio.VA, 50_000, LocalDate.of(2026, 11, 1)))
-        contas.criar(Conta("", "Cartão", Natureza.CARTAO, null, 0, LocalDate.of(2026, 11, 1), diaFechamento = 5, diaVencimento = 12))
+        va = contas.criar(Conta("", "VA", Natureza.BENEFICIO, TipoBeneficio.VA, 50_000, LocalDate.of(2026, 11, 1))).ok()
     }
 
     @After fun fechar() = banco.close()
 
-    private fun <T> Resultado<T>.ok(): T = when (this) {
-        is Resultado.Sucesso -> valor
-        is Resultado.Falha -> error(mensagem)
+    private fun <T> Resultado<T>.ok(): T = when (this) { is Resultado.Sucesso -> valor; is Resultado.Falha -> error(mensagem) }
+    private fun Resultado<*>.recusada(): String = (this as? Resultado.Falha)?.mensagem ?: error("deveria ter sido recusada")
+
+    private suspend fun visao(): VisaoFinanceira {
+        val c = contas.observar().first()
+        val m = movs.observar().first()
+        return VisaoFinanceira(c, categorias.observar().first(), m,
+            VisaoObjetivos(banco.objetivoDao().observarValidos().first().map { it.paraDominio() }, banco.movimentoReservaDao().observarValidos().first().map { it.paraDominio() }, c, m))
     }
 
-    private suspend fun visao() = VisaoFinanceira(
-        contas.observar().first(), categorias.observar().first(), movs.observar().first(),
-        VisaoObjetivos(banco.objetivoDao().observarValidos().first().map { it.paraDominio() }, banco.movimentoReservaDao().observarValidos().first().map { it.paraDominio() }),
-    )
+    private suspend fun caixinha(objetivo: String) = banco.objetivoDao().buscar(objetivo)!!.contaCaixinhaId!!
 
     @Test
-    fun `exemplo da regra 6F2 sem mexer em dinheiro`() = runTest {
-        val antesMovs = movs.observar().first()
-        val fone = servico.criar(Objetivo("", "Fone", meta = 30_000)).ok()
-        val viagem = servico.criar(Objetivo("", "Viagem")).ok()
-        servico.guardar(fone, 30_000, dia).ok()
-        visao().resumo.let { assertEquals(100_000L, it.dinheiroProprio); assertEquals(30_000L, it.reservado); assertEquals(70_000L, it.disponivel) }
-        // Guardar R$ 800,00 com R$ 700,00 disponíveis: recusado (o VA não conta).
-        val r = servico.guardar(viagem, 80_000, dia)
-        assertTrue(r is Resultado.Falha && r.mensagem.contains("R$ 700,00"))
-        servico.retirar(fone, 10_000, dia).ok()
-        assertEquals(80_000L, visao().resumo.disponivel)
-        servico.mover(fone, viagem, 5_000, dia).ok()
-        visao().let { assertEquals(15_000L, it.objetivos.guardado(fone)); assertEquals(5_000L, it.objetivos.guardado(viagem)); assertEquals(80_000L, it.resumo.disponivel) }
-        assertEquals("ajuste", servico.ajustar(viagem, 8_000, dia).ok()?.let { "ajuste" })
-        visao().let { assertEquals(23_000L, it.resumo.reservado); assertEquals(77_000L, it.resumo.disponivel) }
-        // Nada disso é dinheiro: movimentações, saldos, entradas, despesas e fluxo iguais.
-        val depois = movs.observar().first()
-        assertEquals(antesMovs, depois)
-        assertEquals(100_000L, visao().saldo(pix))
-        assertEquals(0L, Saldos.totaisDoMes(depois, YearMonth.of(2026, 12)).despesas)
-        val p = Periodo(YearMonth.of(2026, 12), YearMonth.of(2026, 12))
-        assertEquals(Analises.fluxo(visao().contas, depois, p), Analises.fluxo(visao().contas, antesMovs, p))
-        // Ajuste para baixo e para o mesmo valor (nada muda).
-        servico.ajustar(viagem, 2_000, dia).ok()
-        assertEquals(null, servico.ajustar(viagem, 2_000, dia).ok())
-        assertEquals(2_000L, visao().objetivos.guardado(viagem))
-        // Retirar mais que o guardado e ajustar acima do disponível: recusados.
-        assertTrue(servico.retirar(viagem, 2_001, dia) is Resultado.Falha)
-        assertTrue(servico.ajustar(viagem, 2_000 + 84_000, dia) is Resultado.Falha)
+    fun `tabela da regra 6G2 com guardar rendimento e retirar`() = runTest {
+        val viagem = servico.criar(Objetivo("", "Viagem", meta = 50_000)).ok()
+        val cx = caixinha(viagem)
+        assertEquals(0L, visao().saldo(cx)) // começa zerada
+        servico.guardar(viagem, pix, 30_000, dia).ok()
+        visao().let { v -> assertEquals(70_000L, v.saldo(pix)); assertEquals(30_000L, v.saldo(cx)); assertEquals(100_000L, v.resumo.dinheiroProprio); assertEquals(70_000L, v.resumo.disponivel) }
+        servico.rendimento(viagem, 200, dia).ok()
+        visao().let { v -> assertEquals(30_200L, v.saldo(cx)); assertEquals(100_200L, v.resumo.dinheiroProprio); assertEquals(70_000L, v.resumo.disponivel) }
+        servico.retirar(viagem, pix, 10_000, dia).ok()
+        visao().let { v ->
+            assertEquals(80_000L, v.saldo(pix)); assertEquals(20_200L, v.saldo(cx))
+            assertEquals(100_200L, v.resumo.dinheiroProprio); assertEquals(20_200L, v.resumo.reservado); assertEquals(80_000L, v.resumo.disponivel)
+            assertEquals(20_200L, v.objetivos.guardado(viagem))
+        }
+        // Só o rendimento é receita; guardar e retirar não entram no fluxo nem nos totais.
+        val v = visao()
+        assertEquals(200L, Saldos.totaisDoMes(v.movimentacoes, dez).entradas)
+        assertEquals(0L, Saldos.totaisDoMes(v.movimentacoes, dez).despesas)
+        val f = Analises.fluxo(v.contas, v.movimentacoes, Periodo(dez, dez))
+        assertEquals(200L, f.entrou)
+        assertEquals(0L, f.saiu)
+        assertTrue(categorias.observar().first().any { it.codigoSistema == CategoriasDoSistema.RENDIMENTOS })
     }
 
     @Test
-    fun `desfazer nao deixa negativo e uma retirada desfeita precisa de disponivel`() = runTest {
+    fun `guardar respeita a R1 e so de conta propria`() = runTest {
+        val fone = servico.criar(Objetivo("", "Fone")).ok()
+        assertEquals("Saldo insuficiente no Pix (R$ 1.000,00). Registre a entrada antes ou escolha outra conta.", servico.guardar(fone, pix, 100_001, dia).recusada())
+        servico.guardar(fone, va, 1_000, dia).recusada() // benefício não se guarda
+        servico.guardar(fone, pix, 100_000, dia).ok()
+        assertEquals(0L, visao().resumo.disponivel)
+        assertTrue(servico.retirar(fone, pix, 100_001, dia).recusada().contains("Só há R$ 1.000,00"))
+    }
+
+    @Test
+    fun `mover entre caixinhas e desfazer com a R1`() = runTest {
         val a = servico.criar(Objetivo("", "A")).ok()
         val b = servico.criar(Objetivo("", "B")).ok()
-        val g1 = servico.guardar(a, 40_000, dia).ok()
-        val mover = servico.mover(a, b, 10_000, dia).ok()
-        servico.retirar(b, 10_000, dia).ok()
-        // Desfazer o mover deixaria B negativo.
-        assertTrue(servico.desfazer(mover) is Resultado.Falha)
-        // Desfazer o guardar deixaria A (R$ 300,00) negativo.
-        assertTrue(servico.desfazer(g1) is Resultado.Falha)
-        val r1 = servico.retirar(a, 30_000, dia).ok()
-        servico.guardar(b, 100_000, dia).ok() // usa todo o disponível
-        assertEquals(0L, visao().resumo.disponivel)
-        assertTrue(servico.desfazer(r1) is Resultado.Falha) // guardaria de novo sem disponível
-        val g2 = servico.guardar(a, 0 + 1, dia)
-        assertTrue(g2 is Resultado.Falha)
-        servico.retirar(b, 100_000, dia).ok()
-        servico.desfazer(r1).ok()
-        assertEquals(40_000L - 10_000, visao().objetivos.guardado(a))
-        assertTrue(banco.auditoriaDao().listarTodas().any { it.resumo.contains("desfeito") })
+        val g = servico.guardar(a, pix, 40_000, dia).ok()
+        val m = servico.mover(a, b, 10_000, dia).ok()
+        visao().let { assertEquals(30_000L, it.objetivos.guardado(a)); assertEquals(10_000L, it.objetivos.guardado(b)); assertEquals(60_000L, it.resumo.disponivel) }
+        servico.retirar(b, pix, 10_000, dia).ok()
+        // Desfazer o mover deixaria a caixinha B negativa: a R1 recusa.
+        servico.desfazer(m).recusada()
+        // Desfazer o guardar de 40.000 deixaria a caixinha A (30.000) negativa.
+        servico.desfazer(g).recusada()
+        // Desfazer a retirada de B depois de gastar o Pix: o Pix ficaria negativo.
+        movs.criar(Movimentacao("", TipoMovimentacao.DESPESA, dia, 70_000, pix, null, null, "Compra")).ok()
+        val retirada = visao().objetivos.situacao(b)!!.movimentos.first { it.tipo == com.hkawzz.nkote.dominio.TipoMovimentoCaixinha.RETIRAR }
+        servico.desfazer(retirada.movimentacaoId).recusada()
+        // Com uma entrada de 10.000 no Pix, desfazer devolve o dinheiro para B.
+        movs.criar(Movimentacao("", TipoMovimentacao.ENTRADA, dia, 10_000, pix, null, null, "Salário")).ok()
+        servico.desfazer(retirada.movimentacaoId).ok()
+        assertEquals(0L, visao().saldo(pix))
+        assertEquals(10_000L, visao().objetivos.guardado(b))
     }
 
     @Test
-    fun `O2 guardado maior que o saldo deixa o disponivel negativo sem reduzir nada`() = runTest {
+    fun `caixinha nao e meio de pagamento em nenhum lugar`() = runTest {
         val fone = servico.criar(Objetivo("", "Fone")).ok()
-        servico.guardar(fone, 30_000, dia).ok()
-        val mercado = categorias.observar().first().first { it.nome == "Alimentação" }.id
-        movs.criar(Movimentacao("", TipoMovimentacao.DESPESA, dia, 90_000, pix, null, mercado, "Compra grande")).ok()
-        visao().resumo.let { assertEquals(10_000L, it.dinheiroProprio); assertEquals(30_000L, it.reservado); assertEquals(-20_000L, it.disponivel) }
-        assertEquals(30_000L, visao().objetivos.guardado(fone))
-        assertTrue(servico.guardar(fone, 1, dia) is Resultado.Falha)
-        // Retirar continua possível e corrige o disponível.
-        servico.retirar(fone, 30_000, dia).ok()
-        assertEquals(10_000L, visao().resumo.disponivel)
+        servico.guardar(fone, pix, 30_000, dia).ok()
+        val cx = caixinha(fone)
+        // Lançamento avulso (despesa, transferência de e para a caixinha).
+        movs.criar(Movimentacao("", TipoMovimentacao.DESPESA, dia, 100, cx, null, null, "x")).recusada()
+        movs.criar(Movimentacao("", TipoMovimentacao.TRANSFERENCIA, dia, 100, cx, pix, null, "x")).recusada()
+        movs.criar(Movimentacao("", TipoMovimentacao.TRANSFERENCIA, dia, 100, pix, cx, null, "x")).recusada()
+        // A transferência do guardar não muda pela aba Movimentações.
+        val guardar = visao().objetivos.situacao(fone)!!.movimentos.single()
+        movs.excluir(guardar.movimentacaoId).recusada()
+        movs.editar(movs.buscar(guardar.movimentacaoId)!!.copy(valor = 1)).recusada()
+        // Pagar conta a pagar, fatura, empréstimo e conta padrão.
+        val luz = ObrigacaoRepositorio(banco, auditor, relogio).criarAvulsa(Obrigacao("", OrigemObrigacao.AVULSA, "Luz", 1_000, dia, dez)).ok()
+        PagamentoServico(banco, auditor, relogio).pagar(luz, cx, dia, 1_000, null).recusada()
+        val cartao = contas.criar(Conta("", "Cartão", Natureza.CARTAO, null, 0, LocalDate.of(2026, 11, 1), diaFechamento = 5, diaVencimento = 12)).ok()
+        CompraServico(banco, auditor, relogio).registrar(NovaCompra(cartao, "Fone", null, LocalDate.of(2026, 11, 3), 1_000, 1, LocalDate.of(2026, 11, 12))).ok()
+        PagamentoCreditoServico(banco, auditor, relogio).pagarFatura(cartao, YearMonth.of(2026, 11), cx, dia, 1_000, null).recusada()
+        EmprestimoServico(banco, auditor, relogio).registrar(NovoEmprestimo(TipoEmprestimo.CONCEDIDO, null, "Tonho", "Ajuda", null, 1_000, dia, cx, listOf(dia.plusMonths(1) to 1_000))).recusada()
+        ContaFixaRepositorio(banco, auditor, relogio).criar(ContaFixa("", "Aluguel", 1_000, 10, contaPadraoId = cx)).recusada()
+        // A tela de contas não cria, edita, arquiva nem exclui caixinhas.
+        contas.criar(Conta("", "Minha caixinha", Natureza.CAIXINHA, null, 0, dia)).recusada()
+        contas.editar(contas.buscar(cx)!!.copy(nome = "X")).recusada()
+        contas.arquivar(cx).recusada()
+        assertTrue(contas.excluir(cx) is ContaRepositorio.ResultadoExclusao.TemVinculos)
+        // E nenhuma lista de "pagar com" (meios de pagamento) a mostra.
+        assertTrue(visao().contas.filter { it.ehMeioDePagamento }.none { it.id == cx })
+        assertEquals(30_000L, visao().saldo(cx))
     }
 
     @Test
-    fun `O3 concluir e arquivar mantem o guardado e excluir com guardado e recusado`() = runTest {
+    fun `O3 concluir e arquivar mantem o dinheiro e excluir so com a caixinha zerada`() = runTest {
         val fone = servico.criar(Objetivo("", "Fone", meta = 30_000, prazo = LocalDate.of(2027, 6, 30))).ok()
-        servico.guardar(fone, 30_000, dia).ok()
+        servico.guardar(fone, pix, 30_000, dia).ok()
         servico.concluir(fone).ok()
         assertEquals(30_000L, visao().resumo.reservado)
-        assertTrue(servico.guardar(fone, 100, dia) is Resultado.Falha)
+        servico.guardar(fone, pix, 100, dia).recusada()
         servico.arquivar(fone).ok()
-        assertEquals(30_000L, visao().resumo.reservado)
-        val e = servico.excluir(fone)
-        assertTrue(e is Resultado.Falha && e.mensagem.contains("Retire ou mova os R$ 300,00"))
-        servico.retirar(fone, 30_000, dia).ok()
+        assertTrue(servico.excluir(fone).recusada().contains("Retire ou mova os R$ 300,00"))
+        servico.retirar(fone, pix, 30_000, dia).ok()
+        val cx = caixinha(fone)
         servico.excluir(fone).ok()
         assertTrue(visao().objetivos.objetivos.isEmpty())
-        assertEquals(0L, visao().resumo.reservado)
-        assertTrue(banco.auditoriaDao().listarTodas().any { it.entidade == Auditor.OBJETIVO && it.resumo.contains("excluído") })
-        // Validação do cadastro.
+        // A caixinha fica arquivada (não excluída): o histórico continua sendo dinheiro seu.
+        assertTrue(contas.buscar(cx)!!.arquivada)
+        assertEquals(0L, Analises.fluxo(visao().contas, visao().movimentacoes, Periodo(dez, dez)).saiu)
         assertTrue(servico.criar(Objetivo("", " ")) is Resultado.Falha)
         assertTrue(servico.criar(Objetivo("", "X", meta = 0)) is Resultado.Falha)
     }

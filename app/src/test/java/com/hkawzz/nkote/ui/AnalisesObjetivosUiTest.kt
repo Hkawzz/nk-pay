@@ -29,6 +29,7 @@ import androidx.compose.ui.test.onLast
 import com.hkawzz.nkote.dominio.Objetivo
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.performScrollToNode
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -70,8 +71,10 @@ class AnalisesObjetivosUiTest {
         val dia = LocalDate.of(2026, 12, 1)
         runBlocking {
             val fone = (container.objetivos.criar(Objetivo("", "Fone", meta = 30_000)) as com.hkawzz.nkote.dados.Resultado.Sucesso).valor
-            container.objetivos.guardar(fone, 30_000, dia)
-            container.objetivos.retirar(fone, 10_000, dia)
+            // v0.8 (R2): guardar e retirar escolhem a conta (transferências Pix ↔ caixinha).
+            val pix = container.contas.observar().first().first { it.nome == "Pix" }.id
+            container.objetivos.guardar(fone, pix, 30_000, dia)
+            container.objetivos.retirar(fone, pix, 10_000, dia)
         }
         regra.setContent { NkPayTema { CompositionLocalProvider(LocalContainer provides container) { NkPayApp() } } }
         regra.onNodeWithText("Mais").performClick()
@@ -87,6 +90,7 @@ class AnalisesObjetivosUiTest {
         assertEquals(30_000L, vo.guardadoNoPeriodo(p))
         assertEquals(10_000L, vo.retiradoNoPeriodo(p))
         // Não é entrada nem despesa.
-        assertEquals(0, container.visao.value!!.movimentacoes.size)
+        // v0.8: são transferências entre contas suas, nunca entrada nem despesa.
+        assertEquals(com.hkawzz.nkote.dominio.TotaisDoMes(0, 0), com.hkawzz.nkote.dominio.Saldos.totaisDoMes(container.visao.value!!.movimentacoes, java.time.YearMonth.of(2026, 12)))
     }
 }

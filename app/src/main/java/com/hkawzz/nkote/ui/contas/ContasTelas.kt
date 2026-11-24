@@ -107,7 +107,7 @@ fun ContasTela(
             "Dinheiro próprio" to ativas.filter { it.natureza == Natureza.PROPRIO },
             "Benefícios" to ativas.filter { it.natureza == Natureza.BENEFICIO },
             // Cartões e crediários ficam em Mais → Cartões e crediários.
-            "Arquivadas" to v.contas.filter { it.arquivada && !it.ehContaDeTerceiros },
+            "Arquivadas" to v.contas.filter { it.arquivada && it.ehMeioDePagamento },
         )
         LazyColumn(modifier.fillMaxSize()) {
             for ((titulo, contas) in grupos) {

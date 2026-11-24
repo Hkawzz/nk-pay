@@ -90,7 +90,8 @@ object Analises {
      * Ajustes são correções e ficam fora. Benefícios ficam fora.
      */
     fun fluxo(contas: List<Conta>, movs: List<Movimentacao>, periodo: Periodo): FluxoFinanceiro {
-        val proprias = contas.filter { it.natureza == Natureza.PROPRIO }.map { it.id }.toSet()
+        // v0.8: caixinhas também são dinheiro seu: guardar e retirar não entram no fluxo; rendimento entra.
+        val proprias = contas.filter { it.natureza.ehDinheiroProprio }.map { it.id }.toSet()
         val credito = contas.filter { it.ehCredito }.map { it.id }.toSet()
         var entrou = 0L
         var saiu = 0L
