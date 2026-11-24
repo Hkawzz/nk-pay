@@ -70,12 +70,12 @@ class ContaRepositorio(
     suspend fun editar(conta: Conta): Resultado<Unit> {
         val normalizada = conta.copy(nome = conta.nome.trim())
         Validacao.conta(normalizada)?.let { return Resultado.Falha(it) }
-        return banco.withTransaction {
+        return banco.transacaoConferida {
             val antes = dao.buscar(conta.id)?.takeIf { it.excluidoEm == null }
-                ?: return@withTransaction Resultado.Falha("Conta não encontrada.")
+                ?: return@transacaoConferida Resultado.Falha("Conta não encontrada.")
             // Uma conta com lançamentos não vira de crédito (nem deixa de ser): o devido deixaria de bater.
             if (Natureza.valueOf(antes.natureza).ehContaDeTerceiros != normalizada.natureza.ehContaDeTerceiros && dao.contarMovimentacoes(antes.id) > 0) {
-                return@withTransaction Resultado.Falha("Esta conta já tem lançamentos: ela não pode virar cartão ou crediário (nem o contrário).")
+                return@transacaoConferida Resultado.Falha("Esta conta já tem lançamentos: ela não pode virar cartão ou crediário (nem o contrário).")
             }
             val depois = antes.copy(
                 nome = normalizada.nome,
@@ -90,7 +90,7 @@ class ContaRepositorio(
                 diaVencimento = normalizada.diaVencimento,
                 atualizadoEm = relogio.agora(),
             )
-            if (depois.copy(atualizadoEm = antes.atualizadoEm) == antes) return@withTransaction Resultado.Sucesso(Unit)
+            if (depois.copy(atualizadoEm = antes.atualizadoEm) == antes) return@transacaoConferida Resultado.Sucesso(Unit)
             dao.atualizar(depois)
             auditor.registrar(
                 relogio.novoId(), Operacao.EDICAO, Auditor.CONTA, antes.id,
@@ -402,8 +402,8 @@ class MovimentacaoRepositorio(
 
     suspend fun criar(m: Movimentacao): Resultado<String> {
         val limpa = m.copy(descricao = m.descricao.trim())
-        return banco.withTransaction {
-            validar(limpa)?.let { return@withTransaction Resultado.Falha(it) }
+        return banco.transacaoConferida {
+            validar(limpa)?.let { return@transacaoConferida Resultado.Falha(it) }
             val agora = relogio.agora()
             val nova = MovimentacaoEntidade(
                 id = relogio.novoId(),
@@ -427,15 +427,15 @@ class MovimentacaoRepositorio(
 
     suspend fun editar(m: Movimentacao): Resultado<Unit> {
         val limpa = m.copy(descricao = m.descricao.trim())
-        return banco.withTransaction {
+        return banco.transacaoConferida {
             val antes = dao.buscar(m.id)?.takeIf { it.excluidoEm == null }
-                ?: return@withTransaction Resultado.Falha("Movimentação não encontrada.")
-            mensagemSeProtegida(m.id)?.let { return@withTransaction Resultado.Falha(it) }
-            validar(limpa)?.let { return@withTransaction Resultado.Falha(it) }
+                ?: return@transacaoConferida Resultado.Falha("Movimentação não encontrada.")
+            mensagemSeProtegida(m.id)?.let { return@transacaoConferida Resultado.Falha(it) }
+            validar(limpa)?.let { return@transacaoConferida Resultado.Falha(it) }
             // Uma movimentação de conta de crédito (feita por compra/pagamento) também não muda por aqui.
             if (contaDao.buscar(antes.contaId)?.let { Natureza.valueOf(it.natureza).ehContaDeTerceiros } == true ||
                 antes.contaDestinoId?.let { contaDao.buscar(it) }?.let { Natureza.valueOf(it.natureza).ehContaDeTerceiros } == true
-            ) return@withTransaction Resultado.Falha(Validacao.MENSAGEM_CONTA_DE_CREDITO)
+            ) return@transacaoConferida Resultado.Falha(Validacao.MENSAGEM_CONTA_DE_CREDITO)
             val depois = antes.copy(
                 tipo = limpa.tipo.name,
                 data = limpa.data.toString(),
@@ -446,7 +446,7 @@ class MovimentacaoRepositorio(
                 descricao = limpa.descricao,
                 atualizadoEm = relogio.agora(),
             )
-            if (depois.copy(atualizadoEm = antes.atualizadoEm) == antes) return@withTransaction Resultado.Sucesso(Unit)
+            if (depois.copy(atualizadoEm = antes.atualizadoEm) == antes) return@transacaoConferida Resultado.Sucesso(Unit)
             dao.atualizar(depois)
             auditor.registrar(
                 relogio.novoId(), Operacao.EDICAO, Auditor.MOVIMENTACAO, antes.id,
@@ -457,10 +457,10 @@ class MovimentacaoRepositorio(
     }
 
     /** Exclusão lógica: some das telas e dos cálculos, mas fica no banco e na auditoria. */
-    suspend fun excluir(id: String): Resultado<Unit> = banco.withTransaction {
+    suspend fun excluir(id: String): Resultado<Unit> = banco.transacaoConferida {
         val antes = dao.buscar(id)?.takeIf { it.excluidoEm == null }
-            ?: return@withTransaction Resultado.Falha("Movimentação não encontrada.")
-        mensagemSeProtegida(id)?.let { return@withTransaction Resultado.Falha(it) }
+            ?: return@transacaoConferida Resultado.Falha("Movimentação não encontrada.")
+        mensagemSeProtegida(id)?.let { return@transacaoConferida Resultado.Falha(it) }
         val agora = relogio.agora()
         val depois = antes.copy(excluidoEm = agora, atualizadoEm = agora)
         dao.atualizar(depois)

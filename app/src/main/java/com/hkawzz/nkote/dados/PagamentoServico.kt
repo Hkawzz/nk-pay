@@ -56,22 +56,22 @@ class PagamentoServico(
         data: LocalDate,
         valorPago: Long,
         classificacao: ClassificacaoDiferenca?,
-    ): Resultado<String> = banco.withTransaction {
+    ): Resultado<String> = banco.transacaoConferida {
         val obrig = obrigacaoDao.buscar(obrigacaoId)?.takeIf { it.excluidoEm == null && it.canceladaEm == null }
-            ?: return@withTransaction Resultado.Falha("Conta a pagar não encontrada.")
+            ?: return@transacaoConferida Resultado.Falha("Conta a pagar não encontrada.")
         // v0.4: parcelas de cartão/crediário são pagas por transferência, na tela do cartão (ADR 0015).
-        if (obrig.contaCreditoId != null) return@withTransaction Resultado.Falha("Esta é uma parcela de cartão ou crediário. Pague pela tela do cartão.")
+        if (obrig.contaCreditoId != null) return@transacaoConferida Resultado.Falha("Esta é uma parcela de cartão ou crediário. Pague pela tela do cartão.")
         val conta = contaDao.buscar(contaId)?.takeIf { it.excluidoEm == null }
-            ?: return@withTransaction Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
+            ?: return@transacaoConferida Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
 
         val plano = when (val r = Pagamentos.planejar(restante(obrigacaoId), valorPago, classificacao)) {
             is ResultadoPlano.Pronto -> r.plano
-            is ResultadoPlano.PrecisaClassificar -> return@withTransaction Resultado.Falha("Diga o que é a diferença de ${Dinheiro.formatar(r.diferenca)}.")
-            is ResultadoPlano.Invalido -> return@withTransaction Resultado.Falha(r.mensagem)
+            is ResultadoPlano.PrecisaClassificar -> return@transacaoConferida Resultado.Falha("Diga o que é a diferença de ${Dinheiro.formatar(r.diferenca)}.")
+            is ResultadoPlano.Invalido -> return@transacaoConferida Resultado.Falha(r.mensagem)
         }
         val encargos = if (plano.encargo > 0) {
             categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS)
-                ?: return@withTransaction Resultado.Falha("Categoria “Encargos financeiros” não encontrada.")
+                ?: return@transacaoConferida Resultado.Falha("Categoria “Encargos financeiros” não encontrada.")
         } else {
             null
         }
@@ -138,9 +138,9 @@ class PagamentoServico(
      * a ligação e os ajustes que ele criou, inclusive a despesa de encargo.
      * A conta a pagar volta ao restante de antes.
      */
-    suspend fun excluir(pagamentoId: String): Resultado<Unit> = banco.withTransaction {
+    suspend fun excluir(pagamentoId: String): Resultado<Unit> = banco.transacaoConferida {
         val principal = pagamentoDao.buscar(pagamentoId)?.takeIf { it.excluidoEm == null }
-            ?: return@withTransaction Resultado.Falha("Pagamento não encontrado.")
+            ?: return@transacaoConferida Resultado.Falha("Pagamento não encontrado.")
         val grupo = relogio.novoId()
         val agora = relogio.agora()
 

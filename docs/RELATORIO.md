@@ -30,6 +30,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 |---|---|---|---|
 | [#64](https://github.com/Hkawzz/nk-pay/pull/64) | Docs | Regra 6G (R1, caixinhas, V3, D1/D2, Início, backup automático) e decisões 0030 a 0034. Sem código | ✅ |
 | [#65](https://github.com/Hkawzz/nkote/pull/65) | Renomeação para NKote (sozinho) | Nome visível "NKote"/"NKote debug"; `applicationId` e pacotes `com.hkawzz.nkote`; esquemas 1 a 6 movidos para a pasta nova; backups novos `.nkote` (restauração aceita `.nkpay`); repositório `Hkawzz/nkote`; APK da Release `nkote-vX.Y.Z.apk`; teste novo restaurando um `.nkpay` da v0.7 | ✅ |
+| [#66](https://github.com/Hkawzz/nkote/pull/66) | R1 (sozinho) | Saída sem saldo recusada num ponto só da camada de dados (`transacaoConferida`): despesa, transferência, Pagar, fatura, parcelas, emprestar, excluir/editar entrada, ajuste para baixo e desfazer recebimento; contas já negativas só aceitam o que não as piora. Nenhum teste antigo mudou | ✅ |
 
 **Decisões tomadas sozinho**
 - **O logo novo não entra nesta versão:** o `LEIA-ME-logo.md` pede para aplicá-lo, mas o briefing (que prevalece) manda manter o ícone atual e trazer o novo numa v0.8.x. O ícone continua como adaptive icon em `res/`, fácil de trocar.
