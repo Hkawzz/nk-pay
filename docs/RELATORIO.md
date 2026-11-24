@@ -42,7 +42,7 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 **Pendências:** nenhuma até aqui.
 
 **Problemas encontrados:**
-- Renomeação (#65): na primeira suíte depois da troca de pacotes (compilação do zero, máquina carregada), o `ObjetivosUiTest` estourou uma vez o tempo de espera de 10 s; passou ao rodar de novo, sem mudança. Nenhum teste mudou por causa da renomeação além dos pacotes e do caminho dos esquemas, que acompanham os arquivos movidos.
+- Renomeação (#65): o `ObjetivosUiTest` (da v0.7) falhou na suíte completa, aqui e no CI. Causa: depois de "Criar objetivo", ele esperava o texto "Fone", que também está no campo do formulário; numa máquina lenta, o toque seguinte ia para o campo, antes de a tela voltar para a lista. Correção só no teste: esperar a seção "Ativos" antes de tocar (uma linha). Fora isso, nenhum teste mudou além dos pacotes e do caminho dos esquemas.
 
 ---
 

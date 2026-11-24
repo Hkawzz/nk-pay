@@ -75,6 +75,8 @@ class ObjetivosUiTest {
         regra.onNode(hasSetTextAction() and hasText("Meta (opcional)")).performTextInput("30000")
         foto("v07-objetivo-novo")
         regra.onNodeWithText("Criar objetivo").performScrollTo().performClick()
+        // v0.8: espera a LISTA (o "Fone" também está no campo do formulário; numa máquina lenta o toque ia para ele).
+        esperar("Ativos")
         esperar("Fone")
         // Guardar R$ 300,00.
         regra.onNodeWithText("Fone").performClick()
