@@ -117,6 +117,24 @@ fun MovimentacoesTela(aoAbrir: (String) -> Unit, aoNova: () -> Unit) {
                 }
             }
             item { Filtros(vm, v) }
+            // v0.9 (item 8): com filtro, mostra o total do resultado (transferências e ajustes não somam).
+            if (vm.filtro.ativo) {
+                item {
+                    val (entradas, despesas) = FiltroMovimentacoes.totais(lista)
+                    NkCard {
+                        Column(Modifier.padding(Espaco.m)) {
+                            Text(
+                                "Resultado do filtro · ${lista.size} " + if (lista.size == 1) "lançamento" else "lançamentos",
+                                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row(Modifier.padding(top = Espaco.xs)) {
+                                NkValorRotulado("Entradas", entradas, Modifier.weight(1f), corValor = VerdeEntrada)
+                                NkValorRotulado("Despesas", despesas, Modifier.weight(1f), corValor = RosaDespesa)
+                            }
+                        }
+                    }
+                }
+            }
             if (lista.isEmpty()) {
                 item {
                     NkEstadoVazio(
@@ -167,6 +185,80 @@ private fun Filtros(vm: MovimentacoesViewModel, v: VisaoFinanceira) {
                 selecionado = vm.filtroConta,
                 aoEscolher = { vm.filtroConta = it },
             )
+        }
+    }
+    // v0.9 (item 8): data (um dia ou um intervalo) e categorias (uma ou várias), combináveis.
+    val hoje = LocalContainer.current.relogio.hoje()
+    var abrirData by rememberSaveable { mutableStateOf(false) }
+    var abrirCategorias by rememberSaveable { mutableStateOf(false) }
+    val f = vm.filtro
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(Espaco.xs),
+    ) {
+        FilterChip(
+            selected = f.temData,
+            onClick = { abrirData = !abrirData },
+            label = {
+                Text(
+                    when {
+                        !f.temData -> "Data"
+                        f.de == f.ate -> "Dia ${Formatos.data(f.de!!)}"
+                        else -> "${Formatos.data(minOf(f.de!!, f.ate!!))} a ${Formatos.data(maxOf(f.de, f.ate))}"
+                    },
+                )
+            },
+        )
+        FilterChip(
+            selected = f.categorias.isNotEmpty(),
+            onClick = { abrirCategorias = !abrirCategorias },
+            label = { Text(if (f.categorias.isEmpty()) "Categorias" else "Categorias (${f.categorias.size})") },
+        )
+    }
+    if (abrirData) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
+            val intervalo = f.temData && f.de != f.ate
+            EscolhaSegmentada(
+                listOf(Opcao(false, "Um dia"), Opcao(true, "Intervalo")), intervalo,
+                { quer ->
+                    val base = f.de ?: hoje
+                    vm.filtro = f.copy(de = base, ate = if (quer) maxOf(base, f.ate ?: base).let { if (it == base) base.plusDays(6) else it } else base)
+                },
+            )
+            CampoData(if (intervalo) "De" else "Dia", f.de ?: hoje, { d -> vm.filtro = f.copy(de = d, ate = if (intervalo) f.ate ?: d else d) })
+            if (intervalo) CampoData("Até", f.ate ?: hoje, { d -> vm.filtro = f.copy(de = f.de ?: d, ate = d) })
+            if (!f.temData) {
+                androidx.compose.material3.TextButton(onClick = { vm.filtro = f.copy(de = hoje, ate = hoje) }) { Text("Filtrar por hoje") }
+            } else {
+                Text("Com data, o seletor de mês fica de lado.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+    if (abrirCategorias) {
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(Espaco.xs),
+        ) {
+            for (c in v.categorias.filter { !it.arquivada || it.id in f.categorias }) {
+                FilterChip(
+                    selected = c.id in f.categorias,
+                    onClick = { vm.filtro = f.copy(categorias = if (c.id in f.categorias) f.categorias - c.id else f.categorias + c.id) },
+                    label = { Text(c.nome) },
+                )
+            }
+        }
+    }
+    if (f.ativo) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Filtros ativos: " + listOfNotNull(
+                    f.tipo?.let { "tipo" }, f.conta?.let { "conta" }, if (f.temData) "data" else null,
+                    if (f.categorias.isNotEmpty()) "categorias" else null,
+                ).joinToString(", "),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f),
+            )
+            androidx.compose.material3.TextButton(onClick = { vm.limpar(); abrirData = false; abrirCategorias = false }) { Text("Limpar") }
         }
     }
 }
