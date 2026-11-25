@@ -2,6 +2,8 @@ package com.hkawzz.nkote.dados
 
 import androidx.room.withTransaction
 import com.hkawzz.nkote.dominio.AparenciaSugerida
+import com.hkawzz.nkote.dominio.CategoriasDoSistema
+import com.hkawzz.nkote.dominio.ClassificacaoDiferenca
 import com.hkawzz.nkote.dominio.DatasDeCredito
 import com.hkawzz.nkote.dominio.Dinheiro
 import com.hkawzz.nkote.dominio.NaturezaAjuste
@@ -35,7 +37,15 @@ data class NovaCompra(
     val valorParcela: Long? = null,
     /** v0.6 (A2, regra 6B.9): parcelas pagas adiantado antes do app, fora das primeiras. */
     val antecipadas: List<Antecipada> = emptyList(),
+    /**
+     * v0.9 (item 9, regra 8.1): entre as [parcelasJaPagas], as que foram pagas com valor MAIOR
+     * que o previsto (atraso com juros, multa...), com a data do pagamento e a natureza da diferença.
+     */
+    val pagasComValorMaior: List<PagaAntes> = emptyList(),
 )
+
+/** v0.9 (item 9): uma parcela paga antes do app com [valorPago] maior que a parcela, em [data]. */
+data class PagaAntes(val numero: Int, val valorPago: Long, val data: LocalDate, val classificacao: ClassificacaoDiferenca?)
 
 /** Uma parcela antecipada antes do app: o [valorPago]; o desconto é o previsto − pago. */
 data class Antecipada(val numero: Int, val valorPago: Long)
@@ -93,7 +103,16 @@ class CompraServico(
                 if (a.numero <= n.parcelasJaPagas || a.numero == parcial) return Resultado.Falha("A parcela ${a.numero} já está entre as pagas: ela não pode ser antecipada também.")
                 if (a.valorPago < 0 || a.valorPago > valores[a.numero - 1]) return Resultado.Falha("O valor pago da parcela ${a.numero} vai de zero a ${Dinheiro.formatar(valores[a.numero - 1])}.")
             }
-        } else if (n.parcelasJaPagas != 0 || n.pagoEmParteDaSeguinte != 0L || n.antecipadas.isNotEmpty()) {
+            // v0.9 (item 9): valor pago maior numa parcela já paga.
+            val maiores = n.pagasComValorMaior.map { it.numero }
+            if (maiores.size != maiores.toSet().size) return Resultado.Falha("Uma parcela paga com valor diferente foi informada duas vezes.")
+            for (m in n.pagasComValorMaior) {
+                validarPagaAntes(m.numero, m.valorPago, m.data, m.classificacao, valores.getOrNull(m.numero - 1) ?: 0, m.numero in 1..n.parcelasJaPagas)?.let { return Resultado.Falha(it) }
+            }
+            if (n.pagasComValorMaior.any { it.valorPago > valores[it.numero - 1] } && categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) == null) {
+                return Resultado.Falha(SEM_ENCARGOS_COMPRA)
+            }
+        } else if (n.parcelasJaPagas != 0 || n.pagoEmParteDaSeguinte != 0L || n.antecipadas.isNotEmpty() || n.pagasComValorMaior.isNotEmpty()) {
             return Resultado.Falha("Parcelas já pagas só existem em compras anteriores ao app.")
         }
         return banco.withTransaction {
@@ -192,9 +211,105 @@ class CompraServico(
                         }
                     }
                 }
+                // v0.9 (item 9, regra 8.1): o que foi pago a mais vira encargo, na data do pagamento.
+                for (m in n.pagasComValorMaior) {
+                    val p = parcelas[m.numero - 1]
+                    val excedente = m.valorPago - p.valorPrevistoCentavos
+                    if (excedente > 0) excedenteAntesDoApp(grupo, conta, p, excedente, m.data, m.classificacao!!.natureza!!)
+                }
             }
             Resultado.Sucesso(compra.id)
         }
+    }
+
+    private val SEM_ENCARGOS_COMPRA = "Categoria “Encargos financeiros” não encontrada."
+
+    /** Marca usada nos dois ajustes do excedente pago antes do app (para corrigir depois). */
+    private val marcaExcedente = "excedente-antes"
+
+    private fun validarPagaAntes(numero: Int, valorPago: Long, data: LocalDate, classificacao: ClassificacaoDiferenca?, previsto: Long, ehPaga: Boolean): String? = when {
+        !ehPaga -> "A parcela $numero não está entre as já pagas."
+        valorPago < previsto -> "O valor pago da parcela $numero não pode ser menor que ela (${Dinheiro.formatar(previsto)}). Para pagar menos, use “pago em parte” ou parcela antecipada."
+        data.isAfter(relogio.hoje()) -> "A data do pagamento da parcela $numero não pode ser depois de hoje."
+        valorPago > previsto && (classificacao == null || classificacao.pagouMenos || classificacao.natureza == null) ->
+            "Diga o que é a diferença de ${Dinheiro.formatar(valorPago - previsto)} na parcela $numero."
+        else -> null
+    }
+
+    /**
+     * v0.9 (item 9, regra 8.1): o excedente pago ANTES do app numa parcela. Vira despesa em
+     * "Encargos financeiros" na conta de crédito, na data do pagamento, com o acréscimo na
+     * parcela; um ajuste do mesmo valor e na mesma data registra que ele já foi pago (o devido
+     * não muda). A categoria precisa existir (conferido antes).
+     */
+    private suspend fun excedenteAntesDoApp(grupo: String, conta: ContaEntidade, p: ObrigacaoEntidade, excedente: Long, data: LocalDate, natureza: NaturezaAjuste) {
+        val agora = relogio.agora()
+        val categoria = categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS)!!
+        val despesa = MovimentacaoEntidade(
+            relogio.novoId(), TipoMovimentacao.DESPESA.name, data.toString(), excedente, conta.id, null, categoria.id,
+            "${natureza.rotulo}: ${p.descricao} (pago antes do app)", agora, agora, null,
+        )
+        movDao.inserir(despesa)
+        auditor.registrar(grupo, Operacao.CRIACAO, Auditor.MOVIMENTACAO, despesa.id,
+            "Despesa de ${Dinheiro.formatar(excedente)} de ${natureza.rotulo.lowercase()} em “${p.descricao}” (pago antes do app)", MovimentacaoEntidade.serializer(), null, despesa)
+        val pago = MovimentacaoEntidade(
+            relogio.novoId(), TipoMovimentacao.AJUSTE.name, data.toString(), excedente, conta.id, null, null,
+            "Pago antes do app: ${natureza.rotulo.lowercase()} de ${p.descricao}", agora, agora, null,
+        )
+        movDao.inserir(pago)
+        auditor.registrar(grupo, Operacao.CRIACAO, Auditor.MOVIMENTACAO, pago.id,
+            "Ajuste de ${Dinheiro.formatarComSinal(excedente)} no ${conta.nome}: ${natureza.rotulo.lowercase()} pago antes do app", MovimentacaoEntidade.serializer(), null, pago)
+        for ((nat, movId) in listOf(natureza to despesa.id, NaturezaAjuste.QUITADA_ANTES_DO_APP to pago.id)) {
+            val a = ObrigacaoAjusteEntidade(relogio.novoId(), p.id, null, nat.name, excedente, movId, marcaExcedente, agora, agora, null)
+            ajusteDao.inserir(a)
+            auditor.registrar(grupo, Operacao.CRIACAO, Auditor.AJUSTE_OBRIGACAO, a.id,
+                "Parcela “${p.descricao}”: ${nat.rotulo.lowercase()} de ${Dinheiro.formatar(excedente)} (pago antes do app em $data)", ObrigacaoAjusteEntidade.serializer(), null, a)
+        }
+    }
+
+    /** v0.9 (item 9): a parcela foi quitada antes do app (inteira, sem antecipação nem pagamento no app)? */
+    suspend fun pagaAntesDoApp(obrigacaoId: String): Boolean {
+        val p = obrigacaoDao.buscar(obrigacaoId)?.takeIf { it.excluidoEm == null && it.compraId != null } ?: return false
+        if (pagamentoDao.validosDa(p.id).isNotEmpty()) return false
+        val originais = ajusteDao.validosDa(p.id).filter { it.natureza == NaturezaAjuste.QUITADA_ANTES_DO_APP.name && it.observacao == "" }
+        return originais.sumOf { it.valorCentavos } == p.valorPrevistoCentavos
+    }
+
+    /** O valor pago antes do app hoje registrado na parcela (previsto + excedente). */
+    suspend fun valorPagoAntesDoApp(obrigacaoId: String): Long? {
+        if (!pagaAntesDoApp(obrigacaoId)) return null
+        val p = obrigacaoDao.buscar(obrigacaoId)!!
+        return p.valorPrevistoCentavos + ajusteDao.validosDa(p.id).filter { it.observacao == marcaExcedente && it.natureza == NaturezaAjuste.QUITADA_ANTES_DO_APP.name }.sumOf { it.valorCentavos }
+    }
+
+    /**
+     * v0.9 (item 9, fluxo 3): corrige o valor pago ANTES do app numa parcela já marcada como
+     * paga. O excedente anterior (se houver) é desfeito e o novo é registrado na [data].
+     * Valor menor que a parcela é recusado (a regra de pago em parte e desconto não muda).
+     */
+    suspend fun corrigirPagoAntesDoApp(obrigacaoId: String, valorPago: Long, data: LocalDate, classificacao: ClassificacaoDiferenca?): Resultado<Unit> = banco.withTransaction {
+        if (!pagaAntesDoApp(obrigacaoId)) return@withTransaction Resultado.Falha("Só dá para corrigir o valor de uma parcela paga inteira antes do app.")
+        val p = obrigacaoDao.buscar(obrigacaoId)!!
+        validarPagaAntes(p.numeroParcela ?: 1, valorPago, data, classificacao, p.valorPrevistoCentavos, true)?.let { return@withTransaction Resultado.Falha(it) }
+        val excedente = valorPago - p.valorPrevistoCentavos
+        if (excedente > 0 && categoriaDao.buscarPorCodigo(CategoriasDoSistema.ENCARGOS_FINANCEIROS) == null) return@withTransaction Resultado.Falha(SEM_ENCARGOS_COMPRA)
+        val conta = contaDao.buscar(p.contaCreditoId!!)!!
+        val grupo = relogio.novoId()
+        val agora = relogio.agora()
+        for (a in ajusteDao.validosDa(p.id).filter { it.observacao == marcaExcedente }) {
+            val d = a.copy(excluidoEm = agora, atualizadoEm = agora)
+            ajusteDao.atualizar(d)
+            auditor.registrar(grupo, Operacao.EXCLUSAO, Auditor.AJUSTE_OBRIGACAO, a.id, "Valor pago antes do app corrigido: ajuste de ${Dinheiro.formatar(a.valorCentavos)} desfeito", ObrigacaoAjusteEntidade.serializer(), a, d)
+            a.movimentacaoId?.let { id ->
+                movDao.buscar(id)?.takeIf { it.excluidoEm == null }?.let { m ->
+                    val dm = m.copy(excluidoEm = agora, atualizadoEm = agora)
+                    movDao.atualizar(dm)
+                    auditor.registrar(grupo, Operacao.EXCLUSAO, Auditor.MOVIMENTACAO, m.id, "${TipoMovimentacao.valueOf(m.tipo).rotulo} “${m.descricao}” excluída (valor corrigido)", MovimentacaoEntidade.serializer(), m, dm)
+                }
+            }
+        }
+        if (excedente > 0) excedenteAntesDoApp(grupo, conta, p, excedente, data, classificacao!!.natureza!!)
+        Resultado.Sucesso(Unit)
     }
 
     /**
