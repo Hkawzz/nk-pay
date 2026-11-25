@@ -89,7 +89,7 @@ class MigracaoV8Test {
         val banco = abrirComoOApp()
         try {
             val db = banco.openHelper.writableDatabase
-            assertEquals(8, db.version)
+            assertEquals(NkPayBanco.VERSAO, db.version)
             assertEquals(antes.getValue("movimentacao"), foto(db.query("SELECT * FROM movimentacao ORDER BY id")))
             assertEquals(antes.getValue("conta"), foto(db.query("SELECT * FROM conta ORDER BY id")).map { it.substringBeforeLast("|ordem=") })
             // Ordem 0 em todas ("ainda não reordenada"): a lista fica na ordem alfabética de hoje.

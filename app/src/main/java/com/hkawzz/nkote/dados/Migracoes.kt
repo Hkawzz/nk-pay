@@ -201,7 +201,28 @@ val MIGRACAO_7_8 = object : Migration(7, 8) {
     }
 }
 
-val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5, MIGRACAO_5_6, MIGRACAO_6_7, MIGRACAO_7_8)
+/**
+ * 8 → 9 (v0.9, item 7, ADR 0036): a tabela `parte_caixinha` e as partes de cada caixinha
+ * recalculadas pelo histórico (guardar de X → parte X; retirada sai primeiro da parte da
+ * conta de destino; rendimentos → "Sem origem definida"). Nenhuma linha existente muda, e o
+ * total de cada caixinha continua o mesmo (ele é o saldo da conta, que não é tocado).
+ */
+val MIGRACAO_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `parte_caixinha` (`id` TEXT NOT NULL, `caixinhaId` TEXT NOT NULL, `parteContaId` TEXT, `valorCentavos` INTEGER NOT NULL, " +
+                "`movimentacaoId` TEXT, `grupoId` TEXT NOT NULL, `data` TEXT NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, " +
+                "PRIMARY KEY(`id`), FOREIGN KEY(`caixinhaId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , " +
+                "FOREIGN KEY(`movimentacaoId`) REFERENCES `movimentacao`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_parte_caixinha_caixinhaId` ON `parte_caixinha` (`caixinhaId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_parte_caixinha_movimentacaoId` ON `parte_caixinha` (`movimentacaoId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_parte_caixinha_grupoId` ON `parte_caixinha` (`grupoId`)")
+        recalcularPartesNoBanco(db)
+    }
+}
+
+val MIGRACOES = arrayOf(MIGRACAO_1_2, MIGRACAO_2_3, MIGRACAO_3_4, MIGRACAO_4_5, MIGRACAO_5_6, MIGRACAO_6_7, MIGRACAO_7_8, MIGRACAO_8_9)
 
 /**
  * Rede de segurança: ANTES de o Room migrar, copia o arquivo do banco (e os arquivos

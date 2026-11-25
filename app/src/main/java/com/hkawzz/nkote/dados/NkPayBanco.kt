@@ -29,6 +29,8 @@ import androidx.room.RoomDatabase
         ObjetivoEntidade::class, MovimentoReservaEntidade::class,
         // Versão 7 (v0.8): objetivo ganha contaCaixinhaId; configuração do backup automático (ADR 0033).
         ConfiguracaoBackupEntidade::class,
+        // Versão 9 (v0.9): partes das caixinhas.
+        ParteCaixinhaEntidade::class,
     ],
     version = NkPayBanco.VERSAO,
     exportSchema = true,
@@ -50,10 +52,11 @@ abstract class NkPayBanco : RoomDatabase() {
     abstract fun objetivoDao(): ObjetivoDao
     abstract fun movimentoReservaDao(): MovimentoReservaDao
     abstract fun configuracaoBackupDao(): ConfiguracaoBackupDao
+    abstract fun parteCaixinhaDao(): ParteCaixinhaDao
 
     companion object {
         /** Versão do esquema. Também vai no manifesto de cada backup. */
-        const val VERSAO = 8
+        const val VERSAO = 9
         const val NOME_ARQUIVO = "nk-pay.db"
 
         fun criar(context: Context): NkPayBanco {

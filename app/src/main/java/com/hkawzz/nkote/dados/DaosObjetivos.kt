@@ -43,3 +43,19 @@ interface MovimentoReservaDao {
     @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun inserir(m: MovimentoReservaEntidade)
     @Update suspend fun atualizar(m: MovimentoReservaEntidade)
 }
+
+/** v0.9 (banco 9, item 7): as linhas de composição das caixinhas. */
+@Dao
+interface ParteCaixinhaDao {
+    @Query("SELECT * FROM parte_caixinha WHERE excluidoEm IS NULL ORDER BY data, criadoEm, id")
+    fun observarValidas(): Flow<List<ParteCaixinhaEntidade>>
+
+    @Query("SELECT * FROM parte_caixinha WHERE excluidoEm IS NULL ORDER BY data, criadoEm, id")
+    suspend fun validas(): List<ParteCaixinhaEntidade>
+
+    @Query("SELECT * FROM parte_caixinha WHERE grupoId = :grupoId AND excluidoEm IS NULL")
+    suspend fun doGrupo(grupoId: String): List<ParteCaixinhaEntidade>
+
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun inserir(p: ParteCaixinhaEntidade)
+    @Update suspend fun atualizar(p: ParteCaixinhaEntidade)
+}

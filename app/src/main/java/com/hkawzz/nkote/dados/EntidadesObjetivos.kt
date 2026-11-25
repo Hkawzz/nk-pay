@@ -54,3 +54,35 @@ data class MovimentoReservaEntidade(
     val atualizadoEm: Long,
     val excluidoEm: Long?,
 )
+
+
+/**
+ * v0.9 (banco 9, item 7, ADR 0036): uma linha de composição de uma caixinha. Diz quanto
+ * entrou (+) ou saiu (−) de uma PARTE (a conta de origem do dinheiro). O saldo da parte é a
+ * soma das linhas válidas (de movimentações não excluídas); nada é gravado como saldo.
+ * [parteContaId] vazia = "Sem origem definida" (só informativa: essa parte é o que sobra).
+ * Movimento entre partes: duas linhas sem movimentação, com o mesmo [grupoId].
+ */
+@Serializable
+@Entity(
+    tableName = "parte_caixinha",
+    foreignKeys = [
+        ForeignKey(entity = ContaEntidade::class, parentColumns = ["id"], childColumns = ["caixinhaId"], onDelete = ForeignKey.RESTRICT),
+        ForeignKey(entity = MovimentacaoEntidade::class, parentColumns = ["id"], childColumns = ["movimentacaoId"], onDelete = ForeignKey.RESTRICT),
+    ],
+    indices = [Index("caixinhaId"), Index("movimentacaoId"), Index("grupoId")],
+)
+data class ParteCaixinhaEntidade(
+    @PrimaryKey val id: String,
+    val caixinhaId: String,
+    val parteContaId: String?,
+    /** + entrou na parte, − saiu. */
+    val valorCentavos: Long,
+    val movimentacaoId: String?,
+    val grupoId: String,
+    /** "AAAA-MM-DD". */
+    val data: String,
+    val criadoEm: Long,
+    val atualizadoEm: Long,
+    val excluidoEm: Long?,
+)

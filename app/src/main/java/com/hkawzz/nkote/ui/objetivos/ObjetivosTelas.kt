@@ -338,6 +338,24 @@ fun ObjetivoTela(id: String, aoVoltar: () -> Unit, aoEditar: () -> Unit, aoOpera
                     }
                 }
             }
+            // v0.9 (item 7): de onde vem cada parte do dinheiro guardado. A soma é o total acima.
+            val partes = visao?.objetivos?.partesDe(id).orEmpty()
+            if (partes.isNotEmpty()) {
+                item { NkCabecalhoSecao("Partes") }
+                item {
+                    NkCard {
+                        partes.forEachIndexed { i, p ->
+                            if (i > 0) NkDivisor()
+                            NkListItem(
+                                titulo = nomeDaParte(visao, p.contaId),
+                                subtitulo = if (p.contaId == null) "Rendimentos antigos e o que não deu para atribuir. Use “Entre partes” para dizer onde está." else null,
+                                linhas = 2,
+                                fim = { Text(Dinheiro.formatar(p.valor), style = MaterialTheme.typography.bodyLarge) },
+                            )
+                        }
+                    }
+                }
+            }
             item {
                 Column(Modifier.padding(horizontal = Espaco.m, vertical = Espaco.xs), verticalArrangement = Arrangement.spacedBy(Espaco.xs)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(Espaco.s)) {
@@ -348,6 +366,8 @@ fun ObjetivoTela(id: String, aoVoltar: () -> Unit, aoEditar: () -> Unit, aoOpera
                         NkBotaoSecundario("Mover", { aoOperar(OperacaoCaixinha.MOVER.name) }, Modifier.weight(1f), habilitado = s.guardado > 0)
                         NkBotaoSecundario("Rendimento", { aoOperar(OperacaoCaixinha.RENDIMENTO.name) }, Modifier.weight(1f))
                     }
+                    // v0.9 (item 7): mudar a composição (ex.: depositou no banco o dinheiro físico guardado).
+                    NkBotaoSecundario("Entre partes", { aoOperar(OperacaoCaixinha.MOVER_PARTE.name) }, habilitado = s.guardado > 0)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         NkTextoAjuda("Vai gastar o dinheiro guardado? Retire para uma conta e depois lance a despesa.", Modifier.weight(1f))
                         NkAjuda(ChaveAjuda.OBJETIVO_RETIRAR)
@@ -370,12 +390,19 @@ fun ObjetivoTela(id: String, aoVoltar: () -> Unit, aoEditar: () -> Unit, aoOpera
                                 TipoMovimentoCaixinha.MOVER_SAIDA -> "Movido para $outroObjetivo"
                                 TipoMovimentoCaixinha.MOVER_ENTRADA -> "Recebido de $outroObjetivo"
                                 TipoMovimentoCaixinha.RENDIMENTO -> "Rendimento"
+                                TipoMovimentoCaixinha.MOVER_PARTE -> "Entre partes: ${nomeDaParte(visao, m.partes.getOrNull(0))} → ${nomeDaParte(visao, m.partes.getOrNull(1))}"
                             },
-                            subtitulo = Formatos.data(m.data),
+                            // v0.9 (item 7): a parte de cada movimento.
+                            subtitulo = Formatos.data(m.data) + if (m.tipo != TipoMovimentoCaixinha.MOVER_PARTE && m.partes.isNotEmpty()) {
+                                " · parte: " + m.partes.joinToString(", ") { nomeDaParte(visao, it) }
+                            } else "",
+                            linhas = 2,
                             fim = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(Dinheiro.formatarComSinal(m.valor), style = MaterialTheme.typography.bodyLarge, color = if (m.valor >= 0) VerdeEntrada else RosaDespesa)
-                                    TextButton(onClick = { executar({ container.objetivos.desfazer(m.movimentacaoId) }) }) { Text("Desfazer") }
+                                    Text(Dinheiro.formatarComSinal(m.valor), style = MaterialTheme.typography.bodyLarge, color = if (m.tipo == TipoMovimentoCaixinha.MOVER_PARTE) MaterialTheme.colorScheme.onSurfaceVariant else if (m.valor >= 0) VerdeEntrada else RosaDespesa)
+                                    TextButton(onClick = {
+                                        executar({ if (m.tipo == TipoMovimentoCaixinha.MOVER_PARTE) container.objetivos.desfazerEntrePartes(m.grupoId!!) else container.objetivos.desfazer(m.movimentacaoId) })
+                                    }) { Text("Desfazer") }
                                 }
                             },
                         )
@@ -423,7 +450,11 @@ fun ObjetivoTela(id: String, aoVoltar: () -> Unit, aoEditar: () -> Unit, aoOpera
 // ---------------------------------------------------------------- operações
 
 /** As operações de uma caixinha (v0.8, regra 6G.2). */
-enum class OperacaoCaixinha { GUARDAR, RETIRAR, MOVER, RENDIMENTO }
+/** v0.9 (item 7): nome de uma parte ("Sem origem definida" quando não tem conta). */
+fun nomeDaParte(v: com.hkawzz.nkote.dominio.VisaoFinanceira?, contaId: String?): String =
+    contaId?.takeIf { it.isNotEmpty() }?.let { v?.conta(it)?.nome ?: "Conta removida" } ?: "Sem origem definida"
+
+enum class OperacaoCaixinha { GUARDAR, RETIRAR, MOVER, RENDIMENTO, MOVER_PARTE }
 
 /** Guardar, retirar, mover ou lançar rendimento, em tela cheia (sem diálogos com listas). */
 @Composable
@@ -435,6 +466,8 @@ fun OperacaoObjetivoTela(id: String, tipo: OperacaoCaixinha, aoVoltar: () -> Uni
     var data by rememberSaveable { mutableStateOf(container.relogio.hoje().toString()) }
     var conta by rememberSaveable { mutableStateOf<String?>(null) }
     var destino by rememberSaveable { mutableStateOf<String?>(null) }
+    // v0.9 (item 7): a parte (conta de origem; "" = Sem origem definida).
+    var parte by rememberSaveable { mutableStateOf<String?>(null) }
     var erro by rememberSaveable { mutableStateOf<String?>(null) }
     var salvando by rememberSaveable { mutableStateOf(false) }
     val s = visao?.objetivos?.situacao(id)
@@ -443,6 +476,7 @@ fun OperacaoObjetivoTela(id: String, tipo: OperacaoCaixinha, aoVoltar: () -> Uni
         OperacaoCaixinha.RETIRAR -> "Retirar"
         OperacaoCaixinha.MOVER -> "Mover para outro objetivo"
         OperacaoCaixinha.RENDIMENTO -> "Rendimento"
+        OperacaoCaixinha.MOVER_PARTE -> "Entre partes"
     }
     Subtela(titulo = titulo, aoVoltar = aoVoltar) { modifier ->
         val v = visao ?: return@Subtela
@@ -450,6 +484,21 @@ fun OperacaoObjetivoTela(id: String, tipo: OperacaoCaixinha, aoVoltar: () -> Uni
         // Só contas próprias: a caixinha nunca é meio de pagamento, e benefício não se guarda.
         val proprias = v.contas.filter { it.natureza == com.hkawzz.nkote.dominio.Natureza.PROPRIO && !it.arquivada }
         LaunchedEffect(Unit) { if (conta == null) conta = proprias.firstOrNull()?.id }
+        val sem = com.hkawzz.nkote.dados.ObjetivoServico.SEM_ORIGEM
+        val partes = v.objetivos.partesDe(id)
+        val comSaldo = partes.filter { it.valor > 0 }
+        fun chave(c: String?) = c ?: sem
+        fun opcaoDaParte(p: com.hkawzz.nkote.dominio.SaldoDeParte) = Opcao(chave(p.contaId), nomeDaParte(v, p.contaId), "Na parte " + Dinheiro.formatar(p.valor))
+        LaunchedEffect(tipo) {
+            if (parte == null) parte = when (tipo) {
+                OperacaoCaixinha.RENDIMENTO -> v.objetivos.objetivo(id)?.contaCaixinhaId?.let { container.objetivos.partePadraoDoRendimento(it) } ?: sem
+                OperacaoCaixinha.GUARDAR -> null
+                else -> comSaldo.firstOrNull()?.let { chave(it.contaId) }
+            }
+            // Retirar: o destino padrão é a conta da própria parte.
+            if (tipo == OperacaoCaixinha.RETIRAR) parte?.takeIf { p -> proprias.any { it.id == p } }?.let { conta = it }
+            if (tipo == OperacaoCaixinha.MOVER_PARTE) destino = proprias.firstOrNull { it.id != parte }?.id
+        }
         Column(
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Espaco.l, vertical = Espaco.xs),
             verticalArrangement = Arrangement.spacedBy(Espaco.s),
@@ -461,10 +510,24 @@ fun OperacaoObjetivoTela(id: String, tipo: OperacaoCaixinha, aoVoltar: () -> Uni
                     OperacaoCaixinha.RETIRAR -> "Transfere da caixinha para a conta escolhida. Não é despesa. Se for gastar, lance a despesa depois, por essa conta."
                     OperacaoCaixinha.MOVER -> "Transfere para a caixinha de outro objetivo. O Saldo disponível não muda."
                     OperacaoCaixinha.RENDIMENTO -> "O que a caixinha rendeu (ex.: o CDI do banco). Entra como receita, na categoria Rendimentos."
+                    OperacaoCaixinha.MOVER_PARTE -> "Muda de onde vem o dinheiro guardado (ex.: você depositou no banco o dinheiro físico). O total da caixinha e o saldo das contas não mudam."
                 },
                 style = MaterialTheme.typography.bodySmall,
             )
             CampoDinheiro("Valor", valorTexto, { valorTexto = it })
+            // v0.9 (item 7): de qual parte sai (retirar, mover, entre partes) ou em qual entra (rendimento).
+            when (tipo) {
+                OperacaoCaixinha.RETIRAR, OperacaoCaixinha.MOVER, OperacaoCaixinha.MOVER_PARTE -> CampoEscolha(
+                    "Da parte", comSaldo.map { opcaoDaParte(it) }, parte,
+                    { p -> parte = p; if (tipo == OperacaoCaixinha.RETIRAR && proprias.any { it.id == p }) conta = p },
+                )
+                OperacaoCaixinha.RENDIMENTO -> CampoEscolha(
+                    "Em qual parte",
+                    partes.filter { it.contaId != null }.map { opcaoDaParte(it) } + Opcao(sem, "Sem origem definida"),
+                    parte, { parte = it },
+                )
+                OperacaoCaixinha.GUARDAR -> Unit
+            }
             when (tipo) {
                 OperacaoCaixinha.GUARDAR, OperacaoCaixinha.RETIRAR -> CampoEscolha(
                     if (tipo == OperacaoCaixinha.GUARDAR) "De qual conta" else "Para qual conta",
@@ -474,6 +537,11 @@ fun OperacaoObjetivoTela(id: String, tipo: OperacaoCaixinha, aoVoltar: () -> Uni
                 OperacaoCaixinha.MOVER -> CampoEscolha(
                     "Para",
                     v.objetivos.ativos.filter { it.objetivo.id != id }.map { Opcao(it.objetivo.id, it.objetivo.nome, "Na caixinha ${Dinheiro.formatar(it.guardado)}") },
+                    destino, { destino = it },
+                )
+                OperacaoCaixinha.MOVER_PARTE -> CampoEscolha(
+                    "Para a parte",
+                    proprias.filter { it.id != parte }.map { Opcao(it.id, it.nome) },
                     destino, { destino = it },
                 )
                 OperacaoCaixinha.RENDIMENTO -> Unit
@@ -487,9 +555,14 @@ fun OperacaoObjetivoTela(id: String, tipo: OperacaoCaixinha, aoVoltar: () -> Uni
                 escopo.launch {
                     val r = when (tipo) {
                         OperacaoCaixinha.GUARDAR -> conta?.let { container.objetivos.guardar(id, it, valor, d) } ?: Resultado.Falha("Escolha a conta de onde sai o dinheiro.")
-                        OperacaoCaixinha.RETIRAR -> conta?.let { container.objetivos.retirar(id, it, valor, d) } ?: Resultado.Falha("Escolha a conta para onde o dinheiro volta.")
-                        OperacaoCaixinha.MOVER -> destino?.let { container.objetivos.mover(id, it, valor, d) } ?: Resultado.Falha("Escolha o objetivo de destino.")
-                        OperacaoCaixinha.RENDIMENTO -> container.objetivos.rendimento(id, valor, d)
+                        OperacaoCaixinha.RETIRAR -> conta?.let { container.objetivos.retirar(id, it, valor, d, parte) } ?: Resultado.Falha("Escolha a conta para onde o dinheiro volta.")
+                        OperacaoCaixinha.MOVER -> destino?.let { container.objetivos.mover(id, it, valor, d, parte) } ?: Resultado.Falha("Escolha o objetivo de destino.")
+                        OperacaoCaixinha.RENDIMENTO -> container.objetivos.rendimento(id, valor, d, parte ?: sem)
+                        OperacaoCaixinha.MOVER_PARTE -> {
+                            val de = parte
+                            val para = destino
+                            if (de == null || para == null) Resultado.Falha("Escolha as duas partes.") else container.objetivos.moverEntrePartes(id, de, para, valor, d)
+                        }
                     }
                     salvando = false
                     when (r) {

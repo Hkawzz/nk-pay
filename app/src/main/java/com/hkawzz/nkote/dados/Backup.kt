@@ -50,6 +50,8 @@ data class ManifestoBackup(
     val emprestimos: Int = 0,
     // Versão 6 (v0.7).
     val objetivos: Int = 0,
+    // Versão 9 (v0.9).
+    val partesCaixinha: Int = 0,
 )
 
 @Serializable
@@ -74,6 +76,9 @@ data class DadosBackup(
     // Versão 6 do banco (v0.7). Lista vazia para backups antigos.
     val objetivos: List<ObjetivoEntidade> = emptyList(),
     val movimentosReserva: List<MovimentoReservaEntidade> = emptyList(),
+    // Versão 9 do banco (v0.9, formato 2): partes das caixinhas. Backups antigos não têm:
+    // as partes são recalculadas pelo histórico na restauração (ADR 0036).
+    val partesCaixinha: List<ParteCaixinhaEntidade> = emptyList(),
 )
 
 /** Um backup lido e validado, pronto para ser restaurado. */
@@ -116,7 +121,7 @@ class BackupServico(
                 dao.contas(), dao.categorias(), dao.movimentacoes(), dao.auditoria(),
                 dao.contasFixas(), dao.obrigacoes(), dao.pagamentos(), dao.ajustesDeObrigacao(),
                 dao.compras(), dao.pagamentosDeFatura(), dao.emprestimos(), dao.pendenciasLevadas(),
-                dao.objetivos(), dao.movimentosReserva(),
+                dao.objetivos(), dao.movimentosReserva(), dao.partesCaixinha(),
             )
         }
         val bytesDados = json.encodeToString(DadosBackup.serializer(), dados).toByteArray(Charsets.UTF_8)
@@ -135,6 +140,7 @@ class BackupServico(
             compras = dados.compras.size,
             emprestimos = dados.emprestimos.size,
             objetivos = dados.objetivos.size,
+            partesCaixinha = dados.partesCaixinha.size,
         )
         ZipOutputStream(saida).use { zip ->
             zip.putNextEntry(ZipEntry(MANIFESTO))
@@ -221,6 +227,9 @@ class BackupServico(
         if (!d.pendenciasLevadas.all { it.obrigacaoId in obrigs }) throw BackupInvalido("O backup está inconsistente: há pendências levadas de contas que não existem nele.")
         val objetivos = d.objetivos.map { it.id }.toSet()
         if (!d.movimentosReserva.all { it.objetivoId in objetivos }) throw BackupInvalido("O backup está inconsistente: há movimentos de reserva de objetivos que não existem nele.")
+        if (!d.partesCaixinha.all { it.caixinhaId in contas && (it.movimentacaoId == null || it.movimentacaoId in movs) }) {
+            throw BackupInvalido("O backup está inconsistente: há partes de caixinhas que apontam para registros que não existem nele.")
+        }
     }
 
     private fun lerComLimite(entrada: InputStream): ByteArray {
@@ -252,6 +261,7 @@ class BackupServico(
         val d = backup.dados
         banco.withTransaction {
             // Apaga de "fora para dentro" (quem aponta antes de quem é apontado)...
+            dao.apagarPartesCaixinha()
             dao.apagarMovimentosReserva()
             dao.apagarObjetivos()
             dao.apagarPendenciasLevadas()
@@ -280,6 +290,8 @@ class BackupServico(
             dao.inserirPendenciasLevadas(d.pendenciasLevadas)
             dao.inserirObjetivos(d.objetivos)
             dao.inserirMovimentosReserva(d.movimentosReserva)
+            // v0.9 (ADR 0036): backup de antes das partes → recalcula pelo histórico, como a migração 8 → 9.
+            dao.inserirPartesCaixinha(if (backup.manifesto.versaoBanco < 9) partesRecalculadas(d.contas, d.movimentacoes) else d.partesCaixinha)
             dao.inserirAuditoria(d.auditoria)
             val m = backup.manifesto
             dao.inserirAuditoria(
@@ -329,7 +341,8 @@ class BackupServico(
         MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
     companion object {
-        const val FORMATO = 1
+        /** v0.9: formato 2 (traz as partes das caixinhas). As versões anteriores recusam. */
+        const val FORMATO = 2
         const val EXTENSAO = ".nkote"
         /** v0.8 (ADR 0030): a restauração continua aceitando os backups do NK Pay. */
         const val EXTENSAO_ANTIGA = ".nkpay"

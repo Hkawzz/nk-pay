@@ -46,7 +46,9 @@ Para os detalhes técnicos de cada decisão, veja [`docs/decisoes/`](decisoes/).
 - **Filtro de data:** com data, o seletor de mês fica de lado (o intervalo pode passar de um mês); sem data, vale o mês escolhido, como antes. As categorias abrem como chips na própria tela (sem diálogo com lista, que travava o Robolectric na v0.4).
 - **Conta fixa já vencida:** a data padrão é ontem e o valor padrão é o da conta fixa. A data precisa ser anterior a hoje. Se já existir a ocorrência daquele mês, o app recusa (uma por conta fixa por mês). Na edição, a ocorrência é lançada depois de salvar as alterações.
 
-**Pendências:** nenhuma até aqui.
+**Onde parei (limite de uso):** PRs #77 a #80 mesclados. O PR 5 (caixinhas com partes, item 7) está **em andamento** no branch `feat/v09-partes`, sem PR: banco 9 (`parte_caixinha`), migração 8 → 9 com recálculo pelo histórico, backup formato 2, serviço (guardar, retirar por parte, entre partes, rendimento, desfazer) e telas prontos; testes `PartesCaixinhaTest` passando; `MigracaoV9Test` escrito e ainda **não conferido**. Faltam: conferir a suíte completa, ADR 0036 e abrir o PR. Depois: PR 6 (flavors e notificações) e PR 7 (documentação e Release). **Nada foi publicado.**
+
+**Pendências:** ver "Onde parei".
 
 **Problemas encontrados:**
 - Início (#77): os testes de migração antigos (`MigracaoTest`, `MigracaoV3Test` a `MigracaoV7Test`) comparam as linhas do banco antigo com o banco migrado até a versão atual, e a coluna nova `conta.ordem` aparecia na comparação. Mudança mínima: a foto das linhas ignora as colunas acrescentadas depois (`COLUNAS_NOVAS`, conferidas no `MigracaoV8Test`); no `MigracaoV7Test`, 4 linhas trocaram a versão fixa 7 por `NkPayBanco.VERSAO`. Nenhuma regra testada mudou. No `InicioCompletaUiTest` (v0.8), 2 linhas que esperavam os blocos Cartões e Caixinhas agora conferem que eles **não** aparecem (item 1).

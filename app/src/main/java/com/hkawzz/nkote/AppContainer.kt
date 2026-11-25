@@ -72,10 +72,14 @@ class AppContainer(
             contas.observar(), categorias.observar(), movimentacoes.observar(),
             // v0.7: objetivos e movimentos de reserva (o Guardado do Saldo disponível).
             banco.objetivoDao().observarValidos().map { l -> l.map { it.paraDominio() } },
-            banco.movimentoReservaDao().observarValidos().map { l -> l.map { it.paraDominio() } },
-        ) { c, cat, m, obj, mov ->
+            // v0.9 (item 7): movimentos de reserva da v0.7 e as partes das caixinhas.
+            combine(
+                banco.movimentoReservaDao().observarValidos().map { l -> l.map { it.paraDominio() } },
+                banco.parteCaixinhaDao().observarValidas().map { l -> l.map { it.paraDominio() } },
+            ) { mov, partes -> mov to partes },
+        ) { c, cat, m, obj, (mov, partes) ->
             // v0.8: as caixinhas vêm das contas; os movimentos de reserva da v0.7 ficam só para leitura.
-            VisaoFinanceira(c, cat, m, com.hkawzz.nkote.dominio.VisaoObjetivos(obj, mov, c, m))
+            VisaoFinanceira(c, cat, m, com.hkawzz.nkote.dominio.VisaoObjetivos(obj, mov, c, m, partes))
         }.catch { semBanco(it) }.stateIn(escopo, SharingStarted.Eagerly, null)
 
     // --- Contas a pagar (v0.3) ---
