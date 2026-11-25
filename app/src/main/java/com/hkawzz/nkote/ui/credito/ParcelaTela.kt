@@ -139,6 +139,29 @@ class PagarParcelaViewModel(private val container: AppContainer, val obrigacaoId
         }
     }
 
+    // v0.9 (item 9, fluxo 3): corrigir o valor pago antes do app numa parcela já paga.
+    var pagaAntes by mutableStateOf(false); private set
+    var corrigindo by mutableStateOf(false)
+    var valorCorrigidoTexto by mutableStateOf("0,00")
+    var dataCorrigida by mutableStateOf(container.relogio.hoje())
+    var diferencaCorrigida by mutableStateOf<ClassificacaoDiferenca?>(null)
+
+    init {
+        viewModelScope.launch {
+            container.compras.valorPagoAntesDoApp(obrigacaoId)?.let { pagaAntes = true; valorCorrigidoTexto = Dinheiro.formatarSemSimbolo(it) }
+        }
+    }
+
+    fun corrigir() {
+        val valor = Dinheiro.ler(valorCorrigidoTexto) ?: run { erro = "Valor inválido."; return }
+        viewModelScope.launch {
+            when (val r = container.compras.corrigirPagoAntesDoApp(obrigacaoId, valor, dataCorrigida, diferencaCorrigida)) {
+                is Resultado.Sucesso -> { erro = null; corrigindo = false }
+                is Resultado.Falha -> erro = r.mensagem
+            }
+        }
+    }
+
     fun desfazer(transferenciaId: String) {
         viewModelScope.launch {
             (container.pagamentosCredito.desfazer(transferenciaId) as? Resultado.Falha)?.let { erro = it.mensagem }
@@ -233,6 +256,25 @@ fun ParcelaTela(obrigacaoId: String, aoVoltar: () -> Unit) {
                     }
                     vm.erro?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     NkBotaoPrimario("Confirmar pagamento", vm::pagar, habilitado = resultado is ResultadoPlano.Pronto && vm.contaId != null && !vm.salvando)
+                }
+                // v0.9 (item 9, fluxo 3): parcela paga antes do app, com valor diferente do previsto.
+                if (vm.pagaAntes && s.restante <= 0) {
+                    if (!vm.corrigindo) {
+                        Text("Paga antes de usar o app.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        com.hkawzz.nkote.ui.componentes.NkBotaoSecundario("Corrigir valor pago", { vm.corrigindo = true })
+                    } else {
+                        CampoDinheiro("Valor pago", vm.valorCorrigidoTexto, { vm.valorCorrigidoTexto = it; vm.diferencaCorrigida = null })
+                        CampoData("Data do pagamento", vm.dataCorrigida, { vm.dataCorrigida = it })
+                        val pago = Dinheiro.ler(vm.valorCorrigidoTexto) ?: 0
+                        if (pago > o.valorPrevisto) {
+                            PerguntaDaDiferenca(
+                                "Você pagou ${Dinheiro.formatar(pago - o.valorPrevisto)} a mais. O que é essa diferença?",
+                                ClassificacaoDiferenca.quandoPagaMais, vm.diferencaCorrigida,
+                            ) { vm.diferencaCorrigida = it }
+                            Text("Vira despesa em Encargos financeiros na data do pagamento. O que você deve não muda.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        NkBotaoPrimario("Salvar valor pago", vm::corrigir, habilitado = pago >= o.valorPrevisto && (pago == o.valorPrevisto || vm.diferencaCorrigida != null))
+                    }
                 }
                 vm.erro?.takeIf { s.restante <= 0 }?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Spacer(Modifier.height(Espaco.l))

@@ -86,6 +86,12 @@ class CompraFormViewModel(private val container: AppContainer, private val conta
     var antecipadasTexto by mutableStateOf("")
     val pagoDaAntecipada = androidx.compose.runtime.mutableStateMapOf<Int, String>()
     val numerosAntecipados: List<Int> get() = antecipadasTexto.split(",", " ", ";").mapNotNull { it.trim().toIntOrNull() }.distinct()
+    /** v0.9 (item 9): parcelas já pagas com valor maior (atraso com juros, multa...). */
+    var maioresTexto by mutableStateOf("")
+    val pagoDaMaior = androidx.compose.runtime.mutableStateMapOf<Int, String>()
+    val dataDaMaior = androidx.compose.runtime.mutableStateMapOf<Int, LocalDate>()
+    val diferencaDaMaior = androidx.compose.runtime.mutableStateMapOf<Int, com.hkawzz.nkote.dominio.ClassificacaoDiferenca>()
+    val numerosMaiores: List<Int> get() = maioresTexto.split(",", " ", ";").mapNotNull { it.trim().toIntOrNull() }.distinct()
 
     /** Valor previsto de cada parcela, como o serviço vai criar. */
     fun valoresPrevistos(): List<Long>? {
@@ -130,6 +136,14 @@ class CompraFormViewModel(private val container: AppContainer, private val conta
                     antecipadas = if (!anterior) emptyList() else valoresPrevistos().let { previstos ->
                         numerosAntecipados.map { k ->
                             com.hkawzz.nkote.dados.Antecipada(k, pagoDaAntecipada[k]?.let { Dinheiro.ler(it) } ?: previstos?.getOrNull(k - 1) ?: 0)
+                        }
+                    },
+                    pagasComValorMaior = if (!anterior) emptyList() else valoresPrevistos().let { previstos ->
+                        numerosMaiores.map { k ->
+                            com.hkawzz.nkote.dados.PagaAntes(
+                                k, pagoDaMaior[k]?.let { Dinheiro.ler(it) } ?: previstos?.getOrNull(k - 1) ?: 0,
+                                dataDaMaior[k] ?: data, diferencaDaMaior[k],
+                            )
                         }
                     },
                 ),
@@ -229,6 +243,24 @@ fun CompraFormTela(contaId: String, aoVoltar: () -> Unit) {
                             val d = Dinheiro.ler(t) ?: 0
                             vm.pagoDaAntecipada[k] = Dinheiro.formatarSemSimbolo(maxOf(0, previsto - d))
                         }, modifier = Modifier.weight(1f))
+                    }
+                }
+                // v0.9 (item 9, regra 8.1): parcela já paga com valor maior; o excedente vira encargo na data do pagamento.
+                NkCampo("Parcelas pagas com valor maior (opcional)", vm.maioresTexto, { vm.maioresTexto = it.filter { c -> c.isDigit() || c == 44.toChar() || c == 32.toChar() }.take(40) },
+                    ajuda = "Entre as já pagas, as que você pagou a mais (atraso com juros, multa). Ex.: 3")
+                for (k in vm.numerosMaiores) {
+                    val previsto = previstos?.getOrNull(k - 1) ?: continue
+                    val pagoTexto = vm.pagoDaMaior[k] ?: Dinheiro.formatarSemSimbolo(previsto)
+                    val pago = Dinheiro.ler(pagoTexto) ?: 0
+                    Text("Parcela $k: prevista ${Dinheiro.formatar(previsto)}", style = MaterialTheme.typography.labelLarge)
+                    CampoDinheiro("Valor pago da parcela $k", pagoTexto, { vm.pagoDaMaior[k] = it })
+                    CampoData("Data do pagamento da parcela $k", vm.dataDaMaior[k] ?: vm.data, { vm.dataDaMaior[k] = it })
+                    if (pago > previsto) {
+                        PerguntaDaDiferenca(
+                            "Você pagou ${Dinheiro.formatar(pago - previsto)} a mais. O que é essa diferença?",
+                            com.hkawzz.nkote.dominio.ClassificacaoDiferenca.quandoPagaMais, vm.diferencaDaMaior[k],
+                        ) { vm.diferencaDaMaior[k] = it }
+                        Text("Vira despesa em Encargos financeiros na data do pagamento.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 if (vm.avisos.isNotEmpty()) {
