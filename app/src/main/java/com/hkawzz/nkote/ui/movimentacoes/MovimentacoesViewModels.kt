@@ -17,21 +17,53 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.YearMonth
 
-/** Lista de movimentações: mês escolhido e filtros por tipo e por conta. */
+/**
+ * v0.9 (item 8): os filtros de Movimentações, combináveis. Sem filtro de data, vale o mês
+ * escolhido no seletor; com data (um dia ou um intervalo), vale a data, que pode passar de um mês.
+ */
+data class FiltroMovimentacoes(
+    val tipo: TipoMovimentacao? = null,
+    val conta: String? = null,
+    val de: java.time.LocalDate? = null,
+    val ate: java.time.LocalDate? = null,
+    val categorias: Set<String> = emptySet(),
+) {
+    val temData: Boolean get() = de != null && ate != null
+    /** Algum filtro além do mês. */
+    val ativo: Boolean get() = tipo != null || conta != null || temData || categorias.isNotEmpty()
+
+    fun aplicar(movs: List<Movimentacao>, mes: YearMonth): List<Movimentacao> = movs.filter { m ->
+        (if (temData) m.data in minOf(de!!, ate!!)..maxOf(de, ate) else YearMonth.from(m.data) == mes) &&
+            (tipo == null || m.tipo == tipo) &&
+            (conta == null || m.contaId == conta || m.contaDestinoId == conta) &&
+            (categorias.isEmpty() || m.categoriaId in categorias)
+    }
+
+    companion object {
+        /** Total do resultado: entradas e despesas separadas; transferências e ajustes não somam. */
+        fun totais(movs: List<Movimentacao>): Pair<Long, Long> =
+            movs.filter { it.tipo == TipoMovimentacao.ENTRADA }.sumOf { it.valor } to movs.filter { it.tipo == TipoMovimentacao.DESPESA }.sumOf { it.valor }
+    }
+}
+
+/** Lista de movimentações: mês escolhido e filtros por tipo, conta, data e categoria. */
 class MovimentacoesViewModel(container: AppContainer) : ViewModel() {
     val visao = container.visao
     var mes by mutableStateOf(YearMonth.from(container.relogio.hoje()))
-    var filtroTipo by mutableStateOf<TipoMovimentacao?>(null)
-    var filtroConta by mutableStateOf<String?>(null)
+    var filtro by mutableStateOf(FiltroMovimentacoes())
+    /** Atalhos dos filtros antigos (tipo e conta). */
+    var filtroTipo: TipoMovimentacao?
+        get() = filtro.tipo
+        set(v) { filtro = filtro.copy(tipo = v) }
+    var filtroConta: String?
+        get() = filtro.conta
+        set(v) { filtro = filtro.copy(conta = v) }
 
     fun mesAnterior() { mes = mes.minusMonths(1) }
     fun proximoMes() { mes = mes.plusMonths(1) }
+    fun limpar() { filtro = FiltroMovimentacoes() }
 
-    fun filtrar(v: VisaoFinanceira): List<Movimentacao> = v.movimentacoes.filter { m ->
-        YearMonth.from(m.data) == mes &&
-            (filtroTipo == null || m.tipo == filtroTipo) &&
-            (filtroConta == null || m.contaId == filtroConta || m.contaDestinoId == filtroConta)
-    }
+    fun filtrar(v: VisaoFinanceira): List<Movimentacao> = filtro.aplicar(v.movimentacoes, mes)
 }
 
 /** Como o ajuste é informado: pelo novo saldo (o app calcula a diferença) ou pela diferença. */
