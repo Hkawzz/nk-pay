@@ -76,7 +76,7 @@ class ParcelaEmprestimoUiTest {
         regra.onNodeWithText("Conserto do carro").performClick()
         esperar("Parcela 1/10")
         // Vence em 25/11 e hoje é 01/12: atrasada há 6 dias.
-        esperar("Atrasada · vencida há 6 dias")
+        esperar("Atrasada · venceu há 6 dias") // v0.9 (item 4): texto único de atraso
         regra.onNodeWithText("Parcela 1/10").performClick()
         esperar("Confirmar recebimento")
         esperar("• Devolução de R$ 100,00 (transferência, não é receita)")

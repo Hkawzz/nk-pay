@@ -85,7 +85,8 @@ private var tipoLembrado = TipoEmprestimo.RECEBIDO
 /** Texto da situação de uma parcela: em dia, paga, ou "vencida há N dias". */
 fun rotuloDaParcela(p: ParcelaEmprestimo): String = when {
     p.situacao.status == StatusObrigacao.QUITADA -> "Paga"
-    p.atrasada -> "Atrasada · vencida há ${p.diasDeAtraso} ${if (p.diasDeAtraso == 1) "dia" else "dias"}"
+    // v0.9 (item 4): mesmo texto de A pagar ("venceu ontem" / "venceu há X dias").
+    p.atrasada -> "Atrasada · " + (if (p.diasDeAtraso == 1) "venceu ontem" else "venceu há ${p.diasDeAtraso} dias")
     p.situacao.pago > 0 -> "Em parte · vence ${p.obrigacao.vencimento?.let { Formatos.data(it) }}"
     else -> "Vence ${p.obrigacao.vencimento?.let { Formatos.data(it) }}"
 }

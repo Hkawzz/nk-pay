@@ -39,4 +39,14 @@ object Formatos {
     // O DatePicker do Material trabalha com milissegundos em UTC à meia-noite.
     fun paraMillisUtc(d: LocalDate): Long = d.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
     fun deMillisUtc(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+
+    /**
+     * v0.9 (item 4): "venceu ontem" ou "venceu há X dias". No dia do vencimento ainda não
+     * está atrasada (null). Calculado com o "hoje" do app, nunca gravado.
+     */
+    fun venceuHa(vencimento: LocalDate?, hoje: LocalDate): String? {
+        if (vencimento == null || !vencimento.isBefore(hoje)) return null
+        val dias = java.time.temporal.ChronoUnit.DAYS.between(vencimento, hoje)
+        return if (dias == 1L) "venceu ontem" else "venceu há $dias dias"
+    }
 }

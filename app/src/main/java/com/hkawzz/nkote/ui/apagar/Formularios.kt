@@ -174,7 +174,14 @@ fun ObrigacaoFormTela(id: String?, mesInicial: YearMonth, aoVoltar: () -> Unit, 
                         NkValorRotulado("Pago", s.pago, Modifier.weight(1f), tamanho = com.hkawzz.nkote.ui.componentes.TamanhoValor.LISTA)
                         NkValorRotulado("Falta", s.restante, Modifier.weight(1f), tamanho = com.hkawzz.nkote.ui.componentes.TamanhoValor.LISTA, corValor = corDoStatus(s.status))
                     }
-                    NkTextoAjuda("${s.status.rotulo} · ${s.obrigacao.origem.rotulo}")
+                    // v0.9 (item 4): atrasada mostra há quantos dias venceu.
+                    NkTextoAjuda(
+                        listOfNotNull(
+                            s.status.rotulo,
+                            Formatos.venceuHa(s.obrigacao.vencimento, container.relogio.hoje()).takeIf { s.status == com.hkawzz.nkote.dominio.StatusObrigacao.ATRASADA },
+                            s.obrigacao.origem.rotulo,
+                        ).joinToString(" · "),
+                    )
                 }
                 if (s.status != com.hkawzz.nkote.dominio.StatusObrigacao.QUITADA) {
                     NkBotaoPrimario("Pagar", { aoPagar(s.obrigacao.id) })
@@ -319,6 +326,11 @@ class ContaFixaFormViewModel(private val container: AppContainer, private val id
     var erro by mutableStateOf<String?>(null); private set
     val editando get() = id != null
 
+    // v0.9 (item 6): "Já tenho uma conta deste tipo vencida e não paga".
+    var temAtrasada by mutableStateOf(false)
+    var vencimentoAtrasada by mutableStateOf(container.relogio.hoje().minusDays(1))
+    var valorAtrasadaTexto by mutableStateOf<String?>(null)
+
     init {
         if (id != null) {
             viewModelScope.launch {
@@ -339,8 +351,19 @@ class ContaFixaFormViewModel(private val container: AppContainer, private val id
         val valor = Dinheiro.ler(valorTexto) ?: run { erro = "Valor inválido."; return }
         val dia = diaTexto.trim().takeIf { it.isNotEmpty() }?.let { it.toIntOrNull() ?: run { erro = "Dia inválido."; return } }
         val f = ContaFixa(id ?: "", nome, valor, dia, categoriaId, contaPadraoId)
+        val atrasada = if (temAtrasada) {
+            val v = Dinheiro.ler(valorAtrasadaTexto ?: valorTexto) ?: run { erro = "Valor da conta vencida inválido."; return }
+            com.hkawzz.nkote.dados.ContaFixaRepositorio.OcorrenciaAtrasada(vencimentoAtrasada, v)
+        } else null
         viewModelScope.launch {
-            val r = if (id == null) container.contasFixas.criar(f) else container.contasFixas.editar(f)
+            val r = if (id == null) {
+                container.contasFixas.criar(f, atrasada)
+            } else {
+                when (val e = container.contasFixas.editar(f)) {
+                    is Resultado.Falha -> e
+                    is Resultado.Sucesso -> atrasada?.let { container.contasFixas.lancarAtrasada(id, it) } ?: e
+                }
+            }
             when (r) {
                 is Resultado.Sucesso -> aoTerminar()
                 is Resultado.Falha -> erro = r.mensagem
@@ -382,6 +405,16 @@ fun ContaFixaFormTela(id: String?, aoVoltar: () -> Unit) {
                 listOf(Opcao<String?>(null, "Nenhuma")) + v.contas.filter { it.ehMeioDePagamento && (!it.arquivada || it.id == vm.contaPadraoId) }.map { Opcao<String?>(it.id, it.nome) },
                 vm.contaPadraoId, { vm.contaPadraoId = it }, textoVazio = "Nenhuma",
             )
+            // v0.9 (item 6): uma ocorrência já vencida e não paga entra na hora em A pagar, como atrasada.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Já tenho uma conta deste tipo vencida e não paga", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Switch(checked = vm.temAtrasada, onCheckedChange = { vm.temAtrasada = it })
+            }
+            if (vm.temAtrasada) {
+                com.hkawzz.nkote.ui.componentes.CampoData("Vencimento da conta vencida", vm.vencimentoAtrasada, { vm.vencimentoAtrasada = it })
+                CampoDinheiro("Valor da conta vencida", vm.valorAtrasadaTexto ?: vm.valorTexto, { vm.valorAtrasadaTexto = it })
+                NkTextoAjuda("Se houver mais de uma vencida, lance as outras como contas avulsas em A pagar.")
+            }
             vm.erro?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Spacer(Modifier.height(Espaco.xxs))
             NkBotaoPrimario(if (vm.editando) "Salvar alterações" else "Criar conta fixa", { vm.salvar(aoVoltar) })

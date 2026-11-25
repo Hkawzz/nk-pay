@@ -70,7 +70,7 @@ class APagarTest {
 
         regra.onNodeWithText("A pagar").performClick()
         esperar("Lançar contas fixas de dezembro de 2026")
-        esperar("Pendentes de meses anteriores")
+        esperar("Atrasadas") // v0.9 (item 4): vencida e não paga fica na seção Atrasadas
         foto("11-apagar-antes")
 
         // Seleção manual: marca só Luz e Internet.
